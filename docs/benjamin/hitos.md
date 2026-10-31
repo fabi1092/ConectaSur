@@ -4,7 +4,9 @@
 
 Rama: `feat/benjamin/hito-1-base-android`.
 
-Incluye configuración Gradle, aplicación Compose, logo, pantalla inicial y prueba de lanzamiento. Conserva los documentos de Entrega 1 existentes.
+Incluye configuración Gradle, aplicación Kotlin con Views y XML editable con Palette, logo, pantalla inicial y prueba de lanzamiento. Conserva los documentos de Entrega 1 existentes.
+
+Corrección solicitada: reemplazar Compose por el editor visual de layouts XML. Se registra en un commit adicional del mismo hito; los hitos 2 y 3 siguen separados.
 
 La integración a la rama principal requiere revisión de otro integrante. No modifica Firebase, no crea cuentas y no declara completo el acceso, catálogo o ventas.
 

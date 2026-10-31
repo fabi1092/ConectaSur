@@ -4,7 +4,16 @@ Proyecto de SurCode para Programación en Android 2026.
 
 ## Hito 1 de Benjamín
 
-Base Android en Kotlin y Jetpack Compose, con pantalla inicial, logo y colores de ConectaSur. Este hito permite abrir el proyecto, compilarlo e instalarlo. Aún no incluye autenticación, navegación entre módulos ni conexión a Firebase.
+Base Android en Kotlin y Views con diseño XML, con pantalla inicial, logo y colores de ConectaSur. Este hito permite abrir el proyecto, editarlo con Palette, compilarlo e instalarlo. Aún no incluye autenticación, navegación entre módulos ni conexión a Firebase.
+
+### Editar con Palette
+
+1. Abrir `android` en Android Studio y sincronizar Gradle.
+2. En la vista Android del panel izquierdo, abrir `app > res > layout > activity_main.xml`.
+3. Seleccionar **Design** o **Split**, arriba a la derecha del editor. En **Code** no aparece Palette.
+4. Arrastrar componentes desde **Palette** al `ConstraintLayout` y asignar sus restricciones. Los textos y colores están en `res/values/strings.xml` y `colors.xml`.
+
+El logo usa una subclase de `ImageView` para mostrar la variante horizontal de la imagen original. Compilar el proyecto si el editor necesita cargar esa clase para la vista previa. Kotlin contiene el comportamiento; la distribución de los componentes está en XML.
 
 ### Abrir y ejecutar
 

@@ -1,14 +1,27 @@
 package cl.surcode.conectasur
-import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import org.junit.Rule
-import org.junit.Test
 
+import android.view.View
+import android.widget.TextView
+import androidx.test.core.app.ActivityScenario
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
 class LaunchTest {
-    @get:Rule val compose=createAndroidComposeRule<MainActivity>()
-    @Test fun launchesAndShowsAccessibleBrand() {
-        compose.onNodeWithContentDescription("ConectaSur por SurCode").assertIsDisplayed()
-        compose.onNodeWithText("Tu emprendimiento,\nmás cerca").assertIsDisplayed()
-        compose.onNodeWithText("Puerto Montt · Alerce").assertIsDisplayed()
+    @Test fun launchesXmlLayoutAndShowsAccessibleBrand() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val logo = activity.findViewById<View>(R.id.brand_logo)
+                assertTrue(logo.isShown)
+                assertEquals("ConectaSur por SurCode", logo.contentDescription)
+                assertEquals("Tu emprendimiento,\nmás cerca",
+                    activity.findViewById<TextView>(R.id.welcome_title).text.toString())
+                assertEquals("Puerto Montt · Alerce",
+                    activity.findViewById<TextView>(R.id.community_name).text.toString())
+            }
+        }
     }
 }
