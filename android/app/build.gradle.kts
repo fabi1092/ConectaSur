@@ -1,4 +1,6 @@
 plugins { id("com.android.application") }
+// Firebase solo se activa si existe android/app/google-services.json (ese archivo NO se sube a GitHub).
+if (file("google-services.json").exists()) { apply(plugin = "com.google.gms.google-services") }
 android {
     namespace = "cl.surcode.conectasur"
     compileSdk = 36
@@ -20,6 +22,11 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test:runner:1.7.0")

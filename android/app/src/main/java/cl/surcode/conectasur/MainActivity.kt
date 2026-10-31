@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
         }
     }
     private val prefs by lazy { AccessibilityPreferences(applicationContext) }
-    private val repository: CatalogRepository by lazy { DemoCatalogRepository() }
+    private val repository: CatalogRepository by lazy { RepositoryProvider.catalog(applicationContext) }
     private var products = emptyList<PublicProduct>()
     private var current = Destination("home")
     private val history = mutableListOf<Destination>()

@@ -1,0 +1,77 @@
+rules_version = '2';
+
+// Reglas de ConectaSur (Firestore). Roles guardados en users/{uid}.role:
+// 'admin' | 'emprendedora' | 'comprador'. Todo lo no mencionado queda DENEGADO.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Funciones auxiliares ----------
+    function signedIn() { return request.auth != null; }
+    function profilePath() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function hasProfile() { return signedIn() && exists(profilePath()); }
+    function profile() { return get(profilePath()).data; }
+    function isActive() { return hasProfile() && profile().active == true; }
+    function isAdmin() { return isActive() && profile().role == 'admin'; }
+    function isOwnerOf(shopId) {
+      return isActive() && profile().role == 'emprendedora' && profile().shopId == shopId;
+    }
+
+    // Lo UNICO que puede tener un producto publico (sin stock, sin precio oculto).
+    function validPublic(d) {
+      return d.keys().hasOnly(['id', 'shopId', 'name', 'description', 'category',
+                               'priceClp', 'onRequest', 'photo', 'updatedAt'])
+        && d.keys().hasAll(['id', 'shopId', 'name', 'onRequest'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 120
+        && d.onRequest is bool
+        && (!('priceClp' in d) || d.priceClp == null || d.priceClp is int);
+    }
+
+    // ---------- Usuarios y roles ----------
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      // El admin crea cuentas. Un comprador solo puede crear SU perfil como comprador.
+      allow create: if isAdmin()
+        || (signedIn() && request.auth.uid == uid
+            && request.resource.data.keys().hasOnly(['role', 'active', 'displayName'])
+            && request.resource.data.role == 'comprador'
+            && request.resource.data.active == true);
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- Tiendas ----------
+    match /shops/{shopId} {
+      allow read: if true;                       // la ficha de tienda es publica
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isOwnerOf(shopId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['name', 'description', 'logoUrl', 'entrepreneurType',
+                         'sector', 'contact', 'showPrices', 'updatedAt']));
+
+      // Catalogo PRIVADO (con stock): solo su dueña.
+      match /products/{productId} {
+        allow read, write: if isOwnerOf(shopId);
+      }
+      // Historial de ventas PRIVADO (RN-10): ni el admin lo ve.
+      match /sales/{saleId} {
+        allow read, write: if isOwnerOf(shopId);
+      }
+    }
+
+    // ---------- Catalogo PUBLICO (copia sin datos privados) ----------
+    match /publicProducts/{productId} {
+      allow read: if true;
+      allow create: if isOwnerOf(request.resource.data.shopId) && validPublic(request.resource.data);
+      allow update: if isOwnerOf(resource.data.shopId)
+        && request.resource.data.shopId == resource.data.shopId
+        && validPublic(request.resource.data);
+      allow delete: if resource == null || isOwnerOf(resource.data.shopId) || isAdmin();
+    }
+
+    // ---------- Listas que mantiene el administrador ----------
+    match /associations/{id}       { allow read: if true; allow write: if isAdmin(); }
+    match /productTypes/{id}       { allow read: if true; allow write: if isAdmin(); }
+    match /categories/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /entrepreneurTypes/{id}  { allow read: if true; allow write: if isAdmin(); }
+  }
+}

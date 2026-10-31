@@ -1,0 +1,15 @@
+{
+  "name": "conectasur-firebase",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore,storage --project demo-conectasur \"node --test test/rules.test.js\"",
+    "emuladores": "firebase emulators:start --project demo-conectasur",
+    "seed": "node seed/seed.mjs"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase": "^13.1.0",
+    "firebase-tools": "^15.34.2"
+  }
+}
