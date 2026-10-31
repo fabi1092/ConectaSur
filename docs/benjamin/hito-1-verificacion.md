@@ -25,7 +25,7 @@ Los informes completos se generan en `app/build/reports` y los resultados de dis
 
 No hay autenticación, datos reales ni conexión a Firebase. La presencia de una etiqueta accesible no equivale a una evaluación con TalkBack o con las emprendedoras. La versión mínima API 26 es provisional.
 
-No se automatizó la vista previa de Android Studio. La validación ejecutada corresponde a la compilación, Lint y al inicio del layout XML en el emulador. El README explica cómo abrir Design/Palette; si el logo no aparece de inmediato, sincronizar y compilar para que el editor cargue su clase ImageView.
+Se revisó la vista previa en Android Studio. El nombre de fuente `sans` del tema provocaba un fallo de renderizado (`assetStream is null`); se reemplazó por `sans-serif`. Tras recargar y compilar desde el IDE, la pantalla se mostró completa, incluido el logo, y el panel no indicó problemas de layout. También se repitieron la compilación y Lint después de la corrección. Si la vista aparece excesivamente ampliada, usar Zoom to Fit en la barra de la superficie de diseño.
 
 Se añadió un flujo de GitHub Actions para compilar y ejecutar Lint, pero todavía no se ha ejecutado en GitHub. Un integrante distinto debe revisar el pull request antes de integrar a `main`.
 
