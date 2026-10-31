@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <attr name="appInk" format="color" />
+    <attr name="appMuted" format="color" />
+    <attr name="appSurface" format="color" />
+    <attr name="appPrimary" format="color" />
+    <attr name="appBorder" format="color" />
+</resources>

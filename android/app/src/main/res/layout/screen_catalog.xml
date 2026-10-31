@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:id="@+id/page_scroll" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" tools:theme="@style/Theme.ConectaSur">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+        <TextView android:id="@+id/page_title" style="@style/ConectaSur.Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/catalog_title" />
+        <TextView android:id="@+id/catalog_intro" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/catalog_intro" />
+        <TextView android:id="@+id/search_label" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/search_label" android:labelFor="@id/search_input" />
+        <EditText android:id="@+id/search_input" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="textCapSentences" android:imeOptions="actionSearch" android:singleLine="true" android:padding="12dp" android:autofillHints="" />
+        <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/search_hint" />
+        <Button android:id="@+id/clear_search" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/clear_search" />
+        <TextView android:id="@+id/results_count" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/empty_catalog" />
+        <LinearLayout android:id="@+id/product_list" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+        <TextView android:id="@+id/empty_message" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/empty_search" android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>

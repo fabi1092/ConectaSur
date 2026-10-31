@@ -1,49 +1,56 @@
 # ConectaSur
 
-Proyecto de SurCode para Programación en Android 2026.
+Aplicación de SurCode para conectar emprendedoras y compradores de Puerto Montt y Alerce.
 
-## Hito 1 de Benjamín
+## Avance actual: hito 2
 
-Base Android en Kotlin y Views con diseño XML, con pantalla inicial, logo y colores de ConectaSur. Este hito permite abrir el proyecto, editarlo con Palette, compilarlo e instalarlo. Aún no incluye autenticación, navegación entre módulos ni conexión a Firebase.
+Android en Kotlin y Views, con pantallas XML editables con Palette. Incluye inicio, catálogo de ejemplo, detalle, tienda, ayuda, preferencias de accesibilidad y lectura opcional. Nombres y precios son ficticios; las fotografías provienen de la visita.
 
-### Editar con Palette
+Las funciones de acceso, edición de productos, ventas y Firebase aún deben integrarse con el trabajo de los otros integrantes. La pantalla de ventas informa que esa función estará disponible más adelante.
 
-1. Abrir `android` en Android Studio y sincronizar Gradle.
-2. En la vista Android del panel izquierdo, abrir `app > res > layout > activity_main.xml`.
-3. Seleccionar **Design** o **Split**, arriba a la derecha del editor. En **Code** no aparece Palette.
-4. Arrastrar componentes desde **Palette** al `ConstraintLayout` y asignar sus restricciones. Los textos y colores están en `res/values/strings.xml` y `colors.xml`.
+## Abrir en Android Studio
 
-El logo usa una subclase de `ImageView` para mostrar la variante horizontal de la imagen original. Compilar el proyecto si el editor necesita cargar esa clase para la vista previa. Kotlin contiene el comportamiento; la distribución de los componentes está en XML.
+1. Abrir la carpeta real `android` del proyecto.
+2. Usar JDK 21, SDK Android 36 y Build Tools 36.0.0; sincronizar Gradle.
+3. Ejecutar `app` en un teléfono o emulador Android 8.0 o superior.
 
-### Abrir y ejecutar
+La versión mínima API 26 es provisional y debe contrastarse con los teléfonos de las emprendedoras. No se han probado todas las versiones Android.
 
-1. En Android Studio, abrir la carpeta `android`.
-2. Usar el JDK integrado de Android Studio y un SDK Android 36 con Build Tools 36.0.0.
-3. Sincronizar Gradle y ejecutar `app` en un dispositivo o emulador Android 8.0 o superior.
+## Editar con Palette
 
-En una terminal, dentro de `android`:
+En la vista Android: `app > res > layout > screen_home.xml`. Seleccionar **Design** o **Split**. En Code no se muestra Palette.
+
+`activity_main.xml` contiene la navegación y una inclusión de inicio para mostrarla en el editor. Las demás pantallas están en `screen_catalog.xml`, `item_product.xml`, `screen_detail.xml`, `screen_store.xml`, `screen_settings.xml`, `screen_help.xml`, `screen_sales.xml` y `dialog_menu.xml`.
+
+El logo usa una subclase de ImageView para mostrar la variante horizontal del original. Si el editor necesita cargarla, compilar el proyecto. Kotlin contiene el comportamiento y XML distribuye los componentes. Si la vista se ve demasiado ampliada, usar Zoom to Fit.
+
+## Compilar y comprobar
+
+Desde la carpeta `android`:
 
 ```sh
-./gradlew assembleDebug lintDebug
+./gradlew assembleDebug testDebugUnitTest lintDebug
 ./gradlew connectedDebugAndroidTest
 ```
 
-En Windows se puede usar `gradlew.bat`. El APK se genera en `android/app/build/outputs/apk/debug/app-debug.apk`. La primera compilación descarga dependencias.
-
-La versión mínima API 26 es provisional y debe contrastarse con los teléfonos registrados en el levantamiento. No se han probado todas las versiones Android.
+En Windows se puede usar `gradlew.bat`. El APK queda en `app/build/outputs/apk/debug/app-debug.apk`. La primera compilación descarga dependencias. Las pruebas de dispositivo necesitan un emulador o teléfono conectado.
 
 ## Trabajo por hitos
 
-Cada hito se prepara en una rama, se demuestra y se envía mediante un pull request para revisión de otro integrante. No se mezclan todos los módulos en un solo commit ni se crean contribuciones en nombre de compañeros.
+1. Base Android y logo.
+2. Pantallas, navegación y accesibilidad.
+3. Pruebas e informe de seguridad.
 
-1. **Hito 1:** base Android compilable e instalable.
-2. **Hito 2:** navegación, accesibilidad y vista previa del catálogo con datos de ejemplo.
-3. **Hito 3:** pruebas de reglas, análisis e informe de seguridad; distinguir resultados ejecutados de casos pendientes.
+Cada hito se prepara y comprueba por separado, con mensajes de commit simples. El usuario solicitó enviar estos hitos directamente a main. Para cumplir la pauta del profesor, el equipo debe acordar la protección de main y el flujo de pull requests revisados; no se declara cumplido ese criterio con este envío.
 
-Las funciones de acceso y tienda corresponden a Fabián; catálogo a Dan; ventas a Alonso; Firebase a Felipe y panel web a Kisho. Los contratos compartidos se acuerdan antes de integrar.
+Fabián se encarga de acceso y tienda; Dan de productos; Alonso de ventas; Felipe de Firebase y Kisho del panel web. Benjamín desarrolla la base, navegación, accesibilidad y pruebas de seguridad. Todos deben registrar sus propias contribuciones.
 
-## Seguridad inicial
+Consulta [la guía del hito 2](docs/benjamin/hito-2-pantallas.md) para los puntos de integración y las referencias de accesibilidad.
 
-La app no solicita permisos de cámara, micrófono o almacenamiento, no guarda credenciales y no realiza conexiones de red en este hito. Se desactiva la copia de seguridad de sus datos y el tráfico de texto claro. La única actividad exportada es la de entrada. Estas medidas no acreditan todavía los permisos de Firebase ni sustituyen las pruebas de seguridad de la EVA 3.
+## Datos y permisos
 
-No subir `local.properties`, `google-services.json`, claves privadas, contraseñas ni archivos de firma. No se requieren para ejecutar esta base.
+Esta demostración no usa Firebase ni credenciales. Guarda preferencias visuales y una referencia local al logo elegido. El selector del sistema permite elegir una imagen sin acceso general al almacenamiento. La lectura usa una voz instalada y comienza solo al pulsar Escuchar. Compartir abre un selector de aplicaciones y utiliza texto marcado como ejemplo, sin inventar enlaces públicos.
+
+La app no solicita cámara, micrófono ni huella al iniciar y no incluye permiso de Internet. Estas decisiones no sustituyen las reglas y pruebas de seguridad de Firebase del hito 3.
+
+No subir `local.properties`, `google-services.json`, claves privadas, contraseñas, archivos de firma ni archivos generados de build.

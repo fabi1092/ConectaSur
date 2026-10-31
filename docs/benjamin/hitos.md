@@ -1,20 +1,19 @@
 # Avances de Benjamín Tampier
 
-## Hito 1 Base Android
+## Hito 1: base Android
 
-Rama: `feat/benjamin/hito-1-base-android`.
+Preparado en `feat/benjamin/hito-1-base-android` e integrado a main hasta el commit `1d59a24`. Incluye configuración Gradle, logo, pantalla inicial XML para Palette y prueba de lanzamiento. Se corrigió el nombre de fuente para la vista previa del IDE.
 
-Incluye configuración Gradle, aplicación Kotlin con Views y XML editable con Palette, logo, pantalla inicial y prueba de lanzamiento. Conserva los documentos de Entrega 1 existentes.
+## Hito 2: pantallas y accesibilidad
 
-Corrección solicitada: reemplazar Compose por el editor visual de layouts XML. Se registra en un commit adicional del mismo hito; los hitos 2 y 3 siguen separados.
+Rama: `feat/benjamin/hito-2-pantallas`. Incluye navegación XML, catálogo y detalle de ejemplo, tienda, ayuda, ajustes de letras y botones, contraste, lectura opcional y logo local. La pantalla de ventas sigue reservada para integrar el trabajo de Alonso.
 
-La integración a la rama principal requiere revisión de otro integrante. No modifica Firebase, no crea cuentas y no declara completo el acceso, catálogo o ventas.
+Ver `hito-2-pantallas.md` para las referencias, contratos y límites. El hito se guarda por separado del primero y no declara implementados los módulos del resto del equipo.
 
-## Próximos hitos
+## Hito 3: pendiente
 
-- Hito 2: rutas estables para los módulos de cada integrante, controles amplios, texto ajustable, alto contraste, lectura opcional en pesos chilenos y vista pública de datos ficticios. Respeta el tamaño de texto del sistema.
-- Hito 3: entorno de emuladores y casos permitidos y rechazados por perfil; Android Lint, dependencias, análisis del APK e informe con evidencia. La evaluación con TalkBack necesita un dispositivo y no se declara aprobada por tener etiquetas.
+Entorno de emuladores y pruebas de reglas por perfil, revisión de seguridad e informe con evidencia. La evaluación manual con TalkBack y con las emprendedoras no se considera aprobada solo por tener etiquetas accesibles o pruebas automáticas.
 
-## Para revisar este hito
+## Forma de entrega
 
-Compilar, instalar y abrir la app. Comprobar que el logo y el texto aparecen completos, que no se piden permisos ni se abre una solicitud de huella y que el proyecto no contiene credenciales.
+Commits con mensajes simples, separados por hitos. El usuario solicitó los envíos de estos avances a main. La protección de main y los pull requests revisados que exige la pauta siguen pendientes de acuerdo con el equipo.

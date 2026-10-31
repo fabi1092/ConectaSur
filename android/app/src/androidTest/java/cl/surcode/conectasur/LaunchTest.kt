@@ -17,7 +17,7 @@ class LaunchTest {
                 val logo = activity.findViewById<View>(R.id.brand_logo)
                 assertTrue(logo.isShown)
                 assertEquals("ConectaSur por SurCode", logo.contentDescription)
-                assertEquals("Tu emprendimiento,\nmás cerca",
+                assertEquals("Tu tienda,\nmás cerca",
                     activity.findViewById<TextView>(R.id.welcome_title).text.toString())
                 assertEquals("Puerto Montt · Alerce",
                     activity.findViewById<TextView>(R.id.community_name).text.toString())
