@@ -1,0 +1,17 @@
+.gradle/
+.kotlin/
+**/build/
+local.properties
+.idea/
+*.iml
+google-services.json
+GoogleService-Info.plist
+*.jks
+*.keystore
+*serviceAccount*.json
+.env
+.env.*
+!.env.example
+node_modules/
+*-debug.log
+security/reports/*.log
