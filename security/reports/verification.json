@@ -1,0 +1,72 @@
+{
+  "checkedAt": "2026-11-01T16:29:34.332Z",
+  "environment": {
+    "node": "v24.22.1",
+    "project": "demo-conectasur",
+    "backend": "Emulator Suite local"
+  },
+  "rulesAndWeb": {
+    "tests": 81,
+    "suites": 9,
+    "passed": 81,
+    "failed": 0
+  },
+  "androidUnit": {
+    "tests": 15,
+    "failures": 0,
+    "errors": 0
+  },
+  "androidBuild": true,
+  "lint": {
+    "errors": 0,
+    "warnings": 10
+  },
+  "mergedManifestPermissions": [
+    "android.permission.INTERNET",
+    "android.permission.ACCESS_NETWORK_STATE",
+    "com.google.android.providers.gsf.permission.READ_GSERVICES",
+    "cl.surcode.conectasur.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+  ],
+  "npm": {
+    "firebase": {
+      "info": 0,
+      "low": 0,
+      "moderate": 17,
+      "high": 0,
+      "critical": 0,
+      "total": 17
+    },
+    "web": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "trackedFileScan": {
+    "checkedFiles": 97,
+    "findings": [],
+    "scope": "Patrones acotados; no certifica ausencia de secretos ni revisa todo el historial"
+  },
+  "sourceHashNormalization": "UTF-8, CRLF normalizado a LF para comparar checkouts Windows/Linux",
+  "sourceSha256": {
+    "firebase/firestore.rules": "a1ffb5d6ca53d562e19a58e9ee050359d76723bc053c1e3f2e8c9820b56154d4",
+    "firebase/storage.rules": "efa72835851993ee868fd1f56496237c048c2aff968723345fb861c0498ae0d8",
+    "firebase/test/rules.test.js": "122e5642418565227931a2997f5e26721284eeddeef831609f59c40386334b5b",
+    "firebase/test/web.test.js": "6ec408c7a166bd39382eaa0d4d9ece5d4f4e3a9a9b40dadbd11339ff9e4e8d0b",
+    "firebase/package-lock.json": "6f544a92fcc0e530f807f5eaf0830320c25bed1556b112ce50fc470a0255061b",
+    "web/firebase-data.js": "2e3b4af503b83e2a31946342ab242cdf5c7878fdc81b6a094ae86abf4cad84f5",
+    "web/package-lock.json": "840f98bd7b2a4c2d0adc65284ef9bc7e87e36e968222374d01684c6600f8bc80"
+  },
+  "pending": [
+    "Biometria real",
+    "App Check",
+    "Auditoria del administrador",
+    "Panel web visual",
+    "Pantallas finales integradas",
+    "MobSF",
+    "Validacion normativa de privacidad"
+  ]
+}

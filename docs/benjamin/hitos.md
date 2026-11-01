@@ -14,6 +14,8 @@ Ver `hito-2-pantallas.md` para las referencias, contratos y límites. El hito se
 
 Rama: `feat/benjamin/hito-3-seguridad`. Incluye la auditoría y endurecimiento de `firebase/firestore.rules`, ampliación de la suite automática a 27 pruebas por perfil en Firebase Emulator Suite (`firebase/test/rules.test.js`), corrección del error bloqueante de Android Lint (`InvalidFragmentVersionForActivityResult`), reglas de extracción y respaldo para Android 12+ (`data_extraction_rules.xml` y `backup_rules.xml`), limpieza de advertencias en vistas/preferencias y el informe detallado en `hito-3-seguridad.md`.
 
+Cierre revisado el 1 de noviembre: 81 pruebas de reglas e integración web aprobadas, validación de productos/ventas, sesión y caché web endurecidas, Guava y grpc-js actualizados, inventario Maven consultado en OSV y evidencias JSON. El informe distingue correcciones, riesgos moderados de herramientas de desarrollo y requisitos pendientes. La biometría, App Check, el registro del administrador y las pantallas finales todavía requieren integración.
+
 ## Forma de entrega
 
 Commits con mensajes simples, separados por hitos. El usuario solicitó los envíos de estos avances a main. La protección de main y los pull requests revisados que exige la pauta siguen pendientes de acuerdo con el equipo.

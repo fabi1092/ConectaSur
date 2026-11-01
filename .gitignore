@@ -9,6 +9,9 @@ GoogleService-Info.plist
 *.jks
 *.keystore
 *serviceAccount*.json
+service-account*.json
+service_account*.json
+firebase-config.json
 .env
 .env.*
 !.env.example

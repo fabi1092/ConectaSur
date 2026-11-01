@@ -4,10 +4,10 @@
 import { initializeApp, getApps } from "firebase/app";
 import {
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
-  onAuthStateChanged,
+  onAuthStateChanged, setPersistence, browserSessionPersistence, inMemoryPersistence,
 } from "firebase/auth";
 import {
-  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  initializeFirestore, memoryLocalCache,
   doc, getDoc, setDoc, updateDoc, collection, getDocs, onSnapshot, query, where,
   writeBatch, serverTimestamp, arrayUnion, arrayRemove,
 } from "firebase/firestore";
@@ -25,20 +25,40 @@ export const firebaseConfig = {
 
 const app = getApps().find((a) => a.name === "[DEFAULT]") ?? initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-// Persistencia local: la web tambien lee datos ya descargados si se corta la red.
+// En un computador compartido no dejamos documentos en IndexedDB.
+// La memoria mantiene los documentos consultados mientras esta pagina siga abierta.
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  localCache: memoryLocalCache(),
 });
+
+const sessionReady = setPersistence(auth,
+  typeof window === "undefined" ? inMemoryPersistence : browserSessionPersistence);
+
+async function requireAdmin() {
+  await sessionReady;
+  const user = auth.currentUser;
+  const profile = user && await getDoc(doc(db, "users", user.uid));
+  if (!profile?.exists() || profile.data().active !== true || profile.data().role !== "admin") {
+    throw new Error("Esta accion requiere una cuenta administradora activa");
+  }
+  // Esto evita acciones innecesarias en la UI. Las reglas siguen siendo la autoridad.
+}
 
 // ---------- Acceso ----------
 export async function login(email, password) {
+  await sessionReady;
   const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-  const profile = await getDoc(doc(db, "users", cred.user.uid));
-  if (!profile.exists() || profile.data().active !== true) {
+  try {
+    const profile = await getDoc(doc(db, "users", cred.user.uid));
+    if (!profile.exists() || profile.data().active !== true
+        || !["admin", "emprendedora", "comprador"].includes(profile.data().role)) {
+      throw new Error("Tu cuenta no tiene permiso para entrar o fue desactivada");
+    }
+    return { ...profile.data(), uid: cred.user.uid };
+  } catch (error) {
     await signOut(auth);
-    throw new Error("Tu cuenta no tiene permiso para entrar o fue desactivada");
+    throw error;
   }
-  return { uid: cred.user.uid, ...profile.data() }; // { role, shopId, active, displayName }
 }
 export const logout = () => signOut(auth);
 export const onSession = (callback) => onAuthStateChanged(auth, callback);
@@ -47,11 +67,17 @@ export const onSession = (callback) => onAuthStateChanged(auth, callback);
 // Truco: se crea la cuenta con una SEGUNDA instancia de Firebase para que el administrador
 // no pierda su propia sesion (createUserWithEmailAndPassword inicia sesion con la cuenta nueva).
 export async function createEmprendedora({ email, password, displayName, shopName }) {
+  await requireAdmin(); // Antes de crear una cuenta en Authentication.
   const secondary = getApps().find((a) => a.name === "secondary") ?? initializeApp(firebaseConfig, "secondary");
   const secondaryAuth = getAuth(secondary);
-  const cred = await createUserWithEmailAndPassword(secondaryAuth, email.trim(), password);
-  const uid = cred.user.uid;
-  await signOut(secondaryAuth);
+  await setPersistence(secondaryAuth, inMemoryPersistence);
+  let uid;
+  try {
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email.trim(), password);
+    uid = cred.user.uid;
+  } finally {
+    await signOut(secondaryAuth);
+  }
 
   const shopId = `shop_${uid}`;
   const batch = writeBatch(db); // escribe con la sesion del administrador
@@ -67,6 +93,7 @@ export async function createEmprendedora({ email, password, displayName, shopNam
 
 // Desactivar = no borrar: la cuenta deja de poder entrar y editar (las reglas miran users/{uid}.active).
 export async function setEmprendedoraActive(uid, shopId, active) {
+  await requireAdmin();
   const batch = writeBatch(db);
   batch.update(doc(db, "users", uid), { active });
   batch.update(doc(db, "shops", shopId), { active });
@@ -80,24 +107,35 @@ export async function listShops() {
 
 // ---------- Administrador: asociaciones ----------
 export async function saveAssociation(id, data) {
+  await requireAdmin();
   await setDoc(doc(db, "associations", id), { active: true, ...data }, { merge: true });
 }
 export async function setAssociationActive(id, active) {
+  await requireAdmin();
   await updateDoc(doc(db, "associations", id), { active });
 }
 export async function listAssociations() {
   const snap = await getDocs(collection(db, "associations"));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
-export const addShopToAssociation = (shopId, associationId) =>
-  updateDoc(doc(db, "shops", shopId), { associationIds: arrayUnion(associationId) });
-export const removeShopFromAssociation = (shopId, associationId) =>
-  updateDoc(doc(db, "shops", shopId), { associationIds: arrayRemove(associationId) });
+export async function addShopToAssociation(shopId, associationId) {
+  await requireAdmin();
+  return updateDoc(doc(db, "shops", shopId), { associationIds: arrayUnion(associationId) });
+}
+export async function removeShopFromAssociation(shopId, associationId) {
+  await requireAdmin();
+  return updateDoc(doc(db, "shops", shopId), { associationIds: arrayRemove(associationId) });
+}
 
 // ---------- Administrador: tipos y categorias ----------
 // collectionName: "categories" | "productTypes" | "entrepreneurTypes"
-export const saveListItem = (collectionName, id, name) =>
-  setDoc(doc(db, collectionName, id), { name }, { merge: true });
+export async function saveListItem(collectionName, id, name) {
+  await requireAdmin();
+  if (!["categories", "productTypes", "entrepreneurTypes"].includes(collectionName)) {
+    throw new Error("Lista no permitida");
+  }
+  return setDoc(doc(db, collectionName, id), { name }, { merge: true });
+}
 export async function listItems(collectionName) {
   const snap = await getDocs(collection(db, collectionName));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));

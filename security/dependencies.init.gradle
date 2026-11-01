@@ -1,0 +1,16 @@
+// Inventario de las dependencias Maven realmente resueltas para el APK debug.
+// Uso desde android: ./gradlew -I ../security/dependencies.init.gradle :app:securityDependencies
+gradle.afterProject { p ->
+    if (p.path == ':app') {
+        p.tasks.register('securityDependencies') {
+            doLast {
+                def dependencies = p.configurations.getByName('debugRuntimeClasspath')
+                    .resolvedConfiguration.resolvedArtifacts.collect { artifact ->
+                        def module = artifact.moduleVersion.id
+                        [name: module.group + ':' + module.name, version: module.version]
+                    }.unique().sort { it.name }
+                println 'SECURITY_DEPENDENCIES=' + groovy.json.JsonOutput.toJson(dependencies)
+            }
+        }
+    }
+}

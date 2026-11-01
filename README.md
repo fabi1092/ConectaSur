@@ -37,14 +37,17 @@ En Windows se puede usar `gradlew.bat`. El APK queda en `app/build/outputs/apk/d
 
 ## Pruebas de reglas de seguridad (Firebase Emulator Suite)
 
-Desde la carpeta `firebase` (requiere Node.js y JDK 21):
+Desde la raíz (requiere Node.js >=24.12.0 y JDK 21):
 
 ```sh
-npm ci
-npm test
+npm --prefix web ci
+npm --prefix firebase ci
+npm --prefix firebase test
 ```
 
-Ejecuta los **27 casos automatizados** (`firebase/test/rules.test.js`) sobre Firestore y Storage para los perfiles visitante, emprendedora, administrador y comprador.
+Ejecuta **81 casos automatizados** sobre Authentication, Firestore y Storage: permisos por perfil, validación de productos/ventas, publicación y venta en transacción, y funciones reales de la capa web. Ver [informe y límites](docs/benjamin/hito-3-seguridad.md) y [evidencias](security/reports/verification.json).
+
+Se corrigieron las alertas altas de las herramientas Firebase y la dependencia Guava de Android. Permanecen 17 alertas moderadas en herramientas de desarrollo, con alcance y seguimiento en el informe. La auditoría de las dependencias web no reporta alertas.
 
 ## Trabajo por hitos
 
@@ -58,6 +61,8 @@ Fabián se encarga de acceso y tienda; Dan de productos; Alonso de ventas; Felip
 
 ## Datos y permisos
 
-Sin `android/app/google-services.json`, la app usa datos locales de demostración y guarda preferencias visuales y una referencia local al logo elegido. Las reglas de extracción (`data_extraction_rules.xml` y `backup_rules.xml`) limitan el respaldo únicamente a las preferencias visuales (`presentation.xml`). El selector del sistema permite elegir una imagen sin acceso general al almacenamiento. La lectura usa una voz instalada y comienza solo al pulsar Escuchar.
+Sin `android/app/google-services.json`, la app usa datos locales de demostración y guarda preferencias visuales y una referencia local al logo elegido. `allowBackup=false` deshabilita Auto Backup; las reglas explícitas de extracción y transferencia incluyen únicamente `presentation.xml`. El selector del sistema permite elegir una imagen sin acceso general al almacenamiento. La lectura usa una voz instalada y comienza solo al pulsar Escuchar.
+
+La capa web usa caché en memoria y sesión de navegador por pestaña para reducir la persistencia en equipos compartidos. Falta integrar y verificar el panel visual. Las reglas actuales validan hasta 10 variantes por producto; el editor debe respetar ese límite técnico o migrar las variantes a documentos separados.
 
 No subir `local.properties`, `google-services.json`, `firebase-config.json`, claves privadas, contraseñas, archivos de firma ni archivos generados de build.

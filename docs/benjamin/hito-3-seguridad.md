@@ -1,97 +1,167 @@
 # Hito 3: pruebas e informe de seguridad
 
-Fecha: 31 de octubre de 2026. Responsable: Benjamín Tampier (en coordinación con Felipe Gallardo para el entorno de reglas de Firebase).
+Fecha: 31 de octubre de 2026 (Chile). Responsable: Benjamín Tampier.
+Revisión de cierre: 1 de noviembre de 2026. Las evidencias conservan la fecha real de cada ejecución.
+Revisión local sobre el código del grupo; coordinación pendiente con Felipe y los responsables de las pantallas finales.
 
-Cubre **RNF-SEG-01, RNF-SEG-02, RNF-SEG-03, RNF-SEG-04, RNF-SEG-05, RNF-SEG-08** y **RNF-PRI-01, RNF-PRI-03**, dejando documentado el estado de **RNF-SEG-06** y **RNF-SEG-07**.
+## 1. Alcance y estado de requisitos
 
----
+| Requisito | Evidencia y estado |
+|---|---|
+| RNF-SEG-01 | Reglas por perfil verificadas sobre usuarios, tiendas, catálogo, ventas y fotos. Ferias y los módulos que aún no existen requieren pruebas al integrarse. |
+| RNF-SEG-02 | **Pendiente:** la huella todavía no está implementada. No solicitarla al iniciar no equivale a implementar BiometricPrompt. |
+| RNF-SEG-03 | Exclusiones de Git y revisión acotada de archivos versionados. No se declara auditado todo el historial ni garantizada la ausencia de cualquier secreto. |
+| RNF-SEG-04 | Suite automatizada contra Authentication, Firestore y Storage locales. Incluye operaciones permitidas y rechazadas por perfil. |
+| RNF-SEG-05 | Android Lint, inventario Maven consultado en OSV, npm audit y revisión manual de la capa web existente. No se ejecutó MobSF y todavía no hay un panel web visual que permita evaluar XSS, cabeceras o despliegue. |
+| RNF-SEG-06 | **Pendiente:** activar y verificar App Check en el proyecto compartido. |
+| RNF-SEG-07 | **Pendiente:** registro consultable de acciones del administrador. |
+| RNF-SEG-08 | Este informe reúne resultados, fuentes, correcciones, riesgos residuales y pendientes. Debe repetirse con el producto final. |
+| RNF-PRI-01 | **Pendiente:** esta revisión técnica no acredita por sí sola el cumplimiento normativo de privacidad. |
+| RNF-PRI-03 | Stock y ventas separados del catálogo público; pruebas de acceso. Falta validar de extremo a extremo los cambios de visibilidad y precios con las pantallas reales. |
 
-## 1. Comandos de verificación
+La planificación permite completar RNF-SEG-06 y 07 en la entrega 8 si no alcanzan en la 5. No se presentan como implementados.
 
-### Pruebas automatizadas de reglas de Firestore y Storage (RNF-SEG-04)
+## 2. Reproducción
 
-Desde la carpeta `firebase` (con JDK 21 en `JAVA_HOME`):
+Requiere **Node.js >=24.12.0**, JDK 21 y el SDK Android indicado en el README. Node 20 no cumple los requisitos de las versiones actuales del SDK de Firebase.
 
-```sh
-npm ci
-npm test
-```
+Desde la raíz:
 
-El script inicia `firebase emulators:exec --only firestore,storage --project demo-conectasur` y ejecuta la suite `firebase/test/rules.test.js`.
+~~~sh
+npm --prefix web ci
+npm --prefix firebase ci
+npm --prefix firebase test
+~~~
 
-### Compilación, pruebas unitarias y análisis estático Android (RNF-SEG-05)
+La prueba usa exclusivamente el proyecto ficticio **demo-conectasur** y los emuladores locales. Las pruebas web abortan si faltan las variables de conexión a los emuladores. No se desplegaron reglas ni se usaron cuentas o datos reales.
 
-Desde la carpeta `android`:
+Desde Android:
 
-```sh
+~~~sh
 ./gradlew assembleDebug testDebugUnitTest lintDebug
-```
+./gradlew -I ../security/dependencies.init.gradle :app:securityDependencies
+~~~
 
----
+Guardar la salida de la segunda orden en security/reports/dependencies.log y, desde la raíz, consultar el inventario:
 
-## 2. Resultados de las pruebas de reglas por perfil (RNF-SEG-01, RNF-SEG-04, RN-10)
+~~~sh
+node security/check-android-dependencies.mjs
+npm --prefix firebase audit --json
+npm --prefix web audit --json
+~~~
 
-Se ejecutaron **27 casos de prueba automatizados** distribuidos en 5 suites (**27 aprobados, 0 fallidos** en `6,94 s`), verificando tanto operaciones permitidas como intentos de acceso no autorizado por cada perfil:
+La consulta a OSV envía únicamente coordenadas Maven y versiones, no código ni credenciales.
 
-| Perfil / Suite | Caso probado | Tipo | Resultado |
+El workflow **Pruebas de seguridad** instala ambas carpetas, ejecuta los emuladores y comprueba auditorías. Falla con alertas altas en las herramientas Firebase y con moderadas o superiores en las dependencias web. Las moderadas de desarrollo permanecen abiertas y documentadas; ese umbral no las elimina ni equivale a certificar el producto.
+
+## 3. Resultados y evidencias
+
+- **81 pruebas aprobadas, 0 fallidas, 9 suites**: 73 casos de reglas/integración de datos y 8 de la capa web real.
+- **15 pruebas unitarias Android**, sin fallos ni errores: CatalogTest (8) y SalesTest (7).
+- Compilación debug correcta y Android Lint: **0 errores, 10 advertencias**; las advertencias no se ocultan ni equivalen a pruebas fallidas.
+- Auditoría npm: **web sin alertas**; herramientas Firebase **17 moderadas, 0 altas y 0 críticas** después de actualizar dependencias compatibles y fijar grpc-js corregido.
+- La primera consulta OSV detectó Guava 32.1.3-android con GHSA-xxph-c9ww-hj94; se actualizó a 33.7.2-android y se repitió el análisis: **108 dependencias consultadas, 0 con avisos conocidos** en esa ejecución. Esto no certifica ausencia de vulnerabilidades desconocidas.
+
+Archivos revisables:
+
+| Archivo | Qué contiene |
+|---|---|
+| ../../security/reports/verification.json | Totales, permisos del manifiesto combinado, revisión acotada de secretos y SHA-256 de fuentes probadas. |
+| ../../security/reports/audit-firebase.json | Salida completa de npm audit para las herramientas del emulador. |
+| ../../security/reports/audit-web.json | Salida completa de npm audit para la dependencia web. |
+| ../../security/reports/android-dependencies.json | Versiones Maven efectivamente resueltas y avisos encontrados en OSV. |
+| ../../firebase/test/rules.test.js | Casos de reglas y operaciones de publicación/venta contra Firestore y Storage. |
+| ../../firebase/test/web.test.js | Prueba de las funciones reales de web/firebase-data.js con Authentication y Firestore emulados. |
+
+Los JSON describen una ejecución local y una instantánea de las fuentes. Los logs completos y los reportes HTML/XML de Gradle se generan localmente y no se versionan. security/collect-evidence.mjs reconstruye el resumen a partir de esas salidas; falla si falta una ejecución o hay pruebas fallidas. El resultado del workflow remoto debe comprobarse por separado en GitHub Actions.
+
+### Casos cubiertos
+
+| Grupo | Operaciones y ataques probados |
+|---|---|
+| Visitante | Lectura pública permitida; stock, ventas y perfiles privados denegados; publicación denegada. |
+| Emprendedora | Editar tienda y datos propios; bloqueo de tienda ajena, cambio de dueño y campos administrativos; copia pública sin stock; bloqueo de productos públicos ajenos. |
+| Cuenta desactivada | Bloqueo de edición de tienda, productos, ventas, publicación, subida y borrado de fotos. |
+| Administrador | Gestión permitida de cuentas, tiendas y asociaciones; lectura de ventas y stock privado denegada; mantenimiento de fotos permitido. |
+| Comprador | Catálogo público permitido; stock y ventas privados denegados; administración y subida/borrado de fotos denegados; registro de perfil sin escalamiento de rol. |
+| Producto privado | Rechazo al crear y actualizar con stock negativo, fraccionario, textual o fuera de Int; precio negativo o textual; nombre vacío; descripción excesiva; modalidad inválida; pieza única con más de una unidad; ID/tienda incoherentes; campos inesperados y variantes inválidas. |
+| Venta | Rechazo al crear y actualizar con cantidad cero, negativa, fraccionaria o textual; precio inválido; producto sin ID; nombre vacío; variante con tipo incorrecto; fecha/lugar inválidos y campos inesperados. Se rechazan documentos incompletos. |
+| Fotos | Carpeta propia permitida; ajena denegada; MIME no imagen y tamaño >=2 MiB rechazados; borrado controlado por perfil. El MIME declarado no certifica el contenido real ni reemplaza una validación de imagen. |
+| Publicación | Un batch con producto privado inválido falla completo: no queda una copia pública creada a medias. |
+| Venta integrada de datos | Publicación de pieza única, descuento de stock, retiro de copia pública e historial en transacción; una segunda venta por ese flujo se rechaza al no existir stock. |
+| Capa web | Rechazo sin administrador antes de crear una cuenta; rechazo y cierre de sesión de perfiles inactivos, ausentes o con rol desconocido; creación administrativa conservando su sesión; cierre de la sesión secundaria y logout; bloqueo de colecciones arbitrarias en listas. |
+
+## 4. Hallazgos y correcciones
+
+Las severidades técnicas siguientes son estimaciones del proyecto, salvo las procedentes de npm/OSV, cuya clasificación se conserva. Se separan problemas de compatibilidad y mantenimiento de vulnerabilidades.
+
+| ID | Gravedad / tipo | Hallazgo | Corrección o estado |
 |---|---|---|---|
-| **Visitante (sin sesión)** | Leer catálogo público (`publicProducts`) y tiendas (`shops`) | Permitido | Aprobado |
-| **Visitante (sin sesión)** | Leer productos privados (`shops/{id}/products`) o ventas (`sales`) | Rechazado | Aprobado (Denegado) |
-| **Visitante (sin sesión)** | Leer perfiles (`users/{uid}`) o escribir en catálogo público | Rechazado | Aprobado (Denegado) |
-| **Emprendedora** | Editar los datos permitidos de su propia tienda (`shopA`) | Permitido | Aprobado |
-| **Emprendedora** | Editar la tienda de otra emprendedora (`shopB`) | Rechazado | Aprobado (Denegado) |
-| **Emprendedora** | Cambiar `ownerUid` o `active` de su propia tienda | Rechazado | Aprobado (Denegado) |
-| **Emprendedora** | Dejar el nombre de su tienda vacío (`""`) o guardar tipos inválidos (`showPrices: "si"`) | Rechazado | Aprobado (Denegado) |
-| **Emprendedora** | Publicar un producto válido en `publicProducts` para su tienda | Permitido | Aprobado |
-| **Emprendedora** | Filtrar stock privado (`quantity`) en `publicProducts` o publicar en tienda ajena | Rechazado | Aprobado (Denegado) |
-| **Emprendedora** | Publicar en `publicProducts` con precio negativo (`-1000`) o `id` incoherente con el documento | Rechazado | Aprobado (Denegado) |
-| **Emprendedora** | Borrar o modificar productos públicos de otra emprendedora | Rechazado | Aprobado (Denegado) |
-| **Emprendedora** | Leer y escribir su catálogo privado y su historial de ventas | Permitido | Aprobado |
-| **Emprendedora** | Leer el catálogo privado o las ventas de otra emprendedora | Rechazado | Aprobado (Denegado) |
-| **Emprendedora (desactivada)** | Editar su tienda tras haber sido desactivada (`active: false`) | Rechazado | Aprobado (Denegado) |
-| **Emprendedora** | Crear asociaciones o nuevas tiendas | Rechazado | Aprobado (Denegado) |
-| **Administrador** | Crear asociaciones, tiendas y cuentas de emprendedora | Permitido | Aprobado |
-| **Administrador** | Desactivar la cuenta de una emprendedora | Permitido | Aprobado |
-| **Administrador** | Leer un documento o la colección de ventas de una emprendedora (**RN-10**) | Rechazado | Aprobado (Denegado) |
-| **Comprador** | Leer el catálogo público (`publicProducts`) | Permitido | Aprobado |
-| **Comprador** | Crear asociaciones o editar tiendas | Rechazado | Aprobado (Denegado) |
-| **Comprador** | Crear su propio perfil con rol `comprador` (y rechazo si intenta rol `admin`) | Permitido / Rechazado | Aprobado |
-| **Comprador** | Crear perfil con `displayName` vacío o escalar su rol a `admin` mediante `update` | Rechazado | Aprobado (Denegado) |
-| **Storage** | Emprendedora sube imagen (`image/png`, < 2 MB) a la carpeta de su tienda (`shops/shopA/`) | Permitido | Aprobado |
-| **Storage** | Emprendedora intenta subir imagen a la carpeta de otra tienda (`shops/shopB/`) | Rechazado | Aprobado (Denegado) |
-| **Storage** | Emprendedora intenta subir un archivo no imagen (`text/plain`) | Rechazado | Aprobado (Denegado) |
-| **Storage** | Emprendedora intenta subir una imagen de 2 MB o más (`>= 2 MB`) | Rechazado | Aprobado (Denegado) |
-| **Storage** | Visitante sin sesión intenta subir archivo a una tienda | Rechazado | Aprobado (Denegado) |
+| SEC-01 | Moderada: integridad | La dueña podía escribir productos privados y ventas con cualquier forma o tipo de dato. | Reglas con campos permitidos/obligatorios, tipos, identificadores, límites, modalidades y cantidades; pruebas negativas de creación y actualización. |
+| SEC-02 | Moderada: privacidad web | La capa web guardaba documentos en IndexedDB incluso en un computador compartido. | Caché en memoria. La sesión de navegador se limita a la pestaña y la sesión secundaria es solo en memoria. Si una versión anterior ya se usó, cerrar sesión y borrar sus datos de sitio en ese equipo: el cambio no borra retroactivamente una caché anterior. |
+| SEC-03 | Moderada: acceso web | Se intentaba crear la cuenta Authentication antes de verificar que la sesión fuera administradora. | Comprobación previa de perfil activo/admin en funciones administrativas y cierre de la sesión secundaria con finally. Las reglas siguen verificando autorización aunque se omita la UI. |
+| SEC-04 | Moderada: sesión web | Un fallo al leer el perfil podía dejar una sesión autenticada sin validar. | login cierra sesión ante errores, perfiles ausentes, inactivos o roles desconocidos. Pruebas contra emuladores. |
+| SEC-05 | Alta según npm: dependencias de desarrollo | grpc-js 1.9.16 generaba alertas altas directas y propagadas. | Actualización compatible mediante override ^1.14.7 y lockfile; las cinco alertas altas de la revisión inicial desaparecieron. Suite repetida después de npm ci. |
+| SEC-06 | Moderada según aviso Guava | Guava 32.1.3-android, transitiva de Firestore, aparece afectada por asignación excesiva de memoria al deserializar colecciones. | Se fija Guava 33.7.2-android, versión corregida. Inventario Maven/OSV y compilación repetidos. No se identificó una ruta de deserialización nativa de entradas externas en el código propio; se actualiza igualmente la dependencia. |
+| SEC-07 | Moderada: validación pública | Precios negativos, ID público incoherente y descripción excesiva. | Correcciones del hito original conservadas y verificadas. |
+| SEC-08 | Moderada: validación de tienda | Nombre vacío y showPrices de tipo incorrecto. | Correcciones del hito original conservadas y verificadas. |
+| HARD-01 | Endurecimiento de respaldo | El manifiesto no definía listas explícitas de extracción/transferencia. | Se conservan las reglas que incluyen únicamente presentation.xml. allowBackup=false sigue deshabilitando Auto Backup; no se afirma que las preferencias se respalden efectivamente ni que ese atributo esté deprecado. |
+| COMP-01 | Compatibilidad, no vulnerabilidad alta demostrada | InvalidFragmentVersionForActivityResult al incorporar Firebase. | Se conserva Fragment 1.8.6 y Lint pasa sin errores. No se acredita explotación ni se asigna gravedad alta solo por ser un error bloqueante del build. |
+| MANT-01 | Rendimiento y estilo | DrawAllocation y UseKtx. | Se conservan las mejoras anteriores; no se presentan como vulnerabilidades de seguridad. |
 
----
+### Alertas moderadas de herramientas Firebase que siguen abiertas
 
-## 3. Vulnerabilidades y hallazgos detectados (RNF-SEG-05, RNF-SEG-08)
+npm audit informa 17 paquetes afectados directa o transitivamente, derivados de cuatro avisos raíz. **No son 17 fallos independientes ni se reclasifican como menores.**
 
-Se ejecutó la auditoría de reglas de Firestore y Storage, Android Lint (`:app:lintDebug`), revisión de manifiesto/APK (criterios OWASP MASVS / MobSF) y auditoría de paquetes (`npm audit`). Todos los hallazgos se detallan a continuación con su gravedad y estado:
+| Dependencia / aviso | Impacto y alcance observado | Tratamiento |
+|---|---|---|
+| @opentelemetry/core · GHSA-8988-4f7v-96qf | Posible agotamiento de memoria mediante Baggage. Llega por Pub/Sub dentro de firebase-tools, no por el APK ni por la capa web. | Abierto. La suite usa Auth/Firestore/Storage local, no un servidor público de Pub/Sub. Actualizar la CLI y repetir auditoría cuando haya una resolución compatible. |
+| glob · GHSA-3g3m-2fjr-6pw4 | Recorrido de archivos posterior a cancelación/timeout. Dependencia de herramientas que trabajan con archivos del equipo. | Abierto. No ejecutar estas herramientas sobre proyectos o archivos no confiables. No imponer una versión mayor incompatible sin probar las funciones afectadas de la CLI. |
+| minimatch · GHSA-g3hv-75wg-m249 | Denegación de servicio por patrones de glob. Varias dependencias de la CLI mantienen versiones antiguas. | Abierto. No aceptar patrones de usuarios externos en scripts de mantenimiento. Actualizar la cadena de herramientas al existir una solución compatible. |
+| uuid · GHSA-w5hq-g745-h8pq | Problema de límites al usar determinadas versiones de UUID con un buffer proporcionado. La copia de gaxios revisada invoca v4 sin ese buffer. | Abierto como dependencia vulnerable; la ruta observada no coincide con la descrita por el aviso. Actualizar gaxios/CLI cuando sea compatible. |
 
-| ID | Componente / Herramienta | Gravedad | Hallazgo detectado | Corrección aplicada o justificación |
-|---|---|---|---|---|
-| **VULN-01** | Android (`build.gradle.kts`) · Android Lint (`InvalidFragmentVersionForActivityResult`) | **Alta** | Al incorporar `firebase-auth`, se resolvió transitivamente una versión antigua de `androidx.fragment` (< 1.3.0) que hacía fallar `:app:lintDebug` con error bloqueante y exponía el manejo de códigos de solicitud en `registerForActivityResult`. | **Corregido:** Se fijó `implementation("androidx.fragment:fragment-ktx:1.8.6")` en `android/app/build.gradle.kts`. `:app:lintDebug` pasó a **0 errores**. |
-| **VULN-02** | Firestore (`firestore.rules`) · Auditoría de reglas | **Moderada** | La función `validPublic()` en `/publicProducts/{productId}` permitía precios negativos (`priceClp < 0`), no exigía que el campo `id` coincidiera con `productId` ni acotaba el tamaño de `description`. | **Corregido:** Se actualizó `validPublic(d, productId)` exigiendo `d.id == productId`, `d.priceClp >= 0` y `description.size() <= 1000`. Se agregó prueba automática en `rules.test.js`. |
-| **VULN-03** | Firestore (`firestore.rules`) · Auditoría de reglas | **Moderada** | En `/shops/{shopId}`, `allow update` para la dueña filtraba las claves modificadas (`hasOnly`), pero no validaba tipos ni longitudes, permitiendo dejar `name` vacío (`""`) o corromper el tipo booleano de `showPrices`. | **Corregido:** Se añadieron validaciones de tipo y longitud para `name` (1 a 120 caracteres), `showPrices` (`bool`) y `description` (`<= 1000` caracteres), más prueba automática en `rules.test.js`. |
-| **VULN-04** | Android (`AndroidManifest.xml`) · Android Lint (`DataExtractionRules`) / MobSF | **Moderada** | En Android 12+ (`targetSdk = 36`), `android:allowBackup="false"` por sí solo está deprecado y no define reglas explícitas de extracción para transferencias dispositivo a dispositivo (D2D) ni respaldo en la nube, pudiendo incluir cachés locales de Firestore o sesiones futuras. | **Corregido:** Se crearon `res/xml/data_extraction_rules.xml` y `res/xml/backup_rules.xml` permitiendo únicamente `presentation.xml` (preferencias visuales de accesibilidad) y excluyendo el resto de datos internos. |
-| **VULN-05** | Firestore (`firestore.rules`) · Auditoría de reglas | **Menor** | El registro de perfil propio de `comprador` en `/users/{uid}` no verificaba que `displayName`, cuando se envía, fuera un `string` no vacío con límite de longitud. | **Corregido:** Se exigió `displayName is string && size() > 0 && size() <= 120` en `firestore.rules` y se verificó con prueba en `rules.test.js`. |
-| **VULN-06** | Android (`ProductPhotoView.kt`, `MainActivity.kt`, `AccessibilityPreferences.kt`) · Android Lint | **Menor** | Advertencias `DrawAllocation` (instanciación de `Matrix` en `onDraw`) y `UseKtx` (`SharedPreferences.edit` y `Uri.parse`). | **Corregido:** Se reutiliza una única instancia `cropMatrix` en `ProductPhotoView` y se adoptaron las extensiones KTX (`prefs.edit {}` y `String.toUri()`), reduciendo las advertencias de Lint de 17 a 10 avisos informativos. |
-| **VULN-07** | Herramientas CLI (`firebase/package.json`) · `npm audit` | **Menor (Solo Dev)** | `npm audit` reporta avisos en subdependencias transitivas de `firebase-tools` y `@firebase/rules-unit-testing` (`@grpc/grpc-js`, `glob`, `minimatch`, `uuid`, `@opentelemetry/core`). | **Justificado:** Son paquetes exclusivos de `devDependencies` para ejecutar el emulador local en computador; no se empaquetan en el APK de Android ni en el sitio web. Ejecutar `npm audit fix --force` degradaría `firebase` a v9.14.0 y `firebase-tools` a v13.11.2, rompiendo la suite de pruebas actual. |
+No se ejecutó audit fix --force: propone reemplazos mayores o retrocesos de SDK/CLI, y no es una reparación validada. Estas herramientas permanecen en devDependencies; las dependencias reales de la capa web se auditan por separado. El riesgo del equipo de desarrollo sigue existiendo.
 
----
+## 5. Revisión de Android, web y repositorio
 
-## 4. Revisión de seguridad del APK, Manifiesto y Repositorio (RNF-SEG-02, RNF-SEG-03, RNF-PRI-03)
+- Se revisan el manifiesto de origen **y el combinado**: Firebase añade ACCESS_NETWORK_STATE y READ_GSERVICES además de INTERNET; AndroidX añade un permiso de firma para receptores internos. La lista exacta está en verification.json. No se declara cámara, micrófono, ubicación ni almacenamiento general.
+- usesCleartextTraffic=false está activo. Esto es una configuración de plataforma, no una prueba completa de todo el tráfico de bibliotecas nativas ni de la configuración TLS de producción.
+- La compilación revisada es **debug**, con depuración habilitada. No es un APK de producción auditado o firmado para distribución definitiva.
+- El logo se elige mediante OpenDocument con permisos acotados al URI y decodificación escalada. No se solicita acceso general a las fotos.
+- La capa web no usa eval, innerHTML, document.write ni almacenamiento propio de contraseñas. Solo existe la capa de datos: el renderizado, CSP, cabeceras y despliegue deben analizarse cuando exista el panel.
+- Las reglas de Firestore/Storage son la barrera de autorización; requireAdmin en JavaScript solo evita acciones innecesarias. Un atacante puede modificar su JavaScript.
+- Crear usuarios mediante un SDK cliente no convierte Authentication en un alta exclusivamente administrativa. Las cuentas sin perfil privilegiado no obtienen permisos; para restringir también el alta de identidad se necesita un mecanismo de aprovisionamiento confiable. Si falla el batch después de crear la identidad, puede quedar una cuenta sin perfil: requiere reconciliación administrativa.
+- El escaneo de patrones de claves privadas y nombres de archivos revisa los archivos versionados, sin imprimir su contenido. No sustituye un escáner especializado ni una revisión del historial.
+- No se ejecutaron MobSF ni una auditoría legal de privacidad. Se corrige la atribución ambigua del informe anterior.
 
-1. **Tráfico de red seguro:** `android:usesCleartextTraffic="false"` activo en `AndroidManifest.xml`, impidiendo conexiones HTTP en texto plano.
-2. **Superficie de permisos mínima:** Solo se declara `android.permission.INTERNET` y la consulta `<queries>` para el motor de síntesis de voz (`TTS_SERVICE`). No se solicitan permisos de almacenamiento masivo, cámara, micrófono ni ubicación.
-3. **Selección segura de imágenes y prevención de OOM:** El logo local utiliza `ActivityResultContracts.OpenDocument()` con permisos de lectura acotados al URI seleccionado y decodificación escalada (`inSampleSize`) con tope de `1024 px`.
-4. **Credenciales fuera del repositorio (RNF-SEG-03):** `.gitignore` excluye `google-services.json`, `firebase-config.json`, `service-account*.json`, `*.jks`, `*.keystore` y `local.properties`. Se verificó que ninguno de estos archivos existe en el árbol de Git.
-5. **Biometría (RNF-SEG-02):** La aplicación no solicita huella al iniciar ni almacena datos biométricos propios; cuando se integre el inicio de sesión de Fabián, delegará exclusivamente en `BiometricPrompt` del sistema operativo.
+## 6. Contrato de datos y límites de las reglas
 
----
+Las validaciones respetan los mapas producidos por FirestoreMappers.kt y FirebaseSalesRepository.kt:
 
-## 5. Estado de mecanismos de detección y límites (RNF-SEG-06, RNF-SEG-07)
+- Producto: id, shopId, name, description, category, priceClp, showPrice, stockMode, quantity, visible, photo y variants. updatedAt es opcional y, si existe, timestamp.
+- Stock por unidades: entero entre 0 e Int.MAX_VALUE. Pieza única: 0 o 1, sin variantes. A pedido: admite quantity=null.
+- Variantes: lista de hasta **10** mapas id/label/quantity. Cada elemento se valida, incluido el último. Es un límite técnico del esquema en lista para permanecer dentro del presupuesto de reglas de Firestore, no un hallazgo de terreno. Dan debe reflejarlo en el editor; si se necesitan más opciones, Felipe y Dan deben migrarlas a una subcolección con reglas por documento.
+- Venta: productId, productName, variantId nullable, quantity entera positiva, priceClp no negativo, place, dateMillis y createdAt. Al crear, createdAt debe ser serverTimestamp; una actualización conserva esa fecha.
+- Las ventas siguen siendo editables y borrables por su dueña, como antes; no se implementó un libro contable inmutable.
+- Las reglas validan documentos y perfiles. **No certifican por sí solas** que la suma de variantes coincida con el stock total, que no existan IDs de variante duplicados o que toda escritura de venta incluya el descuento exacto de inventario. El caso integrado prueba ese flujo concreto en transacción; no todas las intercalaciones concurrentes ni clientes maliciosos.
+- La copia pública no acepta quantity. La coherencia completa de esa copia con visible/showPrice y el ajuste global showPrices, incluida la retirada de precios ya publicados, aún debe verificarse e integrarse. No se presenta un simple campo de configuración como protección retroactiva del precio.
 
-- **Firebase App Check (RNF-SEG-06, prioridad Importante)** y **Registro auditable de acciones del administrador (RNF-SEG-07, prioridad Importante):** De acuerdo con la planificación oficial (Entrega 5 / Entrega 8) y los límites documentados en `docs/felipe/modelo-datos.md`, quedan registrados como pendientes para su activación sobre el proyecto Firebase compartido y el panel web administrativo antes de la entrega final.
-- **Pruebas unitarias tras las correcciones:** 15 pruebas unitarias ejecutadas y aprobadas (`8` en `CatalogTest` + `7` en `SalesTest`), `0` errores en `lintDebug` y `27` pruebas de reglas aprobadas en el emulador.
+## 7. Verificación pendiente sobre las pantallas finales
+
+| Prueba | Responsable de integración | Estado |
+|---|---|---|
+| Ingreso real, cuenta desactivada, cierre de sesión y huella opcional con BiometricPrompt | Fabián + Benjamín | Pendiente con pantalla final/proyecto compartido. |
+| Crear/editar producto y variantes, errores comprensibles de validación y publicación sin stock/precio oculto | Dan + Felipe + Benjamín | Contrato probado en emulador; pantalla pendiente. |
+| Dos ventas simultáneas, agotados, variantes e historial opcional usando el repositorio Android real | Alonso + Felipe + Benjamín | Transacción de ejemplo y lógica unitaria probadas; prueba completa pendiente. |
+| Roles, renderizado seguro, caché/sesión tras cerrar la pestaña y configuración del servidor web | Kisho + Benjamín | Funciones de datos probadas; navegador/panel/despliegue pendientes. |
+| App Check y registro de acciones del administrador | Felipe + Kisho + Benjamín | Pendiente; repetir informe al implementarse. |
+
+## 8. Referencias técnicas
+
+- [Validación de campos y límites de tipos en reglas](https://firebase.google.com/docs/firestore/security/rules-fields).
+- [Condiciones, acceso a otros documentos y transacciones](https://firebase.google.com/docs/firestore/security/rules-conditions).
+- [Persistencia de Authentication web](https://firebase.google.com/docs/auth/web/auth-state-persistence).
+- [Caché offline y equipos compartidos](https://firebase.google.com/docs/firestore/manage-data/enable-offline).
+- [Respaldo y extracción de datos Android](https://developer.android.com/identity/data/autobackup).
+- [API OSV](https://google.github.io/osv.dev/api/).
+- [Aviso del mantenedor de Guava](https://github.com/google/guava/security/advisories/GHSA-xxph-c9ww-hj94).

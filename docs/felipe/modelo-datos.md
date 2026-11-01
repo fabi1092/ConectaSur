@@ -20,7 +20,7 @@ Responsable: Felipe Gallardo. Base de datos: Cloud Firestore (+ Cloud Storage pa
 2. **Catalogo privado y publico separados.** Las reglas de Firestore no pueden ocultar campos de un documento: si el stock estuviera en el documento publico, cualquiera podria descargarlo. Por eso el stock vive en `shops/{id}/products` (privado) y el catalogo publico es una copia sin datos privados (`publicProducts`) que se escribe en el mismo `WriteBatch` o transaccion. Las reglas validan que la copia publica solo tenga los campos permitidos.
 3. **Ventas privadas** (RN-10): solo la dueña las lee; el administrador no tiene acceso.
 4. **Venta con transaccion:** descuenta solo la opcion vendida, retira la pieza unica y guarda el historial en una sola operacion atomica.
-5. **Sin conexion** (RNF-DAT-03): Firestore guarda una copia local; la emprendedora ve su catalogo sin red y los cambios se envian al volver la conexion.
+5. **Sin conexion** (RNF-DAT-03): Android conserva la caché local de Firestore. La web usa memoria para evitar documentos persistentes en computadores compartidos: la caché web dura mientras la página permanezca abierta. La tolerancia a cortes de red debe probarse en las pantallas finales.
 6. **Acceso solo por repositorios** (RNF-DAT-02): las pantallas usan las interfaces de `domain/Repositories.kt`; la web usa `web/firebase-data.js`.
 
 ## 3. Consultas principales (y sus indices)
@@ -45,35 +45,7 @@ Casos por perfil (permitidos y rechazados):
 - Comprador: lee catalogo; NO crea asociaciones ni edita tiendas; crea su perfil solo como comprador.
 - Storage: sube imagen a su carpeta; NO a la de otra; NO archivos que no son imagen; visitante NO sube.
 
-**Resultado de la ultima ejecucion:** (pegar aqui la salida de `npm test`)
-
-  ✔ puede crear su perfil como comprador, pero NO como admin (176.397ms)
-✔ Comprador (460.8475ms)
-▶ Storage (fotos y logos)
-  ✔ la emprendedora sube una imagen a SU carpeta (467.4991ms)
-  ✔ NO puede subir a la carpeta de otra tienda (148.5951ms)
-  ✔ NO puede subir archivos que no son imagenes (152.145ms)
-  ✔ un visitante NO puede subir (76.9469ms)
-✔ Storage (fotos y logos) (845.7695ms)
-ℹ tests 23
-ℹ suites 5
-ℹ pass 23
-ℹ fail 0
-ℹ cancelled 0
-ℹ skipped 0
-ℹ todo 0
-ℹ duration_ms 7532.8464
-+  Script exited successfully (code 0)
-i  emulators: Shutting down emulators.
-i  firestore: Stopping Firestore Emulator
-!  Firestore Emulator has exited upon receiving signal: SIGINT
-i  storage: Stopping Storage Emulator
-i  hub: Stopping emulator hub
-i  logging: Stopping Logging Emulator
-!  Unexpected rules runtime error: Exception in thread "main" java.lang.NullPointerException: Cannot invoke "String.length()" because "line" is null
-        at com.google.firebase.rules.tools.local.server.Server.processRequestsFromInputStream(Server.java:75)
-        at com.google.firebase.rules.tools.local.server.Server.start(Server.java:57)
-        at com.google.firebase.rules.tools.local.FirebaseRulesTooling.main(FirebaseRulesTooling.java:81)
+**Verificación vigente:** 81 pruebas aprobadas (73 de reglas/integración de datos y 8 de la capa web). Ver [informe de Benjamín](../benjamin/hito-3-seguridad.md) y [evidencia JSON](../../security/reports/verification.json). La salida anterior de 23 casos se sustituye por esta referencia para evitar resultados contradictorios.
 
 ## 6. Datos ficticios (RNF-DAT-04)
 
@@ -84,3 +56,7 @@ i  logging: Stopping Logging Emulator
 - Las pruebas de reglas comprueban las reglas, no la app completa; la integracion con las pantallas la prueba cada integrante.
 - Firebase App Check y el registro de acciones del administrador (RNF-SEG-06 y 07) estan pendientes.
 - Las fotos de los productos de ejemplo siguen siendo recursos locales de la app; la subida a Storage esta lista en el repositorio, pero cada pantalla debe adoptarla.
+
+## 8. Validaciones reforzadas del hito 3
+
+Productos privados y ventas ahora exigen los campos y tipos emitidos por los repositorios Android, con stock no negativo, cantidad de venta positiva, precio no negativo y coherencia de identificadores. Las variantes en lista se limitan a 10 y se valida cada elemento. Dan debe reflejar este límite técnico en el editor; para más opciones, migrar a documentos separados. Ver el contrato y los límites de consistencia en el informe de seguridad.

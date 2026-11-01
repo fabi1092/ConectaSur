@@ -1,0 +1,34 @@
+name: Pruebas de seguridad
+on:
+  push:
+    paths: ['firebase/**', 'web/**', 'security/**', '.github/workflows/seguridad.yml']
+  pull_request:
+    paths: ['firebase/**', 'web/**', 'security/**', '.github/workflows/seguridad.yml']
+permissions:
+  contents: read
+jobs:
+  reglas-y-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            firebase/package-lock.json
+            web/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+        working-directory: web
+      - run: npm ci
+        working-directory: firebase
+      - run: npm audit --audit-level=high
+        working-directory: firebase
+      - run: npm audit --audit-level=moderate
+        working-directory: web
+      - run: npm test
+        working-directory: firebase
