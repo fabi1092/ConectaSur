@@ -16,6 +16,11 @@ firebase-config.json
 .env.*
 !.env.example
 node_modules/
+android/supabase.properties
+web/supabase-config.js
+supabase/.env.local
+supabase/.temp/
+supabase/.branches/
 *-debug.log
 security/reports/*.log
 

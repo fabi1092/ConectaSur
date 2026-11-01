@@ -1,0 +1,11 @@
+{
+  "name": "conectasur-supabase",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=24.12.0"},
+  "scripts": {
+    "migrate": "node tools/admin.mjs migrate",
+    "seed": "node tools/admin.mjs seed",
+    "test": "node --test --test-concurrency=1 test/*.test.js"
+  }
+}

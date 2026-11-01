@@ -1,0 +1,15 @@
+{
+  "collectedAt": "2026-11-01T18:28:51.306126+00:00",
+  "backend": "Instancia SurCode del profesor, PostgreSQL 15.8 / GoTrue / Storage",
+  "scope": "API con anon y JWT por perfil; Studio solo para preparar y limpiar fixtures",
+  "results": {
+    "tests": 40,
+    "suites": 4,
+    "pass": 40,
+    "fail": 0
+  },
+  "schemaSha256": "3d33c889cc66707276b2e032343ca194bfc8b1ac29a7b7192241fd1969de7123",
+  "testSha256": "260c561511361dba535bf8a891a052fbcda3167274472cd6b193f59143758836",
+  "credentials": "No incluidas",
+  "firebaseData": "Conservados; se recrearon ejemplos ficticios, no se copiaron contraseñas"
+}
