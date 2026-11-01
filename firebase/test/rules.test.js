@@ -66,12 +66,20 @@ describe('Emprendedora', () => {
     await assertFails(updateDoc(doc(as('ana').firestore(), 'shops/shopA'), { ownerUid: 'bea' }));
     await assertFails(updateDoc(doc(as('ana').firestore(), 'shops/shopA'), { active: false }));
   });
+  it('NO puede dejar el nombre vacio ni escribir tipos invalidos en su tienda', async () => {
+    await assertFails(updateDoc(doc(as('ana').firestore(), 'shops/shopA'), { name: '' }));
+    await assertFails(updateDoc(doc(as('ana').firestore(), 'shops/shopA'), { showPrices: 'si' }));
+  });
   it('puede publicar un producto publico valido en su tienda', async () => {
     await assertSucceeds(setDoc(doc(as('ana').firestore(), 'publicProducts/p2'), publicDoc('shopA')));
   });
   it('NO puede publicar con stock (campo privado) ni en la tienda de otra', async () => {
     await assertFails(setDoc(doc(as('ana').firestore(), 'publicProducts/p2'), publicDoc('shopA', { quantity: 5 })));
     await assertFails(setDoc(doc(as('ana').firestore(), 'publicProducts/p2'), publicDoc('shopB')));
+  });
+  it('NO puede publicar con precio negativo ni id incoherente', async () => {
+    await assertFails(setDoc(doc(as('ana').firestore(), 'publicProducts/p2'), publicDoc('shopA', { priceClp: -1000 })));
+    await assertFails(setDoc(doc(as('ana').firestore(), 'publicProducts/p2'), publicDoc('shopA', { id: 'otro' })));
   });
   it('NO puede borrar ni cambiar productos publicos ajenos', async () => {
     await assertFails(deleteDoc(doc(as('bea').firestore(), 'publicProducts/p1')));
@@ -123,6 +131,10 @@ describe('Comprador', () => {
     await assertSucceeds(setDoc(doc(as('nuevo1').firestore(), 'users/nuevo1'), { role: 'comprador', active: true, displayName: 'Nuevo' }));
     await assertFails(setDoc(doc(as('nuevo2').firestore(), 'users/nuevo2'), { role: 'admin', active: true, displayName: 'Intruso' }));
   });
+  it('NO puede crear perfil con nombre vacio ni escalar a admin despues', async () => {
+    await assertFails(setDoc(doc(as('nuevo3').firestore(), 'users/nuevo3'), { role: 'comprador', active: true, displayName: '' }));
+    await assertFails(updateDoc(doc(as('cami').firestore(), 'users/cami'), { role: 'admin' }));
+  });
 });
 
 describe('Storage (fotos y logos)', () => {
@@ -138,6 +150,11 @@ describe('Storage (fotos y logos)', () => {
   it('NO puede subir archivos que no son imagenes', async () => {
     const r = ref(as('ana').storage(), 'shops/shopA/virus.txt');
     await assertFails(uploadBytes(r, png, { contentType: 'text/plain' }));
+  });
+  it('NO puede subir imagenes de 2 MB o mas', async () => {
+    const oversized = new Uint8Array(2 * 1024 * 1024);
+    const r = ref(as('ana').storage(), 'shops/shopA/pesada.png');
+    await assertFails(uploadBytes(r, oversized, { contentType: 'image/png' }));
   });
   it('un visitante NO puede subir', async () => {
     const r = ref(visitor().storage(), 'shops/shopA/logo.png');

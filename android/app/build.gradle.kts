@@ -18,6 +18,7 @@ android {
 }
 dependencies {
     implementation("androidx.activity:activity:1.11.0")
+    implementation("androidx.fragment:fragment-ktx:1.8.6")
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")

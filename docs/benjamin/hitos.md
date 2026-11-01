@@ -10,9 +10,9 @@ Rama: `feat/benjamin/hito-2-pantallas`. Incluye navegación XML, catálogo y det
 
 Ver `hito-2-pantallas.md` para las referencias, contratos y límites. El hito se guarda por separado del primero y no declara implementados los módulos del resto del equipo.
 
-## Hito 3: pendiente
+## Hito 3: pruebas e informe de seguridad
 
-Entorno de emuladores y pruebas de reglas por perfil, revisión de seguridad e informe con evidencia. La evaluación manual con TalkBack y con las emprendedoras no se considera aprobada solo por tener etiquetas accesibles o pruebas automáticas.
+Rama: `feat/benjamin/hito-3-seguridad`. Incluye la auditoría y endurecimiento de `firebase/firestore.rules`, ampliación de la suite automática a 27 pruebas por perfil en Firebase Emulator Suite (`firebase/test/rules.test.js`), corrección del error bloqueante de Android Lint (`InvalidFragmentVersionForActivityResult`), reglas de extracción y respaldo para Android 12+ (`data_extraction_rules.xml` y `backup_rules.xml`), limpieza de advertencias en vistas/preferencias y el informe detallado en `hito-3-seguridad.md`.
 
 ## Forma de entrega
 

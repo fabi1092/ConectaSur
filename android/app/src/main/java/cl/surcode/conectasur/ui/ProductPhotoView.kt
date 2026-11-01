@@ -10,15 +10,15 @@ import android.widget.ImageView
 class ProductPhotoView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ImageView(context, attrs, defStyleAttr) {
+    private val cropMatrix = Matrix()
     init { scaleType = ScaleType.MATRIX }
     override fun onDraw(canvas: Canvas) {
         drawable?.let { photo ->
             if (width > 0 && height > 0 && photo.intrinsicWidth > 0 && photo.intrinsicHeight > 0) {
                 val scale = maxOf(width.toFloat() / photo.intrinsicWidth, height.toFloat() / photo.intrinsicHeight)
-                imageMatrix = Matrix().apply {
-                    setScale(scale, scale)
-                    postTranslate((width - photo.intrinsicWidth * scale) / 2, 0f)
-                }
+                cropMatrix.setScale(scale, scale)
+                cropMatrix.postTranslate((width - photo.intrinsicWidth * scale) / 2, 0f)
+                imageMatrix = cropMatrix
             }
         }
         super.onDraw(canvas)

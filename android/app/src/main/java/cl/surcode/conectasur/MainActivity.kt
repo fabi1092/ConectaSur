@@ -14,6 +14,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -266,7 +267,7 @@ class MainActivity : ComponentActivity() {
     }
     private fun releaseLogoGrant(value: String?) {
         if (value != null) try {
-            contentResolver.releasePersistableUriPermission(Uri.parse(value), Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            contentResolver.releasePersistableUriPermission(value.toUri(), Intent.FLAG_GRANT_READ_URI_PERMISSION)
         } catch (_: SecurityException) { /* An expired grant needs no cleanup. */ }
     }
     private fun clearLogo() {
@@ -284,11 +285,11 @@ class MainActivity : ComponentActivity() {
             val bitmap = withContext(Dispatchers.IO) {
                 try {
                     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it, null, bounds) }
+                    contentResolver.openInputStream(uri.toUri())?.use { BitmapFactory.decodeStream(it, null, bounds) }
                     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) null else {
                         val options = BitmapFactory.Options().apply { inSampleSize = 1 }
                         while (maxOf(bounds.outWidth, bounds.outHeight) / options.inSampleSize > 1024) options.inSampleSize *= 2
-                        contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it, null, options) }
+                        contentResolver.openInputStream(uri.toUri())?.use { BitmapFactory.decodeStream(it, null, options) }
                     }
                 } catch (_: Exception) { null }
             }
