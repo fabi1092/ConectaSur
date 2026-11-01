@@ -3,7 +3,7 @@ package cl.surcode.conectasur.domain
 import kotlinx.coroutines.flow.Flow
 
 // Contratos de la capa de datos. Las pantallas SOLO usan estas interfaces
-// (nunca Firestore directo), asi se puede cambiar Demo <-> Firebase sin tocar la UI.
+// (nunca HTTP/SQL directo), asi se puede cambiar Demo <-> Supabase sin tocar la UI.
 
 enum class Role { ADMIN, EMPRENDEDORA, COMPRADOR }
 
@@ -15,7 +15,7 @@ data class Shop(
 )
 
 /** Una opcion de un producto (talla, color...), con su propio stock. */
-data class Variant(val id: String, val label: String, val quantity: Int)
+data class Variant(val id: String, val label: String, val quantity: Int, val priceClp: Long? = null, val photo: String? = null)
 
 /** Producto tal como lo ve SU dueña: con stock y opciones. */
 data class OwnerProduct(val base: CatalogProduct, val variants: List<Variant> = emptyList())
@@ -55,7 +55,7 @@ interface SalesRepository {
 }
 
 /**
- * Logica pura de venta (sin Firebase, por eso se puede probar sin internet).
+ * Logica pura de venta; el servidor vuelve a validar y descontar en una transaccion.
  * Lanza IllegalArgumentException / IllegalStateException si la venta no es valida.
  */
 fun OwnerProduct.sell(variantId: String?, quantity: Int): OwnerProduct {

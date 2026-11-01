@@ -88,8 +88,29 @@ export async function seed() {
   for(const p of products){await query(`insert into public.products select * from jsonb_populate_record(null::public.products, ${literal(JSON.stringify({visible:true,attributes:{},...p,updated_at:new Date().toISOString()}))}::jsonb) on conflict(id) do nothing`);}
   console.log('Datos ficticios preparados: 4 cuentas, 2 tiendas y 5 productos. Credenciales guardadas de forma privada.');
 }
+export async function seedPhotos() {
+  const config=settings();
+  for(const owner of ['ana','bea']){
+    const account=config.accounts[owner];
+    const session=await api('/auth/v1/token?grant_type=password',{method:'POST',body:{email:account.email,password:account.password}});
+    if(!session.ok)throw new Error('No se pudo iniciar la cuenta de ejemplo');
+    const token=session.data.access_token;const shop='shop_demo_'+owner;
+    for(const name of ['flores','bandejas']){
+      const bytes=readFileSync(new URL('../../android/app/src/main/res/drawable-nodpi/'+name+'.jpg',import.meta.url));
+      const path=shop+'/ejemplos/'+name+'.jpg';
+      const response=await fetch(config.url+'/storage/v1/object/shop-images/'+path,{method:'POST',headers:{
+        'User-Agent':'ConectaSur-migration-review',apikey:config.anonKey,Authorization:'Bearer '+token,'Content-Type':'image/jpeg','x-upsert':'true'},body:bytes});
+      if(!response.ok)throw new Error('No se pudo subir una foto de ejemplo: '+response.status);
+      const url=config.url+'/storage/v1/object/public/shop-images/'+path;
+      const update=await api('/rest/v1/products?shop_id=eq.'+shop+'&photo=eq.'+name,{method:'PATCH',token,body:{photo:url}});
+      if(!update.ok)throw new Error('No se pudo vincular la foto al producto');
+    }
+    await api('/auth/v1/logout?scope=local',{method:'POST',token});
+  }
+  console.log('Fotografias de ejemplo subidas a Storage y vinculadas a los productos.');
+}
 if(process.argv[1]===fileURLToPath(import.meta.url)){
   const command=process.argv[2];
-  try {if(command==='migrate')await migrate();else if(command==='seed')await seed();else throw new Error('Usar migrate o seed');}
+  try {if(command==='migrate')await migrate();else if(command==='seed')await seed();else if(command==='photos')await seedPhotos();else throw new Error('Usar migrate, seed o photos');}
   catch(error){console.error(error.message);process.exitCode=1;}
 }

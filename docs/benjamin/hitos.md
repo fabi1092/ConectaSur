@@ -2,20 +2,23 @@
 
 ## Hito 1: base Android
 
-Preparado en `feat/benjamin/hito-1-base-android` e integrado a main hasta el commit `1d59a24`. Incluye configuración Gradle, logo, pantalla inicial XML para Palette y prueba de lanzamiento. Se corrigió el nombre de fuente para la vista previa del IDE.
+Base compilable con logo y prueba de lanzamiento. Migración a Views/XML editables en Design/Palette y corrección de fuente de vista previa. Commits a1694f7, 4a82550 y 1d59a24.
 
 ## Hito 2: pantallas y accesibilidad
 
-Rama: `feat/benjamin/hito-2-pantallas`. Incluye navegación XML, catálogo y detalle de ejemplo, tienda, ayuda, ajustes de letras y botones, contraste, lectura opcional y logo local. La pantalla de ventas sigue reservada para integrar el trabajo de Alonso.
+Commit fd5f73f: navegación XML, catálogo/detalle, tienda, ayuda, ajustes de letras/botones, contraste, lectura opcional y logo local. Ver hito-2-pantallas.md. No declara implementadas las pantallas pendientes del resto del equipo.
 
-Ver `hito-2-pantallas.md` para las referencias, contratos y límites. El hito se guarda por separado del primero y no declara implementados los módulos del resto del equipo.
+## Hito 3: seguridad
 
-## Hito 3: pruebas e informe de seguridad
+Commits 829ba1c y 68a2024: pruebas e informe sobre Firebase, validaciones y mejoras de dependencias. Ese backend fue sustituido por Supabase tras recibir la instancia del profesor. Los informes y resultados anteriores quedan en docs/historico y en el historial de Git.
 
-Rama: `feat/benjamin/hito-3-seguridad`. Incluye la auditoría y endurecimiento de `firebase/firestore.rules`, ampliación de la suite automática a 27 pruebas por perfil en Firebase Emulator Suite (`firebase/test/rules.test.js`), corrección del error bloqueante de Android Lint (`InvalidFragmentVersionForActivityResult`), reglas de extracción y respaldo para Android 12+ (`data_extraction_rules.xml` y `backup_rules.xml`), limpieza de advertencias en vistas/preferencias y el informe detallado en `hito-3-seguridad.md`.
+## Migración Supabase: dos hitos nuevos
 
-Cierre revisado el 1 de noviembre: 81 pruebas de reglas e integración web aprobadas, validación de productos/ventas, sesión y caché web endurecidas, Guava y grpc-js actualizados, inventario Maven consultado en OSV y evidencias JSON. El informe distingue correcciones, riesgos moderados de herramientas de desarrollo y requisitos pendientes. La biometría, App Check, el registro del administrador y las pantallas finales todavía requieren integración.
+1. Base de datos Supabase (3b0702a): SQL, RLS, RPC de venta, Storage, datos ficticios y 40 pruebas de API real.
+2. Conexiones Android/web: retiro de SDK Firebase, repositorios Supabase, sesión/caché/borradores cifrados, fotos online, pruebas nativas y web, workflows y documentación actualizada.
+
+El informe vigente es hito-3-seguridad.md. La integración de las pantallas finales corresponde a sus integrantes; los contratos y métodos nuevos están explicados en docs/integracion-supabase.md.
 
 ## Forma de entrega
 
-Commits con mensajes simples, separados por hitos. El usuario solicitó los envíos de estos avances a main. La protección de main y los pull requests revisados que exige la pauta siguen pendientes de acuerdo con el equipo.
+Commits con mensajes simples y avances por hitos. Benjamín solicitó publicarlos en main. La protección de main y los PR revisados que exige la pauta son un criterio de colaboración que el equipo todavía debe comprobar.

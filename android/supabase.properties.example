@@ -1,0 +1,3 @@
+# Copiar a supabase.properties (ignorado por Git).
+SUPABASE_URL=https://TU-INSTANCIA
+SUPABASE_ANON_KEY=CLAVE_ANON_DEL_GRUPO

@@ -6,6 +6,8 @@
   "scripts": {
     "migrate": "node tools/admin.mjs migrate",
     "seed": "node tools/admin.mjs seed",
-    "test": "node --test --test-concurrency=1 test/*.test.js"
-  }
+    "test": "node --test --test-concurrency=1 test/sql.test.js",
+    "test:live": "node --test --test-concurrency=1 test/security.test.js test/web.test.js"
+  },
+  "devDependencies": {"pg": "8.16.3"}
 }

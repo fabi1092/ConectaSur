@@ -17,10 +17,10 @@ Aplicado `supabase/migrations/001_conectasur.sql` a la instancia exclusiva del g
 
 **Verificación:** 40 pruebas aprobadas, 0 fallidas, contra Auth, API PostgreSQL y Storage reales. Se crean cuentas y productos temporales aislados y se limpian al terminar. Ver `security/reports/supabase-backend.json`.
 
-Las fotos reales todavía deben conectarse/subirse desde los clientes en el hito 2. La prueba de Storage usó un PNG de un píxel que se eliminó al terminar.
+Las fotografías de ejemplo ya se cargaron y vincularon desde clientes autenticados. Las pruebas usan imágenes temporales que se eliminan al terminar.
 
 ## Hito 2: conexiones y cierre
 
-En preparación: reemplazar SDK y repositorios Firebase de Android y web, conectar el catálogo y las imágenes, conservar accesibilidad, adaptar caché/sesiones y reemplazar las pruebas/workflows de Firebase. Los resultados de las 81 pruebas anteriores son históricos y no acreditan Supabase.
+Completado: se reemplazaron SDK y repositorios Firebase de Android y web, se conectaron el catálogo y las imágenes, se conservó la accesibilidad y se adaptaron caché, sesiones, borradores, pruebas y workflows. Ver informe vigente y guía de integración. Los resultados de las 81 pruebas anteriores son históricos y no acreditan Supabase.
 
 El cambio de tecnología se registra expresamente: la pauta publicada decía Firestore; el grupo debe comunicar al profesor que está implementando la instancia Supabase suministrada para su curso.

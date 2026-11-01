@@ -2,67 +2,64 @@
 
 Aplicación de SurCode para conectar emprendedoras y compradores de Puerto Montt y Alerce.
 
-## Avance actual: hito 3
+## Backend actual: Supabase
 
-Android en Kotlin y Views, con pantallas XML editables con Palette, capa de datos y reglas de Firebase. Incluye inicio, catálogo de ejemplo, detalle, tienda, ayuda, preferencias de accesibilidad, lectura opcional, repositorios para Firestore/Storage y pruebas automatizadas de seguridad por perfil. Nombres y precios son ficticios; las fotografías provienen de la visita.
+Desde el 1 de noviembre se utiliza la instancia del grupo entregada por el profesor: PostgreSQL, Auth y Storage. Android y web consumen la API con la clave anon y la sesión del usuario. El código activo ya no utiliza Firebase/Firestore.
 
-Las pantallas finales de acceso, edición de productos, registro de ventas y panel web aún deben integrarse con el trabajo de los otros integrantes.
+Android mantiene Kotlin y Views con XML editables en Design/Palette, navegación simple, ajustes de letras/botones, contraste, lectura opcional y precios en pesos chilenos. El catálogo y la ficha pública consultan Supabase; las fotografías de ejemplo están alojadas en Storage. Los nombres y precios de esos ejemplos son ficticios.
 
-## Abrir en Android Studio
+Las pantallas finales de acceso/huella, edición de productos, ventas y panel web siguen bajo responsabilidad de sus integrantes. Sus repositorios y la operación de venta ya están conectados y probados; la migración del backend no significa que esas pantallas pendientes estén terminadas.
 
-1. Abrir la carpeta real `android` del proyecto (en una ruta sin caracteres especiales ni tildes en Windows).
-2. Usar JDK 21, SDK Android 36 y Build Tools 36.0.0; sincronizar Gradle.
-3. Ejecutar `app` en un teléfono o emulador Android 8.0 o superior.
+## Configuración local
 
-La versión mínima API 26 es provisional y debe contrastarse con los teléfonos de las emprendedoras. No se han probado todas las versiones Android.
+1. Abrir la carpeta real **android** en Android Studio. Usar JDK 21, SDK 36, Build Tools 36.0.0; mínimo provisional Android 8/API 26.
+2. Copiar android/supabase.properties.example a android/supabase.properties y completar únicamente URL y anon key.
+3. Para la web, ejecutar npm ci en web y copiar supabase-config.example.js a supabase-config.js.
+4. Importar la configuración local y llamar configureSupabase(config) antes de usar la capa web.
+
+Los archivos completos de configuración se excluyen de Git. Las credenciales de Studio, contraseñas y service_role no forman parte de los clientes. Cada usuario debe iniciar sesión con su propia cuenta de la aplicación.
+
+Sin configuración Android se abre una demostración local. Para forzarla en pruebas se usa -PconectaDemo=true. Una conexión fallida al backend configurado muestra el estado de conexión y conserva el catálogo público previamente descargado; no cambia silenciosamente a productos ficticios.
+
+## Compilar y probar Android
+
+Desde android:
+
+~~~sh
+./gradlew assembleDebug testDebugUnitTest lintDebug
+./gradlew -PconectaDemo=true connectedDebugAndroidTest
+~~~
+
+En Windows: gradlew.bat. El APK queda en app/build/outputs/apk/debug/app-debug.apk. La segunda orden verifica la navegación con datos de demostración; las pruebas reales se habilitan expresamente y necesitan una cuenta ficticia mediante argumentos del runner, nunca credenciales incluidas en el APK.
+
+## Backend y pruebas
+
+- [Modelo de datos y permisos](docs/felipe/modelo-datos.md).
+- [Informe de seguridad vigente](docs/benjamin/hito-3-seguridad.md).
+- [Migración y cambios de integración](docs/migracion-supabase.md).
+- [Guía de conexión para el equipo](docs/integracion-supabase.md).
+
+~~~sh
+npm --prefix supabase ci
+npm --prefix web ci
+~~~
+
+npm test en supabase ejecuta pruebas de RLS/RPC en un PostgreSQL desechable local llamado conectasur_test, con TEST_DATABASE_URL. GitHub Actions crea ese entorno sin utilizar las credenciales del profesor.
+
+npm run test:live en supabase verifica Auth, API, RLS, Storage y la capa web contra la instancia del grupo. Requiere configuración privada y credenciales ficticias. Cada ejecución crea fixtures propios y los limpia al terminar.
+
+Los informes antiguos de Firebase se conservan en docs/historico como evidencia de los hitos anteriores; sus resultados no se presentan como pruebas de Supabase. El proyecto Firebase remoto no se ha eliminado.
 
 ## Editar con Palette
 
-En la vista Android: `app > res > layout > screen_home.xml`. Seleccionar **Design** o **Split**. En Code no se muestra Palette.
+Abrir app > res > layout > screen_home.xml y seleccionar Design o Split. activity_main.xml contiene la navegación y una inclusión de inicio para el editor. Los demás XML siguen en res/layout.
 
-`activity_main.xml` contiene la navegación y una inclusión de inicio para mostrarla en el editor. Las demás pantallas están en `screen_catalog.xml`, `item_product.xml`, `screen_detail.xml`, `screen_store.xml`, `screen_settings.xml`, `screen_help.xml`, `screen_sales.xml` y `dialog_menu.xml`.
-
-El logo usa una subclase de ImageView para mostrar la variante horizontal del original. Si el editor necesita cargarla, compilar el proyecto. Kotlin contiene el comportamiento y XML distribuye los componentes. Si la vista se ve demasiado ampliada, usar Zoom to Fit.
-
-## Compilar y comprobar (Android)
-
-Desde la carpeta `android`:
-
-```sh
-./gradlew assembleDebug testDebugUnitTest lintDebug
-./gradlew connectedDebugAndroidTest
-```
-
-En Windows se puede usar `gradlew.bat`. El APK queda en `app/build/outputs/apk/debug/app-debug.apk`. La primera compilación descarga dependencias. Las pruebas de dispositivo necesitan un emulador o teléfono conectado.
-
-## Pruebas de reglas de seguridad (Firebase Emulator Suite)
-
-Desde la raíz (requiere Node.js >=24.12.0 y JDK 21):
-
-```sh
-npm --prefix web ci
-npm --prefix firebase ci
-npm --prefix firebase test
-```
-
-Ejecuta **81 casos automatizados** sobre Authentication, Firestore y Storage: permisos por perfil, validación de productos/ventas, publicación y venta en transacción, y funciones reales de la capa web. Ver [informe y límites](docs/benjamin/hito-3-seguridad.md) y [evidencias](security/reports/verification.json).
-
-Se corrigieron las alertas altas de las herramientas Firebase y la dependencia Guava de Android. Permanecen 17 alertas moderadas en herramientas de desarrollo, con alcance y seguimiento en el informe. La auditoría de las dependencias web no reporta alertas.
+La lectura comienza al pulsar Escuchar; TalkBack y el dictado son ayudas distintas. Los textos respetan el tamaño del sistema y los ajustes locales.
 
 ## Trabajo por hitos
 
-1. Base Android y logo ([verificación](docs/benjamin/hito-1-verificacion.md)).
-2. Pantallas, navegación y accesibilidad ([guía del hito 2](docs/benjamin/hito-2-pantallas.md)).
-3. Pruebas e informe de seguridad ([informe de seguridad](docs/benjamin/hito-3-seguridad.md) y [modelo de datos](docs/felipe/modelo-datos.md)).
+Mensajes de commit simples y avances separados. Benjamín solicitó enviar los hitos a main. La pauta pide protección de main, PR revisados y contribuciones propias: ese criterio de colaboración debe verificarse con el equipo.
 
-Cada hito se prepara y comprueba por separado, con mensajes de commit simples. El usuario solicitó enviar estos hitos directamente a main. Para cumplir la pauta del profesor, el equipo debe acordar la protección de main y el flujo de pull requests revisados; no se declara cumplido ese criterio con este envío.
+Fabián: acceso/tienda; Dan: productos; Alonso: ventas; Felipe: backend; Kisho: web; Benjamín: base Android, accesibilidad y pruebas. Los contratos de dominio se mantienen y los adaptadores se llaman SupabaseAuthRepository, SupabaseShopRepository, SupabaseProductRepository y SupabaseSalesRepository.
 
-Fabián se encarga de acceso y tienda; Dan de productos; Alonso de ventas; Felipe de Firebase y Kisho del panel web. Benjamín desarrolla la base, navegación, accesibilidad y pruebas de seguridad. Todos deben registrar sus propias contribuciones.
-
-## Datos y permisos
-
-Sin `android/app/google-services.json`, la app usa datos locales de demostración y guarda preferencias visuales y una referencia local al logo elegido. `allowBackup=false` deshabilita Auto Backup; las reglas explícitas de extracción y transferencia incluyen únicamente `presentation.xml`. El selector del sistema permite elegir una imagen sin acceso general al almacenamiento. La lectura usa una voz instalada y comienza solo al pulsar Escuchar.
-
-La capa web usa caché en memoria y sesión de navegador por pestaña para reducir la persistencia en equipos compartidos. Falta integrar y verificar el panel visual. Las reglas actuales validan hasta 10 variantes por producto; el editor debe respetar ese límite técnico o migrar las variantes a documentos separados.
-
-No subir `local.properties`, `google-services.json`, `firebase-config.json`, claves privadas, contraseñas, archivos de firma ni archivos generados de build.
+El cambio de Firestore a Supabase responde a la instrucción del grupo tras recibir la instancia del profesor y queda documentado expresamente.

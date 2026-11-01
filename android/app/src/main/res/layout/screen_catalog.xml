@@ -3,6 +3,7 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
         <TextView android:id="@+id/page_title" style="@style/ConectaSur.Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/catalog_title" />
         <TextView android:id="@+id/catalog_intro" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/catalog_intro" />
+        <TextView android:id="@+id/catalog_status" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:accessibilityLiveRegion="polite" android:visibility="gone" />
         <TextView android:id="@+id/search_label" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/search_label" android:labelFor="@id/search_input" />
         <EditText android:id="@+id/search_input" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="textCapSentences" android:imeOptions="actionSearch" android:singleLine="true" android:padding="12dp" android:autofillHints="" />
         <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/search_hint" />

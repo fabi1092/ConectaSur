@@ -1,14 +1,29 @@
-name: Pruebas de seguridad
+name: Pruebas de seguridad Supabase
 on:
   push:
-    paths: ['firebase/**', 'web/**', 'security/**', '.github/workflows/seguridad.yml']
+    paths: ['supabase/**', 'web/**', 'security/**', '.github/workflows/seguridad.yml']
   pull_request:
-    paths: ['firebase/**', 'web/**', 'security/**', '.github/workflows/seguridad.yml']
+    paths: ['supabase/**', 'web/**', 'security/**', '.github/workflows/seguridad.yml']
 permissions:
   contents: read
 jobs:
-  reglas-y-web:
+  permisos-sql:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: conectasur_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/conectasur_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,19 +31,15 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: |
-            firebase/package-lock.json
+            supabase/package-lock.json
             web/package-lock.json
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
       - run: npm ci
         working-directory: web
       - run: npm ci
-        working-directory: firebase
-      - run: npm audit --audit-level=high
-        working-directory: firebase
+        working-directory: supabase
       - run: npm audit --audit-level=moderate
         working-directory: web
+      - run: npm audit --audit-level=moderate
+        working-directory: supabase
       - run: npm test
-        working-directory: firebase
+        working-directory: supabase

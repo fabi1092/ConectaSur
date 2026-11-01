@@ -1,62 +1,71 @@
-# Modelo de datos, reglas y pruebas (Felipe Gallardo)
+# Modelo de datos y permisos: Supabase
 
-Responsable: Felipe Gallardo. Base de datos: Cloud Firestore (+ Cloud Storage para imagenes). Cubre RNF-DAT-01, 02, 03, 04 y RNF-SEG-01, 04.
+Instancia exclusiva SurCode suministrada por el profesor. PostgreSQL 15, Supabase Auth y Storage. Sustituye el diseño Firestore anterior, conservado en docs/historico/modelo-firestore.md.
 
-## 1. Colecciones
+El ID de usuario es el UUID de auth.users. Una nueva cuenta recibe únicamente el perfil comprador por trigger; no puede elegir su rol enviando metadatos.
 
-| Coleccion | Quien lee | Quien escribe | Contenido |
+## Tablas y relaciones
+
+| Tabla | Clave y relación | Lectura | Escritura |
 |---|---|---|---|
-| `users/{uid}` | el propio usuario y el admin | admin (el comprador crea solo su perfil de comprador) | `role` (admin / emprendedora / comprador), `active`, `shopId`, `displayName` |
-| `shops/{shopId}` | todos | admin crea y borra; la dueña edita sus datos visibles | `ownerUid`, `name`, `description`, `logoUrl`, `entrepreneurType`, `sector`, `contact`, `showPrices`, `active`, `associationIds` |
-| `shops/{shopId}/products/{productId}` | solo su dueña | solo su dueña | producto **privado**: datos comunes, `stockMode`, `quantity`, `visible`, `photo`, `variants[]` |
-| `shops/{shopId}/sales/{saleId}` | solo su dueña (ni el admin) | solo su dueña | `productId`, `productName`, `variantId`, `quantity`, `priceClp`, `place`, `dateMillis` |
-| `publicProducts/{productId}` | todos | la dueña de `shopId` | copia **publica** sin stock ni precio oculto: `id`, `shopId`, `name`, `description`, `category`, `priceClp`, `onRequest`, `photo` |
-| `associations/{id}` | todos | admin | `name`, `sector`, `description`, `active` |
-| `categories`, `productTypes`, `entrepreneurTypes` | todos | admin | `name` |
+| profiles | id → auth.users.id; shop_id → shops.id | Perfil propio o admin | Admin; alta inicial mediante trigger |
+| shops | id; owner_uid único → auth.users.id | Dueña activa o admin | Admin crea; dueña edita campos permitidos |
+| products | id; shop_id → shops.id | Solo dueña activa | Solo dueña activa, con validaciones/triggers |
+| sales | UUID; shop_id → shops.id | Solo dueña activa, sin acceso del admin de aplicación | Exclusivamente RPC register_sale |
+| associations | id | Pública | Admin |
+| shop_associations | (shop_id, association_id) | Pública | Admin |
+| categories | id | Pública | Admin |
+| product_types | id; esquema de campos específicos en fields | Pública | Admin |
+| entrepreneur_types | id | Pública | Admin |
+| admin_actions | id secuencial; actor, acción, tabla, destino y fecha | Admin | Triggers; clientes sin permisos de escritura |
+| app_private.sale_requests | UUID + dueño + huella de solicitud | Sin acceso de clientes | RPC; garantiza reintentos idempotentes |
 
-## 2. Decisiones y justificacion
+## Proyecciones públicas
 
-1. **Roles en `users/{uid}`**, no en custom claims: los claims requieren Admin SDK o Cloud Functions; asi el plan gratuito basta. Las reglas leen el rol con `get()`.
-2. **Catalogo privado y publico separados.** Las reglas de Firestore no pueden ocultar campos de un documento: si el stock estuviera en el documento publico, cualquiera podria descargarlo. Por eso el stock vive en `shops/{id}/products` (privado) y el catalogo publico es una copia sin datos privados (`publicProducts`) que se escribe en el mismo `WriteBatch` o transaccion. Las reglas validan que la copia publica solo tenga los campos permitidos.
-3. **Ventas privadas** (RN-10): solo la dueña las lee; el administrador no tiene acceso.
-4. **Venta con transaccion:** descuenta solo la opcion vendida, retira la pieza unica y guarda el historial en una sola operacion atomica.
-5. **Sin conexion** (RNF-DAT-03): Android conserva la caché local de Firestore. La web usa memoria para evitar documentos persistentes en computadores compartidos: la caché web dura mientras la página permanezca abierta. La tolerancia a cortes de red debe probarse en las pantallas finales.
-6. **Acceso solo por repositorios** (RNF-DAT-02): las pantallas usan las interfaces de `domain/Repositories.kt`; la web usa `web/firebase-data.js`.
+public_shops expone únicamente la ficha publicable de tiendas activas con dueña activa. public_products calcula el catálogo público desde products y shops:
 
-## 3. Consultas principales (y sus indices)
+- Nunca incluye quantity ni el stock de variantes.
+- Excluye productos invisibles o agotados; mantiene productos a pedido sin cantidad.
+- Oculta precios de producto y variantes cuando show_price=false o shops.show_prices=false.
+- Una modificación global de precios/visibilidad se refleja en la siguiente consulta sin sincronizar copias físicas.
 
-- Catalogo publico: `publicProducts` completo (o filtrado por `shopId`): indice automatico.
-- Productos de una tienda: `shops/{id}/products`: indice automatico.
-- Historial: `shops/{id}/sales` ordenado por `dateMillis` descendente: indice automatico de un solo campo. Filtros por fecha/producto se hacen sobre ese resultado; si se agregan filtros combinados en el servidor, Firestore indicara el indice compuesto a crear y se agrega a `firebase/firestore.indexes.json`.
+Son vistas deliberadamente propiedad del administrador de la base, con security_barrier, lista explícita de columnas y filtros. El acceso público a esas vistas no concede lectura a las tablas privadas. Las políticas RLS se prueban con usuarios de aplicación, no con Studio.
 
-## 4. Reglas de seguridad
+## Campos del producto
 
-Archivos: `firebase/firestore.rules` y `firebase/storage.rules`. Todo lo no listado queda denegado. Storage: solo imagenes de menos de 2 MB, dentro de `shops/{shopId}/`, y solo su dueña o el admin pueden subir.
+Comunes: id, shop_id, name, description, category, product_type, attributes, price_clp, show_price, stock_mode, quantity, visible, photo, variants y updated_at.
 
-## 5. Pruebas automaticas (RNF-SEG-04)
+- stock_mode: UNITS, UNIQUE u ON_REQUEST.
+- UNITS exige cantidad no negativa; UNIQUE permite 0 o 1 sin variantes; ON_REQUEST admite cantidad nula.
+- variants es una lista de hasta 100 opciones con id único, label, quantity y precio/foto opcionales (priceClp, photo). Un trigger valida todos los elementos y calcula el stock total. Se eliminó el límite técnico anterior de 10 opciones.
+- Los importes se expresan en pesos chilenos enteros; no se utiliza dólar como unidad.
+- product_types.fields describe los campos particulares y attributes almacena sus valores. Ejemplos: artesanía (material, técnica, medidas), alimento (ingredientes, alérgenos, contenido, conservación), ropa (material, cuidados), planta viva (especie, cuidados).
+- Flores tejidas o artesanía con material vegetal se clasifican por el producto terminado en Artesanías; Plantas corresponde a plantas vivas.
 
-Archivo: `firebase/test/rules.test.js`, ejecutado con Firebase Emulator Suite. Comando (desde `firebase/`): `npm test`.
+## Venta e historial
 
-Casos por perfil (permitidos y rechazados):
+register_sale valida a la dueña en el servidor, bloquea el producto con FOR UPDATE, verifica cantidad y variante, descuenta stock y registra la venta en una sola transacción. El precio de una variante se toma desde la base. Una pieza agotada desaparece de la vista pública.
 
-- Visitante: lee catalogo publico y tiendas; NO lee productos privados, ventas ni perfiles; NO escribe.
-- Emprendedora: edita su tienda; NO edita la de otra; NO cambia dueño ni se reactiva sola; publica producto publico valido; NO publica con stock ni en tienda ajena; NO toca productos publicos ajenos; lee sus ventas; NO lee ventas ajenas; desactivada no edita.
-- Administrador: crea asociaciones, tiendas y cuentas; desactiva emprendedoras; NO lee ventas (RN-10).
-- Comprador: lee catalogo; NO crea asociaciones ni edita tiendas; crea su perfil solo como comprador.
-- Storage: sube imagen a su carpeta; NO a la de otra; NO archivos que no son imagen; visitante NO sube.
+El UUID de solicitud evita descontar dos veces tras un reintento de la misma operación. Las ventas no se envían como operaciones optimistas sin conexión. Si history_enabled=false, el stock cambia pero no se guarda el detalle de historial. Un recibo privado conserva únicamente UUID, dueño y huella de solicitud para idempotencia.
 
-**Verificación vigente:** 81 pruebas aprobadas (73 de reglas/integración de datos y 8 de la capa web). Ver [informe de Benjamín](../benjamin/hito-3-seguridad.md) y [evidencia JSON](../../security/reports/verification.json). La salida anterior de 23 casos se sustituye por esta referencia para evitar resultados contradictorios.
+## Fotos y logos
 
-## 6. Datos ficticios (RNF-DAT-04)
+Bucket shop-images, público para imágenes publicables. MIME permitidos: JPEG, PNG, WebP, hasta 2 MiB. Los objetos se agrupan por shop_id como primera carpeta; RLS limita las escrituras a la dueña activa o admin. Cada cliente comprime antes de subir.
 
-`firebase/seed/seed.mjs` (`npm run seed`) carga 2 emprendedoras, 1 asociacion, categorias, tipos y 5 productos en un proyecto de **desarrollo**, separado del real.
+Las fotografías de ejemplo se han cargado y vinculado. No se usa este bucket público para documentos privados. La validación de MIME/metadatos no sustituye una inspección antivirus.
 
-## 7. Limites
+## Sesiones y funcionamiento sin conexión
 
-- Las pruebas de reglas comprueban las reglas, no la app completa; la integracion con las pantallas la prueba cada integrante.
-- Firebase App Check y el registro de acciones del administrador (RNF-SEG-06 y 07) estan pendientes.
-- Las fotos de los productos de ejemplo siguen siendo recursos locales de la app; la subida a Storage esta lista en el repositorio, pero cada pantalla debe adoptarla.
+Android guarda sesión, caché privada y borradores cifrados con una clave de Android Keystore. Conserva catálogo público para lectura offline y una cola de productos por UID. Al volver la red, solo la misma cuenta puede reenviar sus borradores; el servidor valida nuevamente. La pantalla de edición debe usar pendingDrafts para restaurarlos y mostrar errores pendientes.
 
-## 8. Validaciones reforzadas del hito 3
+La web guarda sesión por pestaña mediante sessionStorage y consulta datos sin caché persistente de tablas. La navegación offline completa de la web no está implementada.
 
-Productos privados y ventas ahora exigen los campos y tipos emitidos por los repositorios Android, con stock no negativo, cantidad de venta positiva, precio no negativo y coherencia de identificadores. Las variantes en lista se limitan a 10 y se valida cada elemento. Dan debe reflejar este límite técnico en el editor; para más opciones, migrar a documentos separados. Ver el contrato y los límites de consistencia en el informe de seguridad.
+La consulta del catálogo se actualiza mientras la pantalla está activa, cada 15 segundos. Es consulta periódica, no una suscripción a Supabase Realtime.
+
+## Puesta en marcha
+
+La migración versionada está en supabase/migrations/001_conectasur.sql y su registro SHA-256 se guarda en app_private.schema_migrations. Las migraciones aplicadas no se editan: se añaden nuevas.
+
+Las herramientas administrativas se ejecutan solo en el equipo de desarrollo con las credenciales privadas de Studio; los clientes usan anon + JWT propio. No se solicita ni se utiliza service_role.
+
+El bootstrap inicial creó cuatro cuentas ficticias y dos tiendas. Los UUID son nuevos; las contraseñas de Firebase no se copiaron. La instancia anterior permanece conservada.

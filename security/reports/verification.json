@@ -1,15 +1,28 @@
 {
-  "checkedAt": "2026-11-01T16:29:34.332Z",
-  "environment": {
-    "node": "v24.22.1",
-    "project": "demo-conectasur",
-    "backend": "Emulator Suite local"
+  "collectedAt": "2026-11-01T19:07:08.675Z",
+  "backend": "Supabase de SurCode suministrado por el profesor",
+  "node": "v24.22.1",
+  "apiLive": [
+    {
+      "path": "security/reports/supabase-live.log",
+      "tests": 40,
+      "passed": 40,
+      "failed": 0
+    },
+    {
+      "path": "security/reports/supabase-web.log",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0
+    }
+  ],
+  "androidLive": {
+    "passed": 5,
+    "environment": "Pixel 7, API 36, emulador; API y Storage reales"
   },
-  "rulesAndWeb": {
-    "tests": 81,
-    "suites": 9,
-    "passed": 81,
-    "failed": 0
+  "androidUi": {
+    "passed": 6,
+    "environment": "Mismo emulador, build de demostracion; LaunchTest y NavigationTest"
   },
   "androidUnit": {
     "tests": 15,
@@ -19,24 +32,22 @@
   "androidBuild": true,
   "lint": {
     "errors": 0,
-    "warnings": 10
+    "warnings": 7
   },
-  "mergedManifestPermissions": [
+  "permissions": [
     "android.permission.INTERNET",
-    "android.permission.ACCESS_NETWORK_STATE",
-    "com.google.android.providers.gsf.permission.READ_GSERVICES",
     "cl.surcode.conectasur.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
   ],
   "npm": {
-    "firebase": {
+    "web": {
       "info": 0,
       "low": 0,
-      "moderate": 17,
+      "moderate": 0,
       "high": 0,
       "critical": 0,
-      "total": 17
+      "total": 0
     },
-    "web": {
+    "supabaseTools": {
       "info": 0,
       "low": 0,
       "moderate": 0,
@@ -45,28 +56,258 @@
       "total": 0
     }
   },
-  "trackedFileScan": {
-    "checkedFiles": 97,
-    "findings": [],
-    "scope": "Patrones acotados; no certifica ausencia de secretos ni revisa todo el historial"
+  "osv": {
+    "checkedAt": "2026-11-01T18:55:58.849Z",
+    "source": "https://api.osv.dev/v1/querybatch",
+    "scope": "Maven: debugRuntimeClasspath; no analiza codigo ni el comportamiento de la app",
+    "dependencies": [
+      {
+        "name": "androidx.activity:activity",
+        "version": "1.11.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.annotation:annotation-experimental",
+        "version": "1.4.1",
+        "advisories": []
+      },
+      {
+        "name": "androidx.annotation:annotation-jvm",
+        "version": "1.9.1",
+        "advisories": []
+      },
+      {
+        "name": "androidx.appcompat:appcompat",
+        "version": "1.2.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.appcompat:appcompat-resources",
+        "version": "1.2.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.arch.core:core-common",
+        "version": "2.2.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.arch.core:core-runtime",
+        "version": "2.2.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.collection:collection-jvm",
+        "version": "1.4.2",
+        "advisories": []
+      },
+      {
+        "name": "androidx.concurrent:concurrent-futures",
+        "version": "1.1.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.constraintlayout:constraintlayout",
+        "version": "2.2.1",
+        "advisories": []
+      },
+      {
+        "name": "androidx.constraintlayout:constraintlayout-core",
+        "version": "1.1.1",
+        "advisories": []
+      },
+      {
+        "name": "androidx.core:core",
+        "version": "1.17.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.core:core-ktx",
+        "version": "1.17.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.core:core-viewtree",
+        "version": "1.0.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.cursoradapter:cursoradapter",
+        "version": "1.0.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.customview:customview",
+        "version": "1.0.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.drawerlayout:drawerlayout",
+        "version": "1.0.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.fragment:fragment",
+        "version": "1.1.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.interpolator:interpolator",
+        "version": "1.0.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.lifecycle:lifecycle-common-jvm",
+        "version": "2.9.4",
+        "advisories": []
+      },
+      {
+        "name": "androidx.lifecycle:lifecycle-livedata",
+        "version": "2.9.4",
+        "advisories": []
+      },
+      {
+        "name": "androidx.lifecycle:lifecycle-livedata-core",
+        "version": "2.9.4",
+        "advisories": []
+      },
+      {
+        "name": "androidx.lifecycle:lifecycle-livedata-core-ktx",
+        "version": "2.9.4",
+        "advisories": []
+      },
+      {
+        "name": "androidx.lifecycle:lifecycle-runtime-android",
+        "version": "2.9.4",
+        "advisories": []
+      },
+      {
+        "name": "androidx.lifecycle:lifecycle-runtime-ktx-android",
+        "version": "2.9.4",
+        "advisories": []
+      },
+      {
+        "name": "androidx.lifecycle:lifecycle-viewmodel",
+        "version": "2.9.4",
+        "advisories": []
+      },
+      {
+        "name": "androidx.lifecycle:lifecycle-viewmodel-android",
+        "version": "2.9.4",
+        "advisories": []
+      },
+      {
+        "name": "androidx.lifecycle:lifecycle-viewmodel-savedstate-android",
+        "version": "2.9.4",
+        "advisories": []
+      },
+      {
+        "name": "androidx.loader:loader",
+        "version": "1.0.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.profileinstaller:profileinstaller",
+        "version": "1.4.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.savedstate:savedstate-android",
+        "version": "1.3.1",
+        "advisories": []
+      },
+      {
+        "name": "androidx.startup:startup-runtime",
+        "version": "1.1.1",
+        "advisories": []
+      },
+      {
+        "name": "androidx.tracing:tracing",
+        "version": "1.2.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.vectordrawable:vectordrawable",
+        "version": "1.1.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.vectordrawable:vectordrawable-animated",
+        "version": "1.1.0",
+        "advisories": []
+      },
+      {
+        "name": "androidx.versionedparcelable:versionedparcelable",
+        "version": "1.1.1",
+        "advisories": []
+      },
+      {
+        "name": "androidx.viewpager:viewpager",
+        "version": "1.0.0",
+        "advisories": []
+      },
+      {
+        "name": "com.google.guava:listenablefuture",
+        "version": "1.0",
+        "advisories": []
+      },
+      {
+        "name": "org.jetbrains.kotlin:kotlin-stdlib",
+        "version": "2.2.10",
+        "advisories": []
+      },
+      {
+        "name": "org.jetbrains.kotlinx:kotlinx-coroutines-android",
+        "version": "1.10.2",
+        "advisories": []
+      },
+      {
+        "name": "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm",
+        "version": "1.10.2",
+        "advisories": []
+      },
+      {
+        "name": "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm",
+        "version": "1.7.3",
+        "advisories": []
+      },
+      {
+        "name": "org.jetbrains:annotations",
+        "version": "23.0.0",
+        "advisories": []
+      },
+      {
+        "name": "org.jspecify:jspecify",
+        "version": "1.0.0",
+        "advisories": []
+      }
+    ],
+    "affectedDependencies": 0
   },
-  "sourceHashNormalization": "UTF-8, CRLF normalizado a LF para comparar checkouts Windows/Linux",
+  "privateFileScan": {
+    "files": 107,
+    "findings": [],
+    "scope": "Patrones acotados sobre archivos versionados; no audita todo el historial"
+  },
+  "sourceHashNormalization": "UTF-8, CRLF normalizado a LF",
   "sourceSha256": {
-    "firebase/firestore.rules": "a1ffb5d6ca53d562e19a58e9ee050359d76723bc053c1e3f2e8c9820b56154d4",
-    "firebase/storage.rules": "efa72835851993ee868fd1f56496237c048c2aff968723345fb861c0498ae0d8",
-    "firebase/test/rules.test.js": "122e5642418565227931a2997f5e26721284eeddeef831609f59c40386334b5b",
-    "firebase/test/web.test.js": "6ec408c7a166bd39382eaa0d4d9ece5d4f4e3a9a9b40dadbd11339ff9e4e8d0b",
-    "firebase/package-lock.json": "6f544a92fcc0e530f807f5eaf0830320c25bed1556b112ce50fc470a0255061b",
-    "web/firebase-data.js": "2e3b4af503b83e2a31946342ab242cdf5c7878fdc81b6a094ae86abf4cad84f5",
-    "web/package-lock.json": "840f98bd7b2a4c2d0adc65284ef9bc7e87e36e968222374d01684c6600f8bc80"
+    "supabase/migrations/001_conectasur.sql": "3d33c889cc66707276b2e032343ca194bfc8b1ac29a7b7192241fd1969de7123",
+    "supabase/test/security.test.js": "260c561511361dba535bf8a891a052fbcda3167274472cd6b193f59143758836",
+    "supabase/test/web.test.js": "fbcf52717d91f5509cbec69e4977f3d1f109082a46b727576a6f9a1bf4202a35",
+    "supabase/test/sql.test.js": "3a8ff6c6a2aacb886e4417ef4b65faca042d65b2978d9c94a63288bc5ca42dad",
+    "web/supabase-data.js": "6ac63fda66cb07960d4daf512078cfa7093efaa891647eac5e85b9a4cc88a48a",
+    "web/package-lock.json": "87276a518fc5ec35abed587ed0f4f51fadbee9723dc36b146aca207b6da5e5da",
+    "supabase/package-lock.json": "2e185cdeac0c97fd520dafe327de7de3a8bbe73f3dac30e7f6ef696a36d04b70",
+    "android/app/src/main/java/cl/surcode/conectasur/data/SupabaseClient.kt": "8d7c1a71df26ebcfa1666eaa88fb715d21a088d31ba9f00630c10481b33795c6",
+    "android/app/src/main/java/cl/surcode/conectasur/data/SupabaseRepositories.kt": "d9613da2035610759085624d71179cdff75e10c353a51d20f0f8132a37ea83de",
+    "android/app/src/main/java/cl/surcode/conectasur/data/SecureBackendStore.kt": "6c5b45b4e3011d48b64e57b4efb9c999a1ddc8603242730e91b98ce10e1990cc"
   },
   "pending": [
-    "Biometria real",
-    "App Check",
-    "Auditoria del administrador",
-    "Panel web visual",
-    "Pantallas finales integradas",
-    "MobSF",
-    "Validacion normativa de privacidad"
+    "Google OAuth deshabilitado por configuracion del servidor",
+    "Huella opcional en pantalla de acceso",
+    "Pantallas finales de los otros integrantes",
+    "Validacion de TalkBack en telefonos reales",
+    "Atestacion de integridad de aplicacion equivalente a App Check",
+    "Revision normativa de privacidad"
   ]
 }

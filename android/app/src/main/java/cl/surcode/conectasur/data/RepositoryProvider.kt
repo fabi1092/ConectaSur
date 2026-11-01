@@ -1,24 +1,24 @@
 package cl.surcode.conectasur.data
 
 import android.content.Context
+import cl.surcode.conectasur.BuildConfig
 import cl.surcode.conectasur.domain.*
-import com.google.firebase.FirebaseApp
 
-/**
- * Punto unico para obtener repositorios.
- * - Con android/app/google-services.json: usa Firebase.
- * - Sin ese archivo (por ejemplo en GitHub Actions): usa los datos de demostracion y la app no se cae.
- *
- * Fabian/Dan/Alonso: llamen firebaseReady(context) antes de pedir auth(), shops(), products() o sales().
- */
+/** Una instancia y una sesion compartidas. Sin configuracion se utiliza la demostracion. */
 object RepositoryProvider {
-    fun firebaseReady(context: Context): Boolean = FirebaseApp.getApps(context).isNotEmpty()
-
-    fun catalog(context: Context): CatalogRepository =
-        if (firebaseReady(context)) FirebaseCatalogRepository() else DemoCatalogRepository()
-
-    fun auth(): AuthRepository = FirebaseAuthRepository()
-    fun shops(): ShopRepository = FirebaseShopRepository()
-    fun products(): ProductRepository = FirebaseProductRepository()
-    fun sales(): SalesRepository = FirebaseSalesRepository()
+    private var backend: SupabaseClient? = null
+    @Synchronized fun initialize(context: Context) {
+        if (backend == null && supabaseReady()) backend = SupabaseClient(
+            BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY, SecureBackendStore(context.applicationContext))
+    }
+    fun supabaseReady() = BuildConfig.SUPABASE_URL.isNotBlank() && BuildConfig.SUPABASE_ANON_KEY.isNotBlank()
+    private fun client() = checkNotNull(backend) { "Inicializa RepositoryProvider con el contexto de la aplicacion" }
+    fun catalog(context: Context): CatalogRepository {
+        initialize(context)
+        return if (supabaseReady()) SupabaseCatalogRepository(client()) else DemoCatalogRepository()
+    }
+    fun auth(): AuthRepository = SupabaseAuthRepository(client())
+    fun shops(): ShopRepository = SupabaseShopRepository(client())
+    fun products(): ProductRepository = SupabaseProductRepository(client())
+    fun sales(): SalesRepository = SupabaseSalesRepository(client())
 }
