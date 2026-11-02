@@ -1,281 +1,119 @@
 package cl.surcode.conectasur
 
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.os.Bundle
-import android.util.Base64
-import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.*
-import android.text.Editable
-import android.text.TextWatcher
-import androidx.activity.ComponentActivity
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.view.setPadding
-import org.json.JSONArray
+import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import cl.surcode.conectasur.domain.*
+import cl.surcode.conectasur.ui.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.io.ByteArrayOutputStream
-import java.util.UUID
 
-/**
- * Espacio de trabajo de productos de Dan. Los productos y borradores de demostracion
- * se conservan localmente para que cerrar la app no interrumpa la edicion.
- */
-class ProductManagerActivity : ComponentActivity() {
-    data class Item(
-        val id: String, var name: String, var category: String, var description: String,
-        var price: Long, var type: String, var sizes: String, var colors: String,
-        var photo: String, var published: Boolean
-    )
-    private val prefs by lazy { getSharedPreferences("conectasur_products_workspace", MODE_PRIVATE) }
-    private val items = mutableListOf<Item>()
-    private lateinit var list: LinearLayout
-    private lateinit var summary: TextView
-    private var pendingPhoto = ""
-    private var editingId: String? = null
-    private val gallery = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) try {
-            contentResolver.openInputStream(uri)?.use { stream ->
-                val bitmap = BitmapFactory.decodeStream(stream)
-                pendingPhoto = compress(bitmap)
-                if (editingId == null) {
-                    val draft = runCatching { JSONObject(prefs.getString("editor_recovery", "{}")) }.getOrDefault(JSONObject())
-                    prefs.edit().putString("editor_recovery", draft.put("photo", pendingPhoto).toString()).apply()
-                }
-            }
-            Toast.makeText(this, if (pendingPhoto.isNotEmpty()) "Fotografía optimizada correctamente" else "No se pudo cargar la fotografía", Toast.LENGTH_SHORT).show()
-        } catch (_: Exception) { Toast.makeText(this, "No se pudo procesar la imagen", Toast.LENGTH_LONG).show() }
+/** Integra el espacio de productos iniciado por Dan con repositorios, XML y datos reales. */
+class ProductManagerActivity : OwnerActivity() {
+    override val titleText="Mis productos"
+    private var initialized=false
+    private var products=emptyList<OwnerProduct>()
+    private val selected=mutableSetOf<String>()
+    private var preview=false
+    private var defaults=false
+    private var showPrices=true
+    override fun onOwnerReady() {
+        if(!initialized){initialized=true;showList();lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED){while(isActive){if(!defaults)refresh();delay(12000)}} }}
+        else if(!defaults)refresh()
     }
-    private val camera = registerForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
-        if (bitmap != null) {
-            pendingPhoto = compress(bitmap)
-            if (editingId == null) {
-                val draft = runCatching { JSONObject(prefs.getString("editor_recovery", "{}")) }.getOrDefault(JSONObject())
-                prefs.edit().putString("editor_recovery", draft.put("photo", pendingPhoto).toString()).apply()
-            }
-            Toast.makeText(this, "Fotografía tomada y comprimida", Toast.LENGTH_SHORT).show()
-        }
+    private fun showList(){
+        defaults=false;screen(R.layout.screen_owner_products)
+        click(R.id.pm_add){openEditor(null)}
+        click(R.id.pm_sales){startActivity(Intent(this,SalesActivity::class.java))}
+        click(R.id.pm_history){startActivity(Intent(this,SalesActivity::class.java).putExtra("history",true))}
+        click(R.id.pm_defaults){showDefaults()}
+        click(R.id.pm_refresh){refresh()}
+        click(R.id.pm_preview){preview=!preview;findViewById<Button>(R.id.pm_preview).text=if(preview)"Volver a mi catálogo privado" else "Vista previa pública";render()}
+        click(R.id.pm_bulk){bulk()}
+        findViewById<EditText>(R.id.pm_search).doAfterTextChanged{render()}
+        products=workspace.cached(shopId);render();refresh()
     }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        loadItems()
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xFFFAF7F2.toInt())
+    private fun refresh(){action("Actualizando tu catálogo…"){
+        val snapshot=workspace.sync(shopId);products=snapshot.products
+        showPrices=cl.surcode.conectasur.data.RepositoryProvider.shops().getShop(shopId)?.showPrices?:showPrices
+        if(!defaults)render()
+        status(if(snapshot.offline)"Sin conexión. Catálogo guardado; ${snapshot.pending} cambios pendientes. Se enviarán al volver la red." else "Catálogo actualizado. ${snapshot.products.size} productos. ${snapshot.pending} cambios pendientes.")
+    }}
+    private fun render(){
+        if(defaults)return
+        val list=findViewById<LinearLayout>(R.id.pm_items)?:return;list.removeAllViews()
+        val query=text(R.id.pm_search)
+        val rows=products.filter { (it.base.name+" "+it.base.category).contains(query,true) }.filter { !preview || it.base.toPublicOrNull()!=null }
+        findViewById<TextView>(R.id.pm_summary).text=if(preview)"Vista previa pública: ${rows.size} productos. No muestra cantidades privadas." else "${rows.size} productos · ${selected.size} seleccionados"
+        findViewById<Button>(R.id.pm_add).text=if(workspace.draft(shopId)!=null)"Continuar borrador" else "Agregar producto"
+        rows.forEach {item->
+            val row=layoutInflater.inflate(R.layout.item_owner_product,list,false);val p=item.base;val public=p.toPublicOrNull()
+            row.findViewById<TextView>(R.id.pm_name).text=p.name
+            row.findViewById<CheckBox>(R.id.pm_select).apply{isVisible=!preview;text="Seleccionar ${p.name}";isChecked=p.id in selected;setOnCheckedChangeListener{_,value->if(value)selected.add(p.id)else selected.remove(p.id)}}
+            val mode=modes[modeValues.indexOf(p.stockMode)]
+            row.findViewById<TextView>(R.id.pm_details).text=if(preview){
+                val state=if(public?.soldOut==true)"Agotado" else if(public?.onRequest==true)"A pedido" else "Disponible"
+                "$state · ${priceLabel(p.priceClp.takeIf{p.showPrice && showPrices})}\n${p.description}\n"+item.variants.joinToString("\n"){it.label+" · "+priceLabel((it.priceClp?:p.priceClp).takeIf{p.showPrice&&showPrices})}
+            }else "${p.category} · ${priceLabel(p.priceClp)}\n$mode · ${if(p.visible)"Disponible" else "No disponible"}\n"+
+                (if(p.stockMode in listOf(StockMode.UNITS,StockMode.UNIQUE))"Stock: ${p.quantity?:0}" else "Sin conteo de unidades")+
+                if(item.variants.isEmpty())"" else "\n${item.variants.size} variantes con precio y stock propios"
+            val image=row.findViewById<ImageView>(R.id.pm_photo)
+            if(p.photo.startsWith("data:"))runCatching{val bytes=android.util.Base64.decode(p.photo.substringAfter(','),android.util.Base64.NO_WRAP);image.setImageBitmap(android.graphics.BitmapFactory.decodeByteArray(bytes,0,bytes.size))}
+            else PublicImageLoader.load(lifecycleScope,image,p.photo,BuildConfig.SUPABASE_URL)
+            row.findViewById<Button>(R.id.pm_edit).apply{isVisible=!preview;setOnClickListener{openEditor(p.id)}}
+            row.findViewById<Button>(R.id.pm_delete).apply{isVisible=!preview;setOnClickListener{
+                AlertDialog.Builder(this@ProductManagerActivity).setTitle("Eliminar ${p.name}").setMessage("Se retirará de tu catálogo. Las ventas anteriores se conservan.")
+                    .setNegativeButton("Conservar",null).setPositiveButton("Eliminar"){_,_->action("Eliminando producto…"){
+                        val result=workspace.delete(shopId,p.id);products=result.products;selected.remove(p.id);render();status(if(result.offline)"Eliminación guardada. Se sincronizará al volver la conexión." else "Producto eliminado.")
+                    }}.show()
+            }}
+            list.addView(row);applyAccessibility(row,settings)
         }
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(22))
-            setBackgroundColor(0xFF1A7B6E.toInt())
-        }
-        val back = TextView(this).apply {
-            text = "‹  Volver a Mi tienda"; textSize = 16f; setTextColor(-1)
-            setPadding(0, dp(4), 0, dp(12)); setOnClickListener { finish() }
-        }
-        header.addView(back)
-        header.addView(TextView(this).apply {
-            text = "Mis productos"; textSize = 29f; setTextColor(-1); setTypeface(null, 1)
-        })
-        header.addView(TextView(this).apply {
-            text = "Administra tu catálogo desde un solo lugar"; textSize = 15f; setTextColor(0xFFE0F2ED.toInt())
-            setPadding(0, dp(5), 0, dp(4))
-        })
-        root.addView(header)
-        val scroll = ScrollView(this)
-        val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18)) }
-        summary = TextView(this).apply { textSize = 15f; setTextColor(0xFF52665F.toInt()); setPadding(0, dp(10), 0, dp(14)) }
-        body.addView(summary)
-        val add = Button(this).apply {
-            text = "+  Agregar producto"; isAllCaps = false; textSize = 17f
-            setTextColor(-1); setBackgroundColor(0xFF1A7B6E.toInt())
-            setOnClickListener { openEditor(null) }
-        }
-        body.addView(add, matchWrap())
-        body.addView(TextView(this).apply {
-            text = "Tu catálogo"; textSize = 21f; setTypeface(null, 1); setTextColor(0xFF183A34.toInt())
-            setPadding(0, dp(20), 0, dp(8))
-        })
-        list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        body.addView(list)
-        body.addView(TextView(this).apply {
-            text = "Los borradores quedan guardados en este dispositivo. Puedes volver a editarlos cuando quieras."
-            textSize = 13f; setTextColor(0xFF687A73.toInt()); setPadding(0, dp(16), 0, dp(24))
-        })
-        scroll.addView(body)
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        setContentView(root)
-        render()
+        if(rows.isEmpty())list.addView(TextView(this).apply{text="No hay productos para mostrar. Puedes agregar uno o cambiar la búsqueda.";textSize=18f})
     }
-
-    private fun openEditor(item: Item?) {
-        editingId = item?.id
-        val recovery = if (item == null) runCatching { JSONObject(prefs.getString("editor_recovery", "{}")) }.getOrDefault(JSONObject()) else JSONObject()
-        pendingPhoto = item?.photo ?: recovery.optString("photo", "")
-        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18)) }
-        val photoLabel = TextView(this).apply {
-            text = if (pendingPhoto.isEmpty()) "Sin fotografía seleccionada" else "✓ Fotografía lista"
-            textSize = 14f; setTextColor(0xFF1A7B6E.toInt()); setPadding(0, 0, 0, dp(8))
-        }
-        val photoButtons = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val galleryButton = Button(this).apply { text = "Galería"; isAllCaps = false; setOnClickListener { gallery.launch("image/*"); photoLabel.text = "Selecciona una imagen de la galería" } }
-        val cameraButton = Button(this).apply { text = "Cámara"; isAllCaps = false; setOnClickListener { camera.launch(null); photoLabel.text = "Abriendo cámara…" } }
-        photoButtons.addView(galleryButton, LinearLayout.LayoutParams(0, -2, 1f))
-        photoButtons.addView(cameraButton, LinearLayout.LayoutParams(0, -2, 1f))
-        form.addView(photoLabel); form.addView(photoButtons)
-        fun field(label: String, value: String = "", hint: String = label, input: Int = 1): EditText {
-            form.addView(TextView(this).apply { text = label; textSize = 14f; setTextColor(0xFF52665F.toInt()); setPadding(0, dp(10), 0, dp(3)) })
-            return EditText(this).apply {
-                setSingleLine(input == 1); this.inputType = input; setText(value); this.hint = hint
-                textSize = 16f; setPadding(dp(12), dp(9), dp(12), dp(9))
-                background = getDrawable(android.R.drawable.edit_text)
-                form.addView(this, matchWrap())
-            }
-        }
-        val name = field("Nombre del producto", item?.name ?: recovery.optString("name"), "Ej. Polerón tejido")
-        val category = field("Categoría", item?.category ?: recovery.optString("category"), "Ej. Ropa, artesanía, decoración")
-        val description = field("Descripción", item?.description ?: recovery.optString("description"), "Describe tu producto", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE)
-        val price = field("Precio (CLP)", item?.price?.toString() ?: recovery.optString("price"), "Ej. 12000", 2)
-        val type = field("Tipo de producto", item?.type ?: recovery.optString("type"), "Ej. ropa, accesorio, alimento")
-        val sizes = field("Tallas / medidas", item?.sizes ?: recovery.optString("sizes"), "Ej. S, M, L o 20 x 30 cm")
-        val colors = field("Colores disponibles", item?.colors ?: recovery.optString("colors"), "Ej. negro, azul, blanco")
-        val publish = Switch(this).apply {
-            text = "Publicar en el catálogo"; textSize = 16f; isChecked = item?.published ?: recovery.optBoolean("published", true)
-            setTextColor(0xFF183A34.toInt()); setPadding(0, dp(14), 0, dp(8))
-        }
-        form.addView(publish)
-        fun saveRecovery() {
-            if (item != null) return
-            prefs.edit().putString("editor_recovery", JSONObject().put("name", name.text.toString())
-                .put("category", category.text.toString()).put("description", description.text.toString())
-                .put("price", price.text.toString()).put("type", type.text.toString()).put("sizes", sizes.text.toString())
-                .put("colors", colors.text.toString()).put("photo", pendingPhoto).put("published", publish.isChecked).toString()).apply()
-        }
-        listOf(name, category, description, price, type, sizes, colors).forEach { input ->
-            input.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { saveRecovery() }
-                override fun afterTextChanged(s: Editable?) {}
-            })
-        }
-        publish.setOnCheckedChangeListener { _, _ -> saveRecovery() }
-        val dialog = AlertDialog.Builder(this).setTitle(if (item == null) "Nuevo producto" else "Editar producto")
-            .setView(ScrollView(this).apply { addView(form) })
-            .setNegativeButton("Cancelar", null)
-            .setPositiveButton("Guardar", null).create()
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val parsedPrice = price.text.toString().trim().toLongOrNull()
-                if (name.text.isNullOrBlank() || parsedPrice == null || parsedPrice < 0) {
-                    Toast.makeText(this, "Ingresa un nombre y un precio válido", Toast.LENGTH_LONG).show()
-                    return@setOnClickListener
-                }
-                val saved = Item(item?.id ?: UUID.randomUUID().toString(), name.text.toString().trim(),
-                    category.text.toString().trim().ifBlank { "General" }, description.text.toString().trim(),
-                    parsedPrice, type.text.toString().trim(), sizes.text.toString().trim(), colors.text.toString().trim(),
-                    pendingPhoto, publish.isChecked)
-                if (item == null) items.add(saved) else {
-                    val index = items.indexOfFirst { it.id == item.id }
-                    if (index >= 0) items[index] = saved
-                }
-                saveItems(); prefs.edit().remove("editor_recovery").apply(); render(); dialog.dismiss()
-            }
-        }
-        dialog.show()
+    private fun openEditor(id:String?){
+        val draft=workspace.draft(shopId)
+        fun open(){startActivity(Intent(this,ProductEditorActivity::class.java).apply{if(id!=null)putExtra("productId",id)})}
+        if(id!=null && draft!=null && draft.optString("id")!=id){
+            AlertDialog.Builder(this).setTitle("Tienes un borrador pendiente").setMessage("Puedes continuar ese borrador o descartarlo para editar este producto.")
+                .setNegativeButton("Conservar borrador",null).setPositiveButton("Descartar y editar"){_,_->workspace.discardDraft(shopId);open()}.show()
+        }else open()
     }
-
-    private fun render() {
-        list.removeAllViews()
-        val published = items.count { it.published }
-        val drafts = items.size - published
-        summary.text = "${items.size} productos  •  $published publicados  •  $drafts borradores"
-        if (items.isEmpty()) {
-            list.addView(TextView(this).apply {
-                text = "Todavía no tienes productos. Pulsa “Agregar producto” para crear el primero."
-                textSize = 16f; setTextColor(0xFF52665F.toInt()); setPadding(dp(18), dp(24), dp(18), dp(24))
-                setBackgroundColor(-1)
-            })
-        }
-        items.forEach { item ->
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; setPadding(dp(16))
-                setBackgroundColor(-1)
+    private fun bulk(){
+        AlertDialog.Builder(this).setTitle("¿A qué productos aplicar?").setItems(arrayOf("Seleccionados (${selected.size})","Una categoría","Todo mi catálogo")){_,scope->
+            fun choose(category:String?){
+                if(scope==0 && selected.isEmpty()){status("Primero marca al menos un producto.");return}
+                val labels=arrayOf("Marcar disponibles","Marcar no disponibles","Mostrar precios","Ocultar precios","Al agotarse: ocultar","Al agotarse: mostrar Agotado","Al agotarse: pasar a pedido")
+                AlertDialog.Builder(this).setTitle("Cambio de disponibilidad").setItems(labels){_,which->
+                    val config=when(which){0->JSONObject().put("visible",true);1->JSONObject().put("visible",false);2->JSONObject().put("show_price",true);3->JSONObject().put("show_price",false);else->JSONObject().put("sold_out",soldOutValues[which-4])}
+                    val count=products.count{scope==2 || (scope==1&&it.base.category==category) ||(scope==0&&it.base.id in selected)}
+                    AlertDialog.Builder(this).setTitle("Aplicar a $count productos").setMessage(labels[which]+". Las piezas únicas vendidas siempre se retiran.").setNegativeButton("Cancelar",null).setPositiveButton("Aplicar"){_,_->action("Guardando cambios…"){
+                        val result=workspace.bulk(shopId,selected,category,config,scope==2);products=result.products;render();status(if(result.offline)"Cambios guardados sin conexión. Se enviarán cuando vuelva la red." else "Cambio aplicado a $count productos.")
+                    }}.show()
+                }.show()
             }
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            if (item.photo.isNotEmpty()) {
-                try {
-                    val bytes = Base64.decode(item.photo, Base64.DEFAULT)
-                    val image = ImageView(this).apply {
-                        setImageBitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.size))
-                        scaleType = ImageView.ScaleType.CENTER_CROP
-                    }
-                    row.addView(image, LinearLayout.LayoutParams(dp(76), dp(76)))
-                } catch (_: Exception) {}
-            }
-            val details = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }
-            details.addView(TextView(this).apply { text = item.name; textSize = 18f; setTypeface(null, 1); setTextColor(0xFF183A34.toInt()) })
-            details.addView(TextView(this).apply { text = item.category + "  •  $" + item.price; textSize = 14f; setTextColor(0xFF52665F.toInt()) })
-            details.addView(TextView(this).apply {
-                text = if (item.published) "● Publicado" else "◷ Borrador"
-                textSize = 13f; setTextColor(if (item.published) 0xFF1A7B6E.toInt() else 0xFF98712A.toInt())
-            })
-            row.addView(details, LinearLayout.LayoutParams(0, -2, 1f))
-            card.addView(row)
-            val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.END }
-            val edit = Button(this).apply { text = "Editar"; isAllCaps = false; setOnClickListener { openEditor(item) } }
-            val visibility = Button(this).apply {
-                text = if (item.published) "Pasar a borrador" else "Publicar"; isAllCaps = false
-                setOnClickListener { item.published = !item.published; saveItems(); render() }
-            }
-            val delete = Button(this).apply {
-                text = "Eliminar"; isAllCaps = false; setOnClickListener {
-                    AlertDialog.Builder(this@ProductManagerActivity).setTitle("Eliminar producto")
-                        .setMessage("¿Quieres eliminar “${item.name}”?")
-                        .setNegativeButton("Cancelar", null).setPositiveButton("Eliminar") { _, _ ->
-                            items.removeAll { it.id == item.id }; saveItems(); render()
-                        }.show()
-                }
-            }
-            actions.addView(edit); actions.addView(visibility); actions.addView(delete)
-            card.addView(actions)
-            val outer = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(12))
-                addView(card, matchWrap())
-            }
-            list.addView(outer)
-        }
+            if(scope==1){val cats=products.map{it.base.category}.distinct().sorted();AlertDialog.Builder(this).setTitle("Elegir categoría").setItems(cats.toTypedArray()){_,i->choose(cats[i])}.show()}else choose(null)
+        }.show()
     }
-
-    private fun compress(bitmap: Bitmap): String {
-        val max = 1280
-        val scale = minOf(1f, max.toFloat() / maxOf(bitmap.width, bitmap.height))
-        val resized = if (scale < 1f) Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true) else bitmap
-        val out = ByteArrayOutputStream()
-        resized.compress(Bitmap.CompressFormat.JPEG, 78, out)
-        return Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
-    }
-    private fun saveItems() {
-        val array = JSONArray()
-        items.forEach { p -> array.put(JSONObject().put("id",p.id).put("name",p.name).put("category",p.category)
-            .put("description",p.description).put("price",p.price).put("type",p.type).put("sizes",p.sizes)
-            .put("colors",p.colors).put("photo",p.photo).put("published",p.published)) }
-        prefs.edit().putString("items", array.toString()).apply()
-    }
-    private fun loadItems() {
-        items.clear()
-        try {
-            val array = JSONArray(prefs.getString("items", "[]"))
-            for (i in 0 until array.length()) {
-                val p = array.getJSONObject(i)
-                items.add(Item(p.getString("id"),p.getString("name"),p.getString("category"),p.optString("description"),
-                    p.optLong("price"),p.optString("type"),p.optString("sizes"),p.optString("colors"),p.optString("photo"),p.optBoolean("published")))
-            }
-        } catch (_: Exception) { items.clear() }
-    }
-    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
-    private fun matchWrap() = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    private fun showDefaults(){action("Cargando preferencias…"){
+        val config=workspace.refreshConfiguration(shopId);val d=config.getJSONObject("default_products");defaults=true;screen(R.layout.screen_owner_defaults)
+        choices(R.id.pd_mode,modes,modeValues.indexOf(StockMode.valueOf(d.getString("stockMode"))))
+        choices(R.id.pd_soldout,soldOutLabels,soldOutValues.indexOf(d.getString("soldOut")))
+        findViewById<CheckBox>(R.id.pd_visible).isChecked=d.getBoolean("visible");findViewById<CheckBox>(R.id.pd_price).isChecked=d.getBoolean("showPrice")
+        findViewById<CheckBox>(R.id.pd_history).isChecked=config.optBoolean("history_enabled",true)
+        click(R.id.pd_save){action("Guardando preferencias…"){
+            val next=JSONObject().put("history_enabled",checked(R.id.pd_history)).put("default_products",JSONObject()
+                .put("stockMode",modeValues[option(R.id.pd_mode)].name).put("soldOut",soldOutValues[option(R.id.pd_soldout)]).put("visible",checked(R.id.pd_visible)).put("showPrice",checked(R.id.pd_price)))
+            workspace.saveConfiguration(shopId,next);showList();status("Preferencias guardadas. Se aplican a los próximos productos.")
+        }}
+        status("Configura cómo nacen los productos nuevos y si deseas guardar historial.")
+    }}
 }

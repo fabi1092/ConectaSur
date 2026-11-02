@@ -1,6 +1,7 @@
 package cl.surcode.conectasur
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.text.method.HideReturnsTransformationMethod
@@ -139,6 +140,9 @@ class StoreActivity : FragmentActivity() {
             if (biometric.enabled) { biometric.clear(); model.message("Huella desactivada. Tu sesión sigue abierta.") }
             else authenticate(true)
         }
+        findViewById<Button>(R.id.shop_products).setOnClickListener { discardIfNeeded { startActivity(Intent(this, ProductManagerActivity::class.java)) } }
+        findViewById<Button>(R.id.shop_register_sale).setOnClickListener { discardIfNeeded { startActivity(Intent(this, SalesActivity::class.java)) } }
+        findViewById<Button>(R.id.shop_history).setOnClickListener { discardIfNeeded { startActivity(Intent(this, SalesActivity::class.java).putExtra("history",true)) } }
         model.start(biometric.enabled)
         render(model.state.value)
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { model.state.collect { render(it) } } }

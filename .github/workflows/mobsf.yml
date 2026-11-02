@@ -1,0 +1,31 @@
+name: Analisis MobSF
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['security/mobsf-ci.py', '.github/workflows/mobsf.yml']
+permissions:
+  contents: read
+jobs:
+  mobsf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - run: chmod +x gradlew && ./gradlew -PconectaDemo=true assembleDebug --no-daemon
+        working-directory: android
+      - run: python3 security/mobsf-ci.py android/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: informe-mobsf
+          path: security/reports/mobsf/
+          if-no-files-found: error

@@ -10,7 +10,7 @@
         <TextView android:id="@+id/about_product" style="@style/ConectaSur.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/about_product" />
         <TextView android:id="@+id/product_description" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/product_description" />
         <TextView android:id="@+id/photo_note" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/photo_note" />
-        <Button android:id="@+id/view_store" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/view_store" />
+        <TextView android:id="@+id/product_attributes" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content"/><Spinner android:id="@+id/public_variant" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:contentDescription="Elegir variante del producto"/><Button android:id="@+id/view_store" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/view_store" />
         <Button android:id="@+id/share_product" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/share_product" />
     </LinearLayout>
 </ScrollView>

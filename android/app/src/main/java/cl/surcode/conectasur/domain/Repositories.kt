@@ -60,7 +60,7 @@ interface SalesRepository {
  */
 fun OwnerProduct.sell(variantId: String?, quantity: Int): OwnerProduct {
     require(quantity > 0) { "La cantidad debe ser mayor que cero" }
-    if (base.stockMode == StockMode.ON_REQUEST) return this
+    if (base.stockMode in listOf(StockMode.ON_REQUEST, StockMode.UNLIMITED)) return this
     if (variants.isNotEmpty()) {
         val id = requireNotNull(variantId) { "Elige una opcion del producto" }
         val chosen = variants.firstOrNull { it.id == id }

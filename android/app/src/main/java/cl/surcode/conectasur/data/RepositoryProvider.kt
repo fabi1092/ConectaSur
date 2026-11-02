@@ -19,6 +19,7 @@ object RepositoryProvider {
     }
     fun auth(): AuthRepository = SupabaseAuthRepository(client())
     fun shops(): ShopRepository = SupabaseShopRepository(client())
+    fun ownerWorkspace() = OwnerWorkspaceRepository(client())
     fun products(): ProductRepository = SupabaseProductRepository(client())
     fun sales(): SalesRepository = SupabaseSalesRepository(client())
 }

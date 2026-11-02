@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
     private val scrollPositions = mutableMapOf<String, Int>()
     private var query = ""
     private var shopFilter: String? = null
+    private val selectedVariants = mutableMapOf<String,String>()
     private lateinit var content: FrameLayout
     private lateinit var reader: SpeechReader
     private lateinit var page: View
@@ -224,7 +225,7 @@ class MainActivity : ComponentActivity() {
             item.findViewById<TextView>(R.id.product_name).text = product.name
             item.findViewById<TextView>(R.id.product_category).text = product.category
             item.findViewById<TextView>(R.id.product_price).apply { text = priceLabel(product.priceClp); contentDescription = spokenPrice(product.priceClp) }
-            item.findViewById<TextView>(R.id.product_availability).setText(if (product.onRequest) R.string.on_request else R.string.available)
+            item.findViewById<TextView>(R.id.product_availability).text = if(product.soldOut) "Agotado" else if(product.onRequest) getString(R.string.on_request) else getString(R.string.available)
             item.findViewById<Button>(R.id.open_product).apply {
                 contentDescription = "Ver producto: ${product.name}"
                 setOnClickListener { navigate(Destination("detail", product.id)) }
@@ -246,8 +247,25 @@ class MainActivity : ComponentActivity() {
         page.findViewById<TextView>(R.id.page_title).text = product.name
         page.findViewById<TextView>(R.id.product_category).text = product.category
         page.findViewById<TextView>(R.id.product_price).apply { text = priceLabel(product.priceClp); contentDescription = spokenPrice(product.priceClp) }
-        page.findViewById<TextView>(R.id.product_availability).setText(if (product.onRequest) R.string.on_request else R.string.available)
+        page.findViewById<TextView>(R.id.product_availability).text = if(product.soldOut) "Agotado" else if(product.onRequest) getString(R.string.on_request) else getString(R.string.available)
         page.findViewById<TextView>(R.id.product_description).text = product.description
+        page.findViewById<TextView>(R.id.product_attributes).text=product.attributes.entries.joinToString("\n"){"${it.key}: ${it.value}"}
+        val variants=page.findViewById<Spinner>(R.id.public_variant)
+        variants.isVisible=product.variants.isNotEmpty()
+        if(product.variants.isNotEmpty()) {
+            variants.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,product.variants.map{it.label+if(!it.available && !product.onRequest)" · Agotado" else ""})
+            variants.setSelection(product.variants.indexOfFirst{it.id==selectedVariants[product.id]}.coerceAtLeast(0))
+            variants.onItemSelectedListener=object:AdapterView.OnItemSelectedListener {
+                override fun onNothingSelected(parent:AdapterView<*>?){}
+                override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long){
+                    val v=product.variants[position];selectedVariants[product.id]=v.id
+                    page.findViewById<TextView>(R.id.product_price).apply{text=priceLabel(v.priceClp);contentDescription=spokenPrice(v.priceClp)}
+                    page.findViewById<TextView>(R.id.product_availability).text=if(product.onRequest)"A pedido" else if(product.soldOut||!v.available)"Agotado" else "Disponible"
+                    PublicImageLoader.load(lifecycleScope,page.findViewById(R.id.product_photo),v.photo?:product.photo,BuildConfig.SUPABASE_URL)
+                }
+            }
+        }
+
         page.findViewById<Button>(R.id.view_store).setOnClickListener { navigate(Destination("public_store", product.shopId)) }
         page.findViewById<Button>(R.id.share_product).setOnClickListener {
             val message = "${product.name}\n${spokenPrice(product.priceClp)}\n${product.description}\nDemostración de ConectaSur: datos de ejemplo."

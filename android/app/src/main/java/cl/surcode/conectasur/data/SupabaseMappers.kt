@@ -13,13 +13,13 @@ internal fun JSONObject.toPublicProduct() = PublicProduct(
     getString("id"), getString("shop_id"), getString("name"), optString("description"), optString("category"),
     nullableLong("price_clp"), optBoolean("on_request"), optString("photo"), optString("product_type"), attributes(),
     optJSONArray("variants")?.let { array -> (0 until array.length()).map { i -> array.getJSONObject(i).let {
-        PublicVariant(it.getString("id"), it.getString("label"), it.nullableLong("priceClp"), it.nullableString("photo"))
-    } } }.orEmpty()
+        PublicVariant(it.getString("id"), it.getString("label"), it.nullableLong("priceClp"), it.nullableString("photo"), it.optBoolean("available", true))
+    } } }.orEmpty(), optBoolean("sold_out")
 )
 internal fun JSONObject.toOwnerProduct(): OwnerProduct {
     val base = CatalogProduct(getString("id"), getString("shop_id"), getString("name"), optString("description"),
         optString("category"), getLong("price_clp"), getBoolean("show_price"), StockMode.valueOf(getString("stock_mode")),
-        if (isNull("quantity")) null else getInt("quantity"), getBoolean("visible"), optString("photo"), optString("product_type"), attributes())
+        if (isNull("quantity")) null else getInt("quantity"), getBoolean("visible"), optString("photo"), optString("product_type"), attributes(), optString("sold_out", "HIDE"))
     val options = getJSONArray("variants")
     return OwnerProduct(base, (0 until options.length()).map { i -> options.getJSONObject(i).let {
         Variant(it.getString("id"), it.getString("label"), it.getInt("quantity"), it.nullableLong("priceClp"), it.nullableString("photo"))
@@ -30,6 +30,7 @@ internal fun OwnerProduct.toSupabase(): JSONObject = JSONObject().apply {
     put("category", base.category); put("product_type", base.productType); put("attributes", JSONObject(base.attributes))
     put("price_clp", base.priceClp); put("show_price", base.showPrice); put("stock_mode", base.stockMode.name)
     put("quantity", base.quantity ?: JSONObject.NULL); put("visible", base.visible); put("photo", base.photo)
+    put("sold_out", base.soldOut)
     put("variants", JSONArray().apply { variants.forEach { v -> put(JSONObject().put("id", v.id).put("label", v.label).put("quantity", v.quantity)
         .put("priceClp", v.priceClp ?: JSONObject.NULL).put("photo", v.photo ?: JSONObject.NULL)) } })
 }
