@@ -86,20 +86,20 @@ class Entrega5Test {
   }finally{scenario.close()}
  }
  @Test fun salesScreenSellsUniqueAndHistoryFilterShowsReceipt():Unit=runBlocking{
-  val id="e5ui_"+UUID.randomUUID();created.add(id)
-  val item=OwnerProduct(CatalogProduct(id,shop,"Pieza UI E5", "Prueba UI", "Artesanías",12000,true,StockMode.UNIQUE,1,true,""))
+  val id="e5ui_"+UUID.randomUUID();created.add(id);val productName="Pieza UI E5 "+id.takeLast(6)
+  val item=OwnerProduct(CatalogProduct(id,shop,productName, "Prueba UI", "Artesanías",12000,true,StockMode.UNIQUE,1,true,""))
   repo.save(shop,item)
   val scenario=ActivityScenario.launch(SalesActivity::class.java)
   try{
    wait(scenario){it.findViewById<View>(R.id.sv_register)?.isShown==true}
-   onView(withId(R.id.sv_product)).perform(scrollTo(),click());onView(withText("Pieza UI E5")).perform(click())
+   onView(withId(R.id.sv_product)).perform(scrollTo(),click());onView(withText(productName)).perform(click())
    edit(R.id.sv_quantity,"1");edit(R.id.sv_place,"Feria prueba E5")
    snapshot(scenario,"venta");onView(withId(R.id.sv_register)).perform(scrollTo(),click());onView(withText("Confirmar")).perform(click())
    wait(scenario){it.findViewById<TextView>(R.id.owner_status).text.startsWith("Venta registrada")}
    Assert.assertEquals(0,repo.sync(shop).products.first{it.base.id==id}.base.quantity)
    onView(withId(R.id.sv_history)).perform(scrollTo(),click())
    wait(scenario){it.findViewById<View>(R.id.sh_filter)?.isShown==true}
-   edit(R.id.sh_product,"Pieza UI E5");edit(R.id.sh_place,"Feria prueba E5");onView(withId(R.id.sh_filter)).perform(scrollTo(),click())
+   edit(R.id.sh_product,productName);edit(R.id.sh_place,"Feria prueba E5");onView(withId(R.id.sh_filter)).perform(scrollTo(),click())
    onView(withId(R.id.sh_summary)).check(matches(withText("1 ventas · Total: $12.000 CLP")))
   }finally{scenario.close()}
  }

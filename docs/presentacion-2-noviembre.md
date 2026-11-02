@@ -1,3 +1,5 @@
+> Estado actualizado: esta nota refleja la integración inicial. El cierre posterior con productos, ventas y publicación está en [Entrega 5](entrega-5/informe.md).
+
 # Integración para la presentación del 2 de noviembre de 2026
 
 ## Avances reunidos

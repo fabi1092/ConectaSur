@@ -1,3 +1,5 @@
+> Cierre actualizado del 2 de noviembre: [seguridad de Entrega 5](../entrega-5/seguridad.md). Este documento conserva la evidencia de la migración del 1 de noviembre.
+
 # Hito 3: seguridad con Supabase
 
 Fecha de cierre: 1 de noviembre de 2026. Responsable: Benjamín Tampier.

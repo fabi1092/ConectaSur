@@ -33,6 +33,7 @@ class SalesActivity : OwnerActivity() {
             val p=products.getOrNull(option(R.id.sv_product));choices(R.id.sv_variant,p?.variants?.map{it.label}.orEmpty().ifEmpty{listOf("Sin variantes")})
             pending?.let{d->findViewById<Spinner>(R.id.sv_variant).setSelection(p?.variants?.indexOfFirst{it.id==d.optString("variantId")}?.coerceAtLeast(0)?:0)}
             findViewById<View>(R.id.sv_variant).isVisible=p?.variants?.isNotEmpty()==true
+            findViewById<View>(R.id.sv_variant_label).isVisible=p?.variants?.isNotEmpty()==true
             updatePrice()
         }
         findViewById<Spinner>(R.id.sv_product).onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){};override fun onItemSelected(p:AdapterView<*>?,v:View?,i:Int,id:Long){variants()}}

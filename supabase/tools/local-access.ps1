@@ -22,7 +22,7 @@ if($Action -eq "seed"){$env:CONECTASUR_PRIVATE_OUTPUT=$pendingPath}
 Push-Location $repo
 try{
     if($Action -eq "test"){
-        & $node --test --test-concurrency=1 supabase/test/security.test.js supabase/test/web.test.js
+        & $node --test --test-concurrency=1 supabase/test/entrega5.test.js supabase/test/security.test.js supabase/test/web.test.js
     }else{
         & $node supabase/tools/admin.mjs $Action
     }

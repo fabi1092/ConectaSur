@@ -8,7 +8,7 @@ Desde el 1 de noviembre se utiliza la instancia del grupo entregada por el profe
 
 Android mantiene Kotlin y Views con XML editables en Design/Palette, navegación simple, ajustes de letras/botones, contraste, lectura opcional y precios en pesos chilenos. El catálogo y la ficha pública consultan Supabase; las fotografías de ejemplo están alojadas en Storage. Los nombres y precios de esos ejemplos son ficticios.
 
-El acceso Android, cierre de sesión, huella opcional y edición de datos/logo de la tienda se implementan en StoreActivity. Ver [entrega de Fabián](docs/fabian/acceso-tienda.md) para configuración y verificación. El panel web administrativo también está integrado. Las pantallas Android de edición de productos y ventas siguen pendientes; sus repositorios y la operación de venta están conectados al backend.
+El acceso Android, cierre de sesión, huella opcional y edición de datos/logo de la tienda se implementan en StoreActivity. Ver [entrega de Fabián](docs/fabian/acceso-tienda.md) para configuración y verificación. El panel web administrativo también está integrado. Los productos, el flujo guiado con borradores recuperables, las variantes, la disponibilidad, las ventas y el historial también están integrados. Ver la [Entrega 5](docs/entrega-5/informe.md).
 
 ## Configuración local
 
@@ -71,3 +71,24 @@ Los avances publicados por el equipo se reunieron en main. Ver [estado de integr
 Para abrir el panel: usar Node 24.12 o superior; en web ejecutar npm ci y npm run dev. Abrir la dirección local que indique Vite. La configuración privada de cliente debe estar en web/supabase-config.js. Para generar la versión estática: npm run build; para probarla: npm run preview.
 
 En Android, Mi tienda permite entrar con una cuenta de emprendedora, editar la ficha, cambiar el logo y cerrar sesión. Las cuentas administradoras utilizan el panel web.
+
+## Entrega 5: catálogo, productos y ventas
+
+Panel publicado: https://conectasur-surcode-panel.benjamintampier.chatgpt.site
+
+La URL es pública por autorización de Benjamín y exige el inicio de sesión de administrador de ConectaSur para consultar o modificar datos administrativos. No incluye contraseñas de demostración.
+
+En Android: Inicio → Mi tienda → ingresar con una cuenta de emprendedora → Mis productos / Registrar una venta / Historial de ventas. Las preferencias de productos e historial se abren desde Mis productos. La app abre el catálogo público sin preguntar un rol ni pedir huella al inicio.
+
+- [Informe breve, alcance y reparto](docs/entrega-5/informe.md).
+- [Requisitos y criterios de aceptación](docs/entrega-5/requisitos.md).
+- [Informe de seguridad y hallazgos](docs/entrega-5/seguridad.md).
+- [Cambios respecto del prototipo](docs/entrega-5/cambios-prototipo.md).
+
+Migraciones: npm run migrate desde supabase con las variables privadas del desarrollador. El migrador comprueba hashes y aplica solo las pendientes; no se edita una migración aplicada.
+
+Pruebas SQL aisladas: npm test en supabase con TEST_DATABASE_URL de una base local vacía conectasur_test. Pruebas de servicios reales: npm run test:live en supabase con CONECTASUR_PRIVATE configurado en memoria. En el computador de Benjamín, supabase/tools/local-access.ps1 -Action test carga la configuración cifrada local.
+
+Pruebas Android: ./gradlew assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug. Entrega5Test, StoreAccessTest y LaunchTest se ejecutan con el runner AndroidJUnitRunner en un emulador con supabaseLive=true y una cuenta ficticia por argumentos testEmail/testPassword. Para la navegación local: ./gradlew -PconectaDemo=true -Pandroid.testInstrumentationRunnerArguments.class=cl.surcode.conectasur.LaunchTest,cl.surcode.conectasur.NavigationTest connectedDebugAndroidTest.
+
+El workflow Analisis MobSF analiza el APK en un contenedor del runner y guarda el informe como artefacto. No se sube el APK a un analizador público ni se incluyen credenciales de Supabase en el APK de CI.

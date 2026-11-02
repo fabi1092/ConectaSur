@@ -2,12 +2,16 @@
   "name": "conectasur-supabase",
   "private": true,
   "type": "module",
-  "engines": {"node": ">=24.12.0"},
+  "engines": {
+    "node": ">=24.12.0"
+  },
   "scripts": {
     "migrate": "node tools/admin.mjs migrate",
     "seed": "node tools/admin.mjs seed",
     "test": "node --test --test-concurrency=1 test/sql.test.js",
-    "test:live": "node --test --test-concurrency=1 test/security.test.js test/web.test.js"
+    "test:live": "node --test --test-concurrency=1 test/entrega5.test.js test/security.test.js test/web.test.js"
   },
-  "devDependencies": {"pg": "8.16.3"}
+  "devDependencies": {
+    "pg": "8.16.3"
+  }
 }

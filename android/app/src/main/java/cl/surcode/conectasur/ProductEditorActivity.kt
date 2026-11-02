@@ -130,6 +130,7 @@ class ProductEditorActivity : OwnerActivity() {
     private fun availability(){
         val mode=StockMode.valueOf(draft.getString("mode"));val tracked=mode in listOf(StockMode.UNITS,StockMode.UNIQUE)
         findViewById<View>(R.id.pe_quantity).isVisible=tracked && draft.getJSONArray("variants").length()==0
+        findViewById<View>(R.id.pe_quantity_label).isVisible=tracked && draft.getJSONArray("variants").length()==0
         findViewById<View>(R.id.pe_soldout).isVisible=mode==StockMode.UNITS
         findViewById<View>(R.id.pe_soldout_label).isVisible=mode==StockMode.UNITS
     }
@@ -138,7 +139,7 @@ class ProductEditorActivity : OwnerActivity() {
         findViewById<TextView>(R.id.pe_step).text="Paso ${step+1} de 4: "+listOf("Foto","Datos del producto","Variantes","Disponibilidad y publicación")[step]
         findViewById<View>(R.id.pe_previous).isVisible=step>0;findViewById<View>(R.id.pe_next).isVisible=step<3;findViewById<View>(R.id.pe_save).isVisible=step==3
         findViewById<TextView>(R.id.pe_review).text="${draft.optString("name")}\nPrecio: ${draft.optString("price")} pesos chilenos\n${draft.getJSONArray("variants").length()} variantes.\nSolo se publicará cuando confirmes Guardar producto."
-        (findViewById<View>(R.id.pe_step).parent?.parent as? ScrollView)?.smoothScrollTo(0,0)
+        (findViewById<View>(R.id.pe_step).parent?.parent as? ScrollView)?.scrollTo(0,0)
         availability()
     }
     private fun takePhoto(){

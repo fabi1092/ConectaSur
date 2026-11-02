@@ -22,3 +22,14 @@ El informe vigente es hito-3-seguridad.md. La integración de las pantallas fina
 ## Forma de entrega
 
 Commits con mensajes simples y avances por hitos. Benjamín solicitó publicarlos en main. La protección de main y los PR revisados que exige la pauta son un criterio de colaboración que el equipo todavía debe comprobar.
+
+## Cierre de Entrega 5 — 2 de noviembre
+
+- e76b7bf: Catalogo y stock (incluye la unión del espacio inicial de Dan).
+- 177c3be: Productos y ventas, formularios XML conectados, cola cifrada, pruebas UI y MobSF.
+- 6c3a3bb: Borradores y lectura accesible, agotados a pedido y versión 0.5.0-entrega5.
+- Cierre: informe, matriz, hallazgos, capturas y verificación; etiqueta entrega-5 sobre el commit presentado.
+
+Panel publicado: https://conectasur-surcode-panel.benjamintampier.chatgpt.site
+
+Ver docs/entrega-5 para el recorrido y los límites. La huella/TalkBack/cámara requieren validación física; el APK entregado es de desarrollo.

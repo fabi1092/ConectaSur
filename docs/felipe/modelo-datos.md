@@ -69,3 +69,13 @@ La migración versionada está en supabase/migrations/001_conectasur.sql y su re
 Las herramientas administrativas se ejecutan solo en el equipo de desarrollo con las credenciales privadas de Studio; los clientes usan anon + JWT propio. No se solicita ni se utiliza service_role.
 
 El bootstrap inicial creó cuatro cuentas ficticias y dos tiendas. Los UUID son nuevos; las contraseñas de Firebase no se copiaron. La instancia anterior permanece conservada.
+
+## Ampliación de Entrega 5
+
+Migraciones 002–004: products.sold_out toma HIDE, SHOW u ORDER; stock_mode admite UNLIMITED para productos regulares sin conteo. ON_REQUEST identifica productos a pedido y UNIQUE sigue limitado a una unidad. La vista public_products añade sold_out y un indicador available por variante, sin cantidades privadas. Una pieza única agotada siempre se retira. Un producto regular agotado con ORDER se presenta y vende a pedido sin generar stock negativo.
+
+shops.default_products contiene stockMode, soldOut, visible y showPrice; solo se consulta mediante la tabla privada protegida por RLS. history_enabled controla si el RPC conserva el detalle de ventas futuras. set_product_availability valida las claves y aplica selección, categoría o catálogo en una transacción.
+
+register_sale recibe p_quantity numeric y exige un entero positivo dentro del rango admitido, para evitar conversiones implícitas. Mantiene bloqueo de fila, precio de servidor e idempotencia.
+
+Android conserva borradores completos, fotos por subir, ediciones y eliminaciones pendientes en OwnerWorkspaceRepository con AES-GCM, separados por UID y tienda. Las fotos se suben al recuperar red antes de enviar las filas. Las ventas exigen conexión y conservan la solicitud de reintento hasta recibir confirmación.

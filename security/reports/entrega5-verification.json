@@ -1,0 +1,153 @@
+{
+  "checkedAt": "2026-11-02T16:46:18.587512+00:00",
+  "delivery": "entrega-5",
+  "backend": {
+    "passed": 59,
+    "failed": 0
+  },
+  "androidInstrumented": {
+    "passed": 8,
+    "api": 36
+  },
+  "navigationRegression": {
+    "passed": 6,
+    "mode": "Demo"
+  },
+  "unitTests": {
+    "passed": 30,
+    "failed": 0
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 44
+  },
+  "osv": {
+    "dependencies": 50,
+    "affected": 0
+  },
+  "privateCredentialScan": {
+    "findings": 0,
+    "scope": "Tracked files, entrega-5 documents and delivery APK; known local Studio/demo passwords only"
+  },
+  "web": {
+    "url": "https://conectasur-surcode-panel.benjamintampier.chatgpt.site",
+    "access": "public URL; Supabase admin login required",
+    "browser": "Chromium",
+    "adminSectionsTested": 4,
+    "mobileLogin": true
+  },
+  "apk": {
+    "version": "0.5.0-entrega5",
+    "versionCode": 4,
+    "sha256": "b7f57f37ff9370da851929d613831b1cd0e77577b408e087783e3034f52237ea",
+    "type": "debug, development only"
+  },
+  "mobsf": {
+    "version": "4.6.5",
+    "workflowRun": 41482716645,
+    "evidence": {
+      "commit": "6c3a3bb4b81f126eaa6ebd5bad969bf0384c5884",
+      "image": [
+        "opensecurity/mobile-security-framework-mobsf@sha256:e5d65aec0385810d31ce95d06396b06ed74712d01bb2f0d12bc3deabaf28ccb9"
+      ],
+      "apk_sha256": "8d7920ebb5090609b9658a8650a14bcb02ce470833eae5563f100f99527aed66",
+      "package": "cl.surcode.conectasur",
+      "version": "0.5.0-entrega5",
+      "scope": "Analisis estatico del APK debug sin credenciales locales; no se ejecuto analisis dinamico."
+    },
+    "scope": "Static analysis of CI Demo APK; report source commit recorded; later UI labels/scroll/style changes do not change authorization"
+  },
+  "sourceFilesSha256Lf": {
+    "android/app/src/androidTest/java/cl/surcode/conectasur/Entrega5Test.kt": "e74c0d4e49a8bf9ba0f8155fa262ef86c7346681ccbca79969bd1562d0a75b41",
+    "android/app/src/androidTest/java/cl/surcode/conectasur/LaunchTest.kt": "6a0f821d818e5e26a17003f60fe0336b383ec9917d3cfba3c1248cab0bcc3f5e",
+    "android/app/src/androidTest/java/cl/surcode/conectasur/NavigationTest.kt": "2ca5e4b1ad15587ce54bce2c9f6b4f1d59aecff8081254e6a94d8f1d5885a4fc",
+    "android/app/src/androidTest/java/cl/surcode/conectasur/StoreAccessTest.kt": "2185839488eb54b169550761d35db28e050826ebeb296104c5e156059d67ea0e",
+    "android/app/src/androidTest/java/cl/surcode/conectasur/SupabaseIntegrationTest.kt": "b7ad750e7a3bcd0d12b6c34c790176a54506b0a1ed699a85810837148291d72d",
+    "android/app/src/main/AndroidManifest.xml": "a4ea241c23f5044061fa71afb55b662e69c62024add3216f8acd0cd073ac8bbe",
+    "android/app/src/main/java/cl/surcode/conectasur/ConectaSurLogoView.kt": "1d1718a10af9dc6bab1380f1bc04093bd55af6a743704dca9b36249d05bacac1",
+    "android/app/src/main/java/cl/surcode/conectasur/MainActivity.kt": "23b7a4e65220e0757c8e40f5947a7f55290c40806e3651a1ec3d98dc67d5cd20",
+    "android/app/src/main/java/cl/surcode/conectasur/OwnerActivity.kt": "ac1ef558a3924468480a4423696f8768df367c97c183b5e64bd8e937d36b4568",
+    "android/app/src/main/java/cl/surcode/conectasur/ProductEditorActivity.kt": "96512ff2115f06dab0434f70b3b34a4df00185eead2d3126cc5bee8800432bbc",
+    "android/app/src/main/java/cl/surcode/conectasur/ProductManagerActivity.kt": "992990f8c15528f04695e7d7ecdea6fbbc924086057799013e1c9f4a3a0b5e7c",
+    "android/app/src/main/java/cl/surcode/conectasur/SalesActivity.kt": "0c9facb422b8ea05029c1fc83148824c326922910816c2c4afcb63fdd168f684",
+    "android/app/src/main/java/cl/surcode/conectasur/StoreActivity.kt": "8c97ec5123f7c5bfd7ab971bc89c1db7eb82d211ff0e5e7b3d0e0f32e4521b75",
+    "android/app/src/main/java/cl/surcode/conectasur/data/AccessibilityPreferences.kt": "129009eb4f657bf102b2292875e2f8f446bab5e84b3aa2d237dbd6e56b5f32b1",
+    "android/app/src/main/java/cl/surcode/conectasur/data/BiometricStoreLock.kt": "822224059468412537ff841a94638322903dc330ffa66197d590ff0af3e8542e",
+    "android/app/src/main/java/cl/surcode/conectasur/data/DemoCatalogRepository.kt": "d467de7852483dfabe01fc2bd83f231a53c1a1d2f8f3f03d70aa08bad865ffc8",
+    "android/app/src/main/java/cl/surcode/conectasur/data/OwnerWorkspaceRepository.kt": "aff5a9e03ac6d5aae39205f869970c86d7da7ed2174095e73a163b47d18d7291",
+    "android/app/src/main/java/cl/surcode/conectasur/data/RepositoryProvider.kt": "4b5b71a5739f5169567ed90799d9846a2c3fc175331b9c375a6c06c3b4975392",
+    "android/app/src/main/java/cl/surcode/conectasur/data/SecureBackendStore.kt": "6c5b45b4e3011d48b64e57b4efb9c999a1ddc8603242730e91b98ce10e1990cc",
+    "android/app/src/main/java/cl/surcode/conectasur/data/SupabaseClient.kt": "8d7c1a71df26ebcfa1666eaa88fb715d21a088d31ba9f00630c10481b33795c6",
+    "android/app/src/main/java/cl/surcode/conectasur/data/SupabaseMappers.kt": "25f6503e47ec05b39d574bbd3f9e82ecd3af21c6b3a884ce201873f625ab88d5",
+    "android/app/src/main/java/cl/surcode/conectasur/data/SupabaseRepositories.kt": "d9613da2035610759085624d71179cdff75e10c353a51d20f0f8132a37ea83de",
+    "android/app/src/main/java/cl/surcode/conectasur/domain/Catalog.kt": "144c796b30e53a87174cf0f170df7ae0a1c8f3aa7f91f001ae996b5cb674abd2",
+    "android/app/src/main/java/cl/surcode/conectasur/domain/Repositories.kt": "2cfdbbc44be18c9548e1273f531daf6dae8a57d9653414311c7f052f200a3861",
+    "android/app/src/main/java/cl/surcode/conectasur/ui/AccessibilityStyler.kt": "5f749cc9db239d59b9e446d8a9aaf370be3037f5cfb8e22072fc8443c19f8f18",
+    "android/app/src/main/java/cl/surcode/conectasur/ui/LogoEncoder.kt": "7917b521571f0b8aff14e30d046699ef71164de87b264eba4d0b84e554835d54",
+    "android/app/src/main/java/cl/surcode/conectasur/ui/ProductPhotoView.kt": "f883d6484ed1dbdba3cca420fb790650aa7202faec465f1c2267bd31b6ada345",
+    "android/app/src/main/java/cl/surcode/conectasur/ui/PublicImageLoader.kt": "9d96e06dcf256b6f3ccc2c69b5a6e5f878e9fdf5b3f11a9ef2fe3b24f03784c7",
+    "android/app/src/main/java/cl/surcode/conectasur/ui/SpeechReader.kt": "28c1915a3a2ee049550d852818dc812c4396d9bec2568133ed9448bcb50514de",
+    "android/app/src/main/java/cl/surcode/conectasur/ui/StoreViewModel.kt": "aab3639b0656933ff03491a31a712cddb183a54673d68ac19e589eea084353ed",
+    "android/app/src/main/res/drawable-nodpi/bandejas.jpg": "742549f8418753eb16e616b93f0799ad46ab46c7df81efbb831a2d2adf1ab6ff",
+    "android/app/src/main/res/drawable-nodpi/conectasur_brand.jpg": "e1c5897a3b1e3a6fdd6942570d4a42fa76e44c73a4ea4081593801fea8235f88",
+    "android/app/src/main/res/drawable-nodpi/flores.jpg": "95fb77a484011daf7ad235565b7aa1f6bd567da2fe2003e9dce95340b6032226",
+    "android/app/src/main/res/drawable/button_outline.xml": "d2d593b5ec129d870a8dd29ef7f44b52585ef1f796041cc7f21c4dbf0bab1fe3",
+    "android/app/src/main/res/drawable/button_primary.xml": "013d907e38086e82b31991b7a69002dd041d98ec85fd60b8d4f37f31212df5dc",
+    "android/app/src/main/res/drawable/card_surface.xml": "42d9c4de88568485f3b7fd45be7611041b8752c0d8ccf280f6559d2a80e6d69d",
+    "android/app/src/main/res/drawable/ic_back.xml": "f995bd61e9cccf7d4a53fc866dd26b66520778268aa3daa171a947df9cd9b653",
+    "android/app/src/main/res/drawable/ic_help.xml": "576339c197704dd17b7805bca964d04e2488817f2db70c414887396ee9dc1241",
+    "android/app/src/main/res/drawable/ic_home.xml": "9592dfa9b2f65f3d207d547a1ae9af668ea2735c13b8306928bf9bb43b810d7c",
+    "android/app/src/main/res/drawable/ic_launcher.xml": "c7b4aff6cc9cc903381be206c055c44b8e95d3f4d4f885b37fb2897a9a20dbbe",
+    "android/app/src/main/res/drawable/ic_products.xml": "be974d593234b6ac654fccd8e388859d03c858d1967436d13bb3ba9ed15aa169",
+    "android/app/src/main/res/drawable/ic_shop_logo.xml": "e0cddc6c272720ce10b41bff76c39fd09b8c4c43c10c439a1fda03072c662eb3",
+    "android/app/src/main/res/drawable/ic_speaker.xml": "03225b7bb0d898f190730b0a9b9091a47fe4a282d1245bf96ebc6e6aa7194156",
+    "android/app/src/main/res/drawable/ic_store.xml": "e3a5dbe6c8b457bf40187988afbdca739477e5c8e2f4897daee454ac86422469",
+    "android/app/src/main/res/drawable/ic_text.xml": "370db9c83546b5d20747721a68eebf92a3f13e2549957c968213d8336effae43",
+    "android/app/src/main/res/layout/activity_main.xml": "7772514bbb5197dabf8b4793e9e0c076f403b69823990b6d2a4d5983acfac4fc",
+    "android/app/src/main/res/layout/activity_owner.xml": "15212a91e99e9fd255ddb2ce00adcb697a2f0b7ee2df1bb8e0fa469add96a514",
+    "android/app/src/main/res/layout/activity_store.xml": "ec191472125511897c8badd284aec21fa4c7dbf108bbd100fa4ec000eea84c7a",
+    "android/app/src/main/res/layout/dialog_menu.xml": "080aaf2b832d6537b046b8b4cba213e341710a9a70b9056d6a72cc06119e706c",
+    "android/app/src/main/res/layout/item_owner_product.xml": "22af35472594acbb44c2f2c0f37bb96cb5880fddcc90ef60d1ff72f763506359",
+    "android/app/src/main/res/layout/item_product.xml": "c82ea192d093cdc296c0a021f3acc214a77084a3dc4559993cc7823bd32032ee",
+    "android/app/src/main/res/layout/item_variant_editor.xml": "e56975f5bc1e50d3883320c79a152a21e56aeda9ac82a7ba92394dd4d4cc1545",
+    "android/app/src/main/res/layout/screen_catalog.xml": "9a0f582d41fe2ca3326a35f10a1f172c9fab0656265b506f1cb309abf5c12105",
+    "android/app/src/main/res/layout/screen_detail.xml": "fdc1e8c448f028700efde1c5e99bc25f3255cd19d8ba05cbd6c8528c32dcb1cd",
+    "android/app/src/main/res/layout/screen_help.xml": "38cb5ad9cbe9218cfeee51d57224117eb149370bab198baac55352148b425d4d",
+    "android/app/src/main/res/layout/screen_home.xml": "f57e5fdf9e5fe9dcfa1219fab90c31459f674d341453d03559ce793b15688e39",
+    "android/app/src/main/res/layout/screen_owner_defaults.xml": "2295eb7486f9c7ddeb64b0fe058378e8a1b1ce2ee155b702ce20a006e6e8cc90",
+    "android/app/src/main/res/layout/screen_owner_history.xml": "09285fe80d0c0e26f98de673c9cbe25e9481a5d1d31ad727d2af99c3089f9c12",
+    "android/app/src/main/res/layout/screen_owner_products.xml": "069bc4c90e959124ad38b7c15a2ea9db8c779eefc69f569b1ad5b22d1167108d",
+    "android/app/src/main/res/layout/screen_owner_sales.xml": "1c3397482b43aec61d9964bb06ce806b8c8e31b5e5531a49bce9781153832d62",
+    "android/app/src/main/res/layout/screen_product_editor.xml": "99d5a4d7c0556a77d0b35be8d976dfc678bb6efe25bd7fb27d0fe3ae4c1b0b3f",
+    "android/app/src/main/res/layout/screen_sales.xml": "441a1fd26c690095fd6c2e3bf9538c4570a5f1a7e5332b3e9ea3ac35116d1924",
+    "android/app/src/main/res/layout/screen_settings.xml": "dc005b59f79937d80df7c37873d653eb704d14cc9b4c10cba1d5d03cc92f3c86",
+    "android/app/src/main/res/layout/screen_store.xml": "71951d6502fb54b06f5606859ede4bed296307837dbd74169ef107059093d450",
+    "android/app/src/main/res/values/attrs.xml": "ef8813bc7b34c42f1a4175a0159a2097ae867f0371a324374f275c0dbb901072",
+    "android/app/src/main/res/values/colors.xml": "d69d22ec2b29d180db8e50f5ba4fb630e4c84975fc91632a10b73dc33f2b14dd",
+    "android/app/src/main/res/values/entrega5_strings.xml": "d949ba5a03327c67eb560307b8652d42ed8d89938c5f13205d3ef31273ed2878",
+    "android/app/src/main/res/values/ids.xml": "d2f1484ff35c9a4cb3fd042d30f9ec11af223924b0118d0e8d8b785b0ea51dcc",
+    "android/app/src/main/res/values/store_strings.xml": "2fd8d8308b9b896425f27e808a158099e4cc5ea7154e3985ccd8cdbc32c7eaa6",
+    "android/app/src/main/res/values/strings.xml": "a0be98f5aeb34083e84bfc0cb8b0156959b2cd9d28ed6e70fcb0b9e3a10abf29",
+    "android/app/src/main/res/values/styles.xml": "081da7cb584a362558c7f4e72600decec1fec9b926debfc93d8a1bcf7d8fa0a5",
+    "android/app/src/main/res/xml/backup_rules.xml": "a0b11c5edab27d4b8407657d44c39eddf1e3e2f8532e3e5143bca48b9b9f5940",
+    "android/app/src/main/res/xml/data_extraction_rules.xml": "ceba2701d2391f27b3188d8639801d327622384add602a670556b3c0b7a21319",
+    "android/app/src/main/res/xml/product_photo_paths.xml": "9a640cc11ee81b44ebe478dc6243222a8a8dcde44b0c9c0e764748157f74c888",
+    "android/app/src/test/java/cl/surcode/conectasur/domain/CatalogTest.kt": "ce9ce15e489a703d522d2fe2df9fb94ace9d5e4d55f92cce601aeefc7efeb7fc",
+    "android/app/src/test/java/cl/surcode/conectasur/domain/Entrega5RulesTest.kt": "3d7379e7f91b71a04cbce8f5073473d91d1b8ebed7e4951ca969b79137755d67",
+    "android/app/src/test/java/cl/surcode/conectasur/domain/SalesTest.kt": "d9a24125e8cf69eb309c894d3161e852438e044dff330a70ffa3ddcf86b4f766",
+    "android/app/src/test/java/cl/surcode/conectasur/ui/StoreViewModelTest.kt": "2d53ecc58739e3e647a91347b6193d1dc8f885ba8b2715fcaccfd88ace6c31cf",
+    "supabase/migrations/001_conectasur.sql": "3d33c889cc66707276b2e032343ca194bfc8b1ac29a7b7192241fd1969de7123",
+    "supabase/migrations/002_catalogo_ventas.sql": "76e69a9c1423e36cc02d7e187320454d072084736e1b9012971a63264bb019cd",
+    "supabase/migrations/003_cantidad_entera.sql": "7ed851b34401ddba07a2bc4041bf586524795dcb73e6a62a732b9d568542f8cb",
+    "supabase/migrations/004_venta_a_pedido.sql": "db83611d931c7950f27a33cc47d49c0092512b4d0cb444bd5c2cdd0641fd6789",
+    "web/src/main.js": "92691f08ee8930936452649f5a88c6c11ffdd7aaa8015cf76eb62e971f2064da",
+    "web/src/style.css": "265048e7c9908f2c99cd4900dad7f4ef53650c08e3186da63780e66eb90559b0"
+  },
+  "limits": [
+    "Physical TalkBack, fingerprint, dictation and camera validation pending",
+    "MobSF dynamic analysis not run",
+    "Client integrity equivalent to App Check remains pending for final delivery",
+    "Minimum API26 provisional",
+    "Independent PR reviews not claimed"
+  ]
+}

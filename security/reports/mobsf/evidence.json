@@ -1,0 +1,10 @@
+{
+  "commit": "6c3a3bb4b81f126eaa6ebd5bad969bf0384c5884",
+  "image": [
+    "opensecurity/mobile-security-framework-mobsf@sha256:e5d65aec0385810d31ce95d06396b06ed74712d01bb2f0d12bc3deabaf28ccb9"
+  ],
+  "apk_sha256": "8d7920ebb5090609b9658a8650a14bcb02ce470833eae5563f100f99527aed66",
+  "package": "cl.surcode.conectasur",
+  "version": "0.5.0-entrega5",
+  "scope": "Analisis estatico del APK debug sin credenciales locales; no se ejecuto analisis dinamico."
+}
