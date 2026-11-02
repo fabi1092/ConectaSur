@@ -6,7 +6,7 @@ La web puede alojarse en Firebase Hosting mientras Auth, PostgreSQL y Storage co
 2. En web, ejecutar npm ci y npm run build con Node 24.12 o superior.
 3. Ejecutar firebase login con la cuenta que tiene acceso al proyecto conectasur-dev.
 4. Desde la raíz del repositorio, ejecutar firebase deploy --only hosting --project conectasur-dev --config firebase.hosting.json.
-5. Comprobar la portada sin sesión, las fichas de tienda y el acceso de administrador desde #administracion, con sus secciones y cierre de sesión.
+5. Comprobar la portada sin sesión, las fichas de tienda, el acceso de emprendedora desde #mi-tienda y el de administrador desde #administracion, con sus cierres de sesión.
 
 firebase.hosting.json publica únicamente web/dist y redirige las rutas a index.html. El comando se limita a hosting: no despliega reglas, funciones, Firestore ni Storage. El dominio definitivo se registra después de una publicación comprobada. La URL anterior de Sites se conserva mientras se verifica la nueva.
 
@@ -21,3 +21,5 @@ La publicación previa de Sites queda como alternativa existente; la dirección 
 ## Bloque 1 de Entrega 4
 
 La portada publicada muestra tiendas sin pedir una cuenta. Las fichas abren mediante #tienda/ID y consultan public_shops a través de la capa de datos. El panel se abre desde Administración (#administracion). La publicación inicial de Sites se conserva como versión anterior; no se actualiza automáticamente con Firebase Hosting.
+
+El bloque 2 incorpora Mi tienda (#mi-tienda) para ingreso, consulta y cierre de sesión de emprendedoras. Conserva la portada pública y la administración separadas. Ver docs/entrega-4/acceso-emprendedoras.md.

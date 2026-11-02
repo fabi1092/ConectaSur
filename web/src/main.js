@@ -3,6 +3,7 @@ import './style.css';
 import config from '../supabase-config.js';
 import { createDataLayer } from '../supabase-data.js';
 import { showPublicShops, showPublicShop } from './public-shops.js';
+import { showEntrepreneurAccess } from './entrepreneur-access.js';
 
 const app = document.querySelector('#app');
 const db = createDataLayer(config);
@@ -1028,11 +1029,21 @@ function mostrarFormularioLista(seccion) {
 // ------------------------------------------
 
 let navigationVersion = 0;
+let stopOwnerScreen = () => {};
 
 async function iniciar() {
+  stopOwnerScreen();
+  stopOwnerScreen = () => {};
   const version = ++navigationVersion;
   const isCurrent = () => version === navigationVersion;
   const route = window.location.hash;
+
+  if (route === '#mi-tienda') {
+    usuarioActual = null;
+    seccionActual = 'mi-tienda';
+    stopOwnerScreen = showEntrepreneurAccess(app, db, isCurrent);
+    return;
+  }
 
   if (route !== '#administracion') {
     usuarioActual = null;

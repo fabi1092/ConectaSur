@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const unwrap = ({ data, error }) => {
-  if (error) throw new Error(error.message);
+  if (error) throw Object.assign(new Error(error.message), { code: error.code, status: error.status });
   return data;
 };
 
@@ -108,7 +108,7 @@ export function createDataLayer(config, { storage } = {}) {
       !p?.active ||
       !['admin', 'emprendedora', 'comprador'].includes(p.role)
     ) {
-      throw new Error('Cuenta desactivada o sin permisos');
+      throw Object.assign(new Error('Cuenta desactivada o sin permisos'), { code: 'account_inactive' });
     }
 
     return {
@@ -161,6 +161,28 @@ export function createDataLayer(config, { storage } = {}) {
         await sdk.auth.signOut({ scope: 'local' });
         throw error;
       }
+    },
+
+    async entrepreneurHome() {
+      const user = await profile();
+      if (user.role !== 'emprendedora') {
+        throw Object.assign(new Error('Necesitas una cuenta de emprendedora'), { code: 'entrepreneur_required' });
+      }
+      if (!user.shopId) {
+        throw Object.assign(new Error('Tu cuenta no tiene una tienda asignada'), { code: 'shop_not_assigned' });
+      }
+      const record = unwrap(
+        await sdk.from('shops')
+          .select('id,name,description,logo_url,entrepreneur_type,sector,contact,show_prices')
+          .eq('id', user.shopId)
+          .eq('owner_uid', user.uid)
+          .eq('active', true)
+          .maybeSingle()
+      );
+      if (!record) {
+        throw Object.assign(new Error('Tu tienda no está disponible'), { code: 'shop_not_assigned' });
+      }
+      return { user, shop: shop(record) };
     },
 
     async logout() {

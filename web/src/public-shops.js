@@ -41,12 +41,17 @@ function shell(content) {
     <a class="skip-link" href="#public-content">Ir al contenido</a>
     <header class="public-header">
       <a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">Conecta<span>Sur</span></a>
-      <a class="public-admin" href="#administracion">Administración <span aria-hidden="true">↗</span></a>
+      <nav class="public-navigation" aria-label="Acceso a tu cuenta">
+        <a class="public-owner-link" href="#mi-tienda">Mi tienda <span aria-hidden="true">→</span></a>
+        <a class="public-admin" href="#administracion">Administración <span aria-hidden="true">↗</span></a>
+      </nav>
     </header>
     <main id="public-content" tabindex="-1">${content}</main>
     <footer class="public-footer"><strong>ConectaSur</strong><span>Emprendimientos de Puerto Montt y Alerce · SurCode</span></footer>
   </div>`;
 }
+
+export { shell as publicShell, logo as shopLogo, imageFallbacks as wireShopImages, escape as escapeHtml };
 
 function showStatus(app, title, message, retry) {
   app.innerHTML = shell(`<section class="public-state" aria-labelledby="state-title">

@@ -80,6 +80,8 @@ La portada y las fichas de tienda se pueden consultar sin cuenta. Para consultar
 
 Revisión de Entrega 4 del 4 de noviembre: [bloque 1, ficha pública de tienda](docs/entrega-4/ficha-publica.md). La portada abre en la URL principal; cada ficha tiene un enlace `#tienda/ID`. El panel continúa en `#administracion`.
 
+[Bloque 2, acceso de emprendedoras](docs/entrega-4/acceso-emprendedoras.md): `#mi-tienda` permite ingresar con las credenciales creadas por el administrador, consultar la tienda propia y cerrar sesión. La edición de su ficha se realiza en Android.
+
 En Android: Inicio → Mi tienda → ingresar con una cuenta de emprendedora → Mis productos / Registrar una venta / Historial de ventas. Las preferencias de productos e historial se abren desde Mis productos. La app abre el catálogo público sin preguntar un rol ni pedir huella al inicio.
 
 - [Informe breve, alcance y reparto](docs/entrega-5/informe.md).
