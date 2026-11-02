@@ -1,4 +1,5 @@
 import { publicShell, shopLogo, wireShopImages, escapeHtml as escape } from './public-shops.js';
+import { showShopEditor } from './shop-editor.js';
 
 function messageFor(error) {
   if (error.code === 'account_inactive') return 'Tu cuenta está desactivada o no tiene acceso. Consulta al administrador de ConectaSur.';
@@ -14,6 +15,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
   let mode = 'loading';
   let busy = false;
   let checking = false;
+  let editor = null;
   const events = new AbortController();
   const alive = () => !stopped && isCurrent();
   document.title = 'Ingresar | ConectaSur';
@@ -105,24 +107,35 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     } finally { busy = false; }
   }
 
-  function home({ user, shop }) {
+  function home(data, notice = '') {
     if (!alive()) return;
+    const { user, shop } = data;
     mode = 'home';
     document.title = 'Mi tienda | ConectaSur';
     app.innerHTML = publicShell(`<section class="owner-home" aria-labelledby="owner-home-title">
       <div class="owner-topbar"><a class="public-back" href="#inicio">← Volver a las tiendas</a><button id="owner-logout" class="owner-secondary">Cerrar sesión</button></div>
       <div class="owner-welcome"><div><p class="public-eyebrow">Mi espacio en ConectaSur</p><h1 id="owner-home-title" tabindex="-1">Esta es tu tienda.</h1><p>Consulta tus datos y revisa cómo te encuentra tu comunidad.</p></div><span class="owner-session-state">Sesión iniciada</span></div>
+      ${notice ? `<p class="owner-save-success" role="status">${escape(notice)}</p>` : ''}
       <div class="owner-summary">
         <div class="owner-shop-heading">${shopLogo(shop, true)}<div><h2>${escape(shop.name)}</h2><p class="public-category">${escape(shop.entrepreneurType || 'Tipo por informar')}</p><p class="public-sector">${escape(shop.sector || 'Sector por informar')}</p></div></div>
         <div class="owner-details"><section aria-labelledby="owner-about-title"><h3 id="owner-about-title">Acerca de tu tienda</h3><p class="public-description">${escape(shop.description || 'Tu tienda aún no tiene una descripción.')}</p></section><section aria-labelledby="owner-contact-title"><h3 id="owner-contact-title">Datos de contacto</h3><p class="public-description">${escape(shop.contact || 'Tu tienda aún no tiene datos de contacto.')}</p></section></div>
-        <div class="owner-actions"><a class="public-primary" href="#tienda/${escape(encodeURIComponent(shop.id))}">Ver mi ficha pública <span aria-hidden="true">↗</span></a><button class="owner-secondary" id="owner-refresh">Actualizar información</button></div>
+        <div class="owner-actions"><button class="public-primary" id="owner-edit" type="button">Editar tienda</button><a class="owner-secondary" href="#tienda/${escape(encodeURIComponent(shop.id))}">Ver mi ficha pública <span aria-hidden="true">↗</span></a><button class="owner-secondary" id="owner-refresh">Actualizar información</button></div>
       </div>
-      <div class="owner-bottom"><section class="owner-update-help"><h2>¿Quieres cambiar algún dato?</h2><p>Para cambiar el logo, la descripción o el contacto, abre <strong>Mi tienda</strong> en la aplicación Android. Al guardar, tus cambios también se verán aquí.</p></section><section class="owner-account"><h2>Tu cuenta</h2><p>Ingresaste con</p><p class="owner-account-email">${escape(user.email)}</p><p>Si compartes este equipo, cierra tu sesión al terminar.</p></section></div>
+      <div class="owner-bottom"><section class="owner-update-help"><h2>Tu tienda, en ambos lugares</h2><p>Los datos y el logo que guardes aquí también se verán en Android y en tu ficha pública. Puedes editar tu tienda desde cualquiera de los dos.</p></section><section class="owner-account"><h2>Tu cuenta</h2><p>Ingresaste con</p><p class="owner-account-email">${escape(user.email)}</p><p>Si compartes este equipo, cierra tu sesión al terminar.</p></section></div>
     </section>`);
     wireShopImages(app);
     app.querySelector('#owner-home-title').focus({ preventScroll: true });
+    window.scrollTo(0, 0);
     app.querySelector('#owner-logout').addEventListener('click', logout);
     app.querySelector('#owner-refresh').addEventListener('click', () => loadHome());
+    app.querySelector('#owner-edit').addEventListener('click', () => {
+      mode = 'edit';
+      editor = showShopEditor(app, db, data, {
+        isCurrent: () => alive() && mode === 'edit',
+        onSaved: updated => { editor.dispose(); editor = null; home(updated, 'Guardamos los cambios de tu tienda. Ya puedes verlos en tu ficha pública.'); },
+        onCancel: () => { editor.dispose(); editor = null; loadHome(); }
+      });
+    });
   }
 
   async function openAccount(user) {
@@ -184,5 +197,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
   window.addEventListener('focus', recheck, { signal: events.signal });
   document.addEventListener('visibilitychange', recheck, { signal: events.signal });
   start();
-  return () => { stopped = true; events.abort(); };
+  const dispose = () => { stopped = true; events.abort(); editor?.dispose(); };
+  dispose.canLeave = () => editor?.requestLeave() ?? true;
+  return dispose;
 }

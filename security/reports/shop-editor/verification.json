@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-11-02T22:41:37.650Z",
+  "url": "https://conectasur-dev.web.app/",
+  "passed": 14,
+  "checks": [
+    "Solo la dueña puede guardar la tienda asignada; comprador, rol administrador e ID ajeno se rechazan",
+    "Campos de propiedad y nombres vacíos se rechazan sin modificar la tienda",
+    "Elegir logo solo prepara una vista previa; cambiar foco conserva el formulario y no publica datos",
+    "Cancelar pide confirmación y descarta datos e imagen sin subir archivos",
+    "Formato no admitido e imagen inválida se rechazan antes de subirla",
+    "Guardar publica todos los datos y el logo en la tienda propia, y respeta ocultar precios",
+    "Los datos y el logo persisten al recargar la cuenta",
+    "La ficha pública sin sesión refleja lo guardado, con imagen JPEG reducida a 1024 px y hasta 2 MiB",
+    "Navegar fuera pide confirmación; rechazarla mantiene la ruta y lo escrito",
+    "Un error de guardado conserva el formulario y permite reintentar con éxito",
+    "Reemplazar logo guarda una nueva imagen sin afectar los demás datos",
+    "Quitar logo se aplica solo al guardar; volver a mostrar precios restaura el precio público",
+    "Formulario sin desbordamiento en 390 px y 320 px con texto al 200 %",
+    "Sin errores JavaScript en todo el recorrido"
+  ],
+  "fixture": "Cuenta, tienda, producto e imágenes propios temporales; se eliminan al finalizar",
+  "limits": [
+    "Navegador móvil emulado; no prueba física con emprendedoras",
+    "Se verifica el mismo registro y API que usa Android, sin operar el dispositivo Android en esta prueba",
+    "La protección conserva el formulario abierto; no se promete recuperar un borrador al cerrar el navegador"
+  ]
+}

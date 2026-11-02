@@ -975,13 +975,19 @@ function mostrarFormularioLista(seccion) {
 
 let navigationVersion = 0;
 let stopOwnerScreen = () => {};
+let lastRenderedRoute = window.location.hash;
 
 async function iniciar() {
+  if (stopOwnerScreen.canLeave && !stopOwnerScreen.canLeave()) {
+    history.replaceState(null, '', window.location.pathname + window.location.search + lastRenderedRoute);
+    return;
+  }
   stopOwnerScreen();
   stopOwnerScreen = () => {};
   const version = ++navigationVersion;
   const isCurrent = () => version === navigationVersion;
   const route = window.location.hash;
+  lastRenderedRoute = route;
 
   // Los enlaces anteriores siguen abriendo el mismo acceso; el rol viene del backend.
   if (['#ingresar', '#mi-tienda', '#administracion'].includes(route)) {

@@ -36,4 +36,6 @@ security/entrepreneur-access-check.mjs comprueba ingreso por rol, cierre de sesi
 
 Resultado del 2 de noviembre: 19 comprobaciones de la galería/ficha pública y 21 del acceso por rol aprobadas; compilación Vite correcta. Durante un primer intento de la suite de acceso, una actualización del fixture recibió HTTP 502 del backend; la ejecución repetida terminó sin fallos. No se atribuye esa respuesta a un cambio de permisos.
 
-Este cambio no añade pagos, carrito ni edición web de productos. Los compradores consultan las publicaciones y contactan a cada tienda. El registro de comprador, recuperación de contraseña y Google siguen siendo bloques pendientes del checklist.
+El hito posterior Editar tienda desde la web incorpora un formulario con vista previa del logo, confirmación al descartar y conservación del formulario ante errores. Sigue la misma paleta, superficies, tipografía y tamaños de control. Ver docs/entrega-4/acceso-emprendedoras.md y security/reports/shop-editor/.
+
+Estos cambios no añaden pagos, carrito ni edición web de productos. Los compradores consultan las publicaciones y contactan a cada tienda. El registro de comprador, recuperación de contraseña y Google siguen siendo bloques pendientes del checklist.

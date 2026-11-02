@@ -130,6 +130,16 @@ export function createDataLayer(config, { storage } = {}) {
     }
   }
 
+  async function uploadShopLogoFile(shopId, file) {
+    if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size <= 0 || file.size > 2097152) {
+      throw Object.assign(new Error('Usa una imagen JPEG, PNG o WebP de hasta 2 MiB'), { code: 'invalid_logo' });
+    }
+    const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
+    const path = shopId + '/logo/' + crypto.randomUUID() + '.' + ext;
+    unwrap(await sdk.storage.from('shop-images').upload(path, file, { contentType: file.type, upsert: false }));
+    return sdk.storage.from('shop-images').getPublicUrl(path).data.publicUrl;
+  }
+
   const layer = {
     client: sdk,
 
@@ -184,6 +194,34 @@ export function createDataLayer(config, { storage } = {}) {
         throw Object.assign(new Error('Tu tienda no está disponible'), { code: 'shop_not_assigned' });
       }
       return { user, shop: shop(record) };
+    },
+
+    async saveEntrepreneurShop(expectedShopId, changes, { logoFile = null, removeLogo = false } = {}) {
+      const current = await layer.entrepreneurHome();
+      if (current.shop.id !== expectedShopId) {
+        throw Object.assign(new Error('La tienda asignada a tu cuenta cambió. Vuelve a entrar antes de editar.'), { code: 'shop_changed' });
+      }
+      const limits = { name: 120, description: 1000, entrepreneurType: 120, sector: 240, contact: 240 };
+      const values = {};
+      for (const [key, value] of Object.entries(changes)) {
+        if (key === 'showPrices') {
+          if (typeof value !== 'boolean') throw Object.assign(new Error('Revisa la opción de mostrar precios.'), { code: 'invalid_shop' });
+          values.show_prices = value;
+        } else if (Object.hasOwn(limits, key) && typeof value === 'string' && value.trim().length <= limits[key]) {
+          values[shopFields[key]] = value.trim();
+        } else {
+          throw Object.assign(new Error('Hay un dato de tienda no permitido o demasiado largo.'), { code: 'invalid_shop' });
+        }
+      }
+      if (!values.name) throw Object.assign(new Error('Escribe el nombre de tu tienda.'), { code: 'invalid_shop' });
+      if (logoFile && removeLogo) throw Object.assign(new Error('Elige una imagen o quita el logo actual.'), { code: 'invalid_logo' });
+      if (logoFile) values.logo_url = await uploadShopLogoFile(current.shop.id, logoFile);
+      else if (removeLogo) values.logo_url = null;
+      const updated = unwrap(await sdk.from('shops').update(values)
+        .eq('id', current.shop.id).eq('owner_uid', current.user.uid).eq('active', true)
+        .select('id,name,description,logo_url,entrepreneur_type,sector,contact,show_prices').maybeSingle());
+      if (!updated) throw Object.assign(new Error('No tienes permiso para guardar esta tienda.'), { code: 'shop_changed' });
+      return { user: current.user, shop: shop(updated) };
     },
 
     async logout() {
@@ -476,40 +514,8 @@ export function createDataLayer(config, { storage } = {}) {
     },
 
     async uploadLogo(shopId, file) {
-      if (
-        !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
-        file.size > 2097152
-      ) {
-        throw new Error(
-          'Usa una imagen JPEG, PNG o WebP de hasta 2 MiB'
-        );
-      }
-
-      const ext = {
-        'image/jpeg': 'jpg',
-        'image/png': 'png',
-        'image/webp': 'webp'
-      }[file.type];
-
-      const path =
-        shopId + '/logo/' + crypto.randomUUID() + '.' + ext;
-
-      unwrap(
-        await sdk.storage.from('shop-images')
-          .upload(path, file, {
-            contentType: file.type,
-            upsert: false
-          })
-      );
-
-      const publicUrl =
-        sdk.storage.from('shop-images')
-          .getPublicUrl(path).data.publicUrl;
-
-      await layer.updateShop(shopId, {
-        logoUrl: publicUrl
-      });
-
+      const publicUrl = await uploadShopLogoFile(shopId, file);
+      await layer.updateShop(shopId, { logoUrl: publicUrl });
       return publicUrl;
     },
 

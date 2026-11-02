@@ -153,6 +153,7 @@ p, dd, h1, h2, h3 { overflow-wrap: anywhere; }
 .public-state .public-text-link, .owner-state .public-text-link { margin: 16px; }
 .skip-link { position: fixed; top: -100px; left: 16px; padding: 12px 20px; background: white; z-index: 20; }
 .skip-link:focus { top: 12px; }
+.skip-link:not(:focus) { clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; padding: 0; }
 .owner-access { display: grid; grid-template-columns: 1.1fr 1fr; gap: 26px 70px; align-items: start; padding-block: 44px 64px; }
 .owner-intro { padding: 16px 0 0; grid-column: 1; grid-row: 1; }
 .owner-intro h1 { font-size: clamp(2.3rem, 4vw, 3.7rem); }
@@ -178,7 +179,7 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .owner-home { padding-block: 20px 48px; }
 .owner-topbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 28px; }
 .owner-topbar .public-back { margin: 0; }
-.owner-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 12px 20px; border: 1px solid #aec3b5; background: white; border-radius: 8px; font-size: 1rem; color: var(--ink); font-weight: 600; }
+.owner-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 12px 20px; border: 1px solid #aec3b5; background: white; border-radius: 8px; font-size: 1rem; color: var(--ink); font-weight: 600; text-decoration: none; }
 .owner-secondary:hover { background: var(--mint); }
 .owner-welcome { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 .owner-welcome h1 { font-size: clamp(2rem, 3.5vw, 3rem); }
@@ -199,6 +200,35 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .owner-bottom p { margin-top: 12px; }
 .owner-account p { font-size: .95rem; color: var(--muted); }
 .owner-account .owner-account-email { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.owner-save-success { padding: 16px 20px; background: #edf6e8; border: 1px solid #b9d3b3; color: #225f3e; border-radius: 10px; margin-bottom: 24px; }
+.shop-editor-page { width: min(1120px, 100% - 64px); margin: auto; padding-block: 28px 52px; }
+.editor-heading { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 28px; }
+.editor-heading h1 { font-size: clamp(2rem, 3.5vw, 3rem); }
+.editor-heading p:not(.public-eyebrow) { margin-top: 12px; color: var(--muted); }
+#shop-editor-fields { border: 0; min-width: 0; }
+.shop-editor-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 26px; align-items: start; }
+.editor-card { border: 1px solid var(--line); background: white; border-radius: 16px; padding: 28px; min-width: 0; }
+.editor-card h2 { font-size: 1.45rem; }
+.editor-intro { color: var(--muted); margin-top: 10px; font-size: .95rem; }
+.editor-two-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.editor-two-fields > div { min-width: 0; }
+.editor-hint { font-size: .85rem; color: var(--muted); margin-top: 8px; }
+.editor-check { display: flex; align-items: center; gap: 12px; min-height: 48px; cursor: pointer; }
+.editor-logo-preview { display: flex; align-items: center; justify-content: center; min-height: 210px; padding: 20px; background: #f5f7f0; border: 1px solid #e3eadd; border-radius: 12px; margin-top: 22px; }
+.editor-logo-preview > img { width: 160px; max-width: 100%; height: 160px; object-fit: contain; border-radius: 10px; background: white; }
+.editor-file-label { width: 100%; gap: 10px; cursor: pointer; margin: 20px 0 0; }
+.editor-file-input, .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.editor-file-label:has(+ input:focus-visible) { outline: 3px solid #a65b24; outline-offset: 4px; }
+.editor-remove { width: 100%; min-height: 48px; padding: 10px 16px; margin-top: 8px; font-size: .95rem; color: #8e3b2f; border: 0; background: transparent; border-radius: 8px; text-decoration: underline; text-underline-offset: 4px; }
+.editor-remove:disabled { color: #6b7a70; cursor: default; text-decoration: none; }
+.editor-photo-tip { display: flex; align-items: flex-start; gap: 12px; padding-top: 22px; margin-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+.editor-photo-tip .ui-icon { color: var(--green); margin-top: 3px; }
+.editor-save-bar { display: flex; align-items: center; justify-content: space-between; gap: 22px; border: 1px solid var(--line); background: #edf3e7; border-radius: 14px; padding: 22px 26px; margin-top: 26px; }
+.editor-save-bar > div:last-child { display: flex; gap: 12px; flex-shrink: 0; }
+.editor-save-bar strong { font-size: .95rem; color: var(--ink); }
+.editor-save-bar p { font-size: .85rem; color: var(--muted); margin-top: 5px; }
+.editor-status { margin-top: 20px; }
+.editor-status:empty { display: none; }
 body:has(dialog[open]) { overflow: hidden; }
 .product-dialog { width: min(920px, calc(100% - 36px)); max-height: calc(100dvh - 36px); min-height: 0; padding: 56px 28px 28px; border: 1px solid var(--line); border-radius: 18px; margin: auto; background: #fff; color: #284740; }
 .product-dialog::backdrop { background: #0c2c38a6; }
@@ -331,6 +361,12 @@ td.actions button { margin: 3px; }
  .owner-shop-heading { gap: 20px; }
  .owner-details, .owner-bottom { grid-template-columns: 1fr; gap: 22px; }
  .owner-actions { flex-direction: column; }
+ .shop-editor-page { width: calc(100% - 36px); padding-top: 24px; }
+ .shop-editor-layout, .editor-two-fields { grid-template-columns: 1fr; gap: 20px; }
+ .editor-card { padding: 23px; }
+ .editor-save-bar { flex-direction: column; align-items: stretch; padding: 22px; }
+ .editor-save-bar > div:last-child { flex-wrap: wrap; }
+ .editor-save-bar button { flex: 1; }
  .owner-state .public-text-link, .public-state .public-text-link { display: flex; margin-inline: 0; }
  .product-dialog { padding: 54px 20px 22px; }
  .product-dialog-layout { grid-template-columns: 1fr; gap: 20px; }

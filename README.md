@@ -80,7 +80,7 @@ La portada y las fichas de tienda se pueden consultar sin cuenta. Para consultar
 
 Revisión de Entrega 4 del 4 de noviembre: [bloque 1, ficha pública de tienda](docs/entrega-4/ficha-publica.md). La portada abre en la URL principal; cada ficha tiene un enlace `#tienda/ID`. El único acceso de cuenta es **Ingresar** (`#ingresar`): el rol validado en Supabase abre la tienda propia o el panel administrativo.
 
-[Bloque 2, acceso de cuentas](docs/entrega-4/acceso-emprendedoras.md): la emprendedora ingresa con las credenciales creadas por el administrador, consulta la tienda propia y cierra sesión. La edición de su ficha se realiza en Android. Los enlaces anteriores `#mi-tienda` y `#administracion` abren el mismo acceso y respetan el rol de la cuenta.
+[Bloque 2, acceso de cuentas](docs/entrega-4/acceso-emprendedoras.md): la emprendedora ingresa con las credenciales creadas por el administrador, consulta o edita su tienda y logo, y cierra sesión. Los cambios se guardan en el mismo registro que consulta Android. Los enlaces anteriores `#mi-tienda` y `#administracion` abren el mismo acceso y respetan el rol de la cuenta.
 
 [Rediseño de la web y referencias](docs/entrega-4/redisenio-web.md): fotografías de la visita, galería pública con filtros y detalle, fichas de tiendas con productos y panel administrativo con resumen real. Se conservan los permisos y el acceso único.
 
