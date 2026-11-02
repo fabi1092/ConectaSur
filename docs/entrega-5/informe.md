@@ -19,7 +19,7 @@ El catálogo privado previamente descargado se consulta sin red. Las altas, edic
 3. Mis productos: crear un producto de Artesanías con foto, precio CLP y una variante. Cerrar a mitad del flujo y recuperar el borrador. Guardar y revisar la vista previa pública.
 4. Registrar una venta de esa variante y comprobar el descuento. Vender una pieza única y comprobar que deja de aparecer públicamente.
 5. Consultar historial por producto o lugar. Mostrar la preferencia para desactivarlo.
-6. Abrir el [panel publicado](https://conectasur-surcode-panel.benjamintampier.chatgpt.site), entrar como administrador y mostrar tiendas/asociaciones/tipos. Las cuentas de aplicación se comparten por un canal privado.
+6. Abrir el [panel publicado](https://conectasur-dev.web.app), entrar como administrador y mostrar tiendas/asociaciones/tipos. Las cuentas de aplicación se comparten por un canal privado.
 7. Mostrar pruebas y el análisis MobSF desde los documentos de esta carpeta y GitHub Actions.
 
 ## Validación y evidencias

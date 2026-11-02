@@ -74,7 +74,7 @@ En Android, Mi tienda permite entrar con una cuenta de emprendedora, editar la f
 
 ## Entrega 5: catálogo, productos y ventas
 
-Panel publicado: https://conectasur-surcode-panel.benjamintampier.chatgpt.site
+Panel publicado: https://conectasur-dev.web.app
 
 La URL es pública por autorización de Benjamín y exige el inicio de sesión de administrador de ConectaSur para consultar o modificar datos administrativos. No incluye contraseñas de demostración.
 

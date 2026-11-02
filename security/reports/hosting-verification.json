@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-11-02T16:57:03.125Z",
+  "url": "https://conectasur-dev.web.app",
+  "backend": "Supabase",
+  "httpStatus": 200,
+  "adminLogin": true,
+  "adminSectionsTested": 4,
+  "logout": true,
+  "javascriptErrors": [],
+  "mobileLoginNoOverflow": true,
+  "scope": "Publicación estática únicamente; los servicios de datos siguen en Supabase."
+}

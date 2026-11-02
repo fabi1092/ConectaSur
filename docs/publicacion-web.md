@@ -9,3 +9,11 @@ La web puede alojarse en Firebase Hosting mientras Auth, PostgreSQL y Storage co
 5. Comprobar la URL que devuelva la publicación: login de administrador, secciones y cierre de sesión.
 
 firebase.hosting.json publica únicamente web/dist y redirige las rutas a index.html. El comando se limita a hosting: no despliega reglas, funciones, Firestore ni Storage. El dominio definitivo se registra después de una publicación comprobada. La URL anterior de Sites se conserva mientras se verifica la nueva.
+
+## Publicación comprobada
+
+URL principal: https://conectasur-dev.web.app
+
+Publicada el 2 de noviembre de 2026 en Firebase Hosting del proyecto conectasur-dev. Se comprobó HTTP 200, ingreso real de administrador, cuatro secciones administrativas, cierre de sesión y formato móvil. Evidencia: security/reports/hosting-verification.json. Las cuentas y la base de datos continúan en Supabase.
+
+La publicación previa de Sites queda como alternativa existente; la dirección que el equipo comparte ahora es la de web.app.
