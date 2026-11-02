@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { createDataLayer } from '../web/supabase-data.js';
 import { settings, query, literal } from '../supabase/tools/admin.mjs';
+import { priceLabel } from '../web/src/content.js';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -40,6 +41,14 @@ try {
   await logoPage.close();
   data.logoUrl = await owner.uploadLogo(fixture.shopId, new File([png], 'logo-prueba.png', { type: 'image/png' }));
   imagePath = decodeURIComponent(new URL(data.logoUrl).pathname.split('/shop-images/')[1]);
+  const { error: productsError } = await owner.client.from('products').insert([
+    { id: fixture.shopId + '_public', shop_id: fixture.shopId, name: 'Tejido de prueba', category: 'Artesanías', product_type: 'artesania', price_clp: 18000, show_price: true, stock_mode: 'UNITS', quantity: 4, photo: data.logoUrl },
+    { id: fixture.shopId + '_hidden', shop_id: fixture.shopId, name: 'Encargo de prueba', category: 'Ropa', product_type: 'ropa', price_clp: 9999, show_price: false, stock_mode: 'ON_REQUEST', photo: data.logoUrl }
+  ]);
+  if (productsError) throw productsError;
+  assert.equal(priceLabel({ priceClp: null, variants: [] }), 'Consultar precio');
+  assert.ok(priceLabel({ priceClp: 1000, variants: [{ priceClp: 500, available: false }, { priceClp: 18000 }, { priceClp: 20000 }] }).includes('18.000'));
+  checks.push('Precios CLP respetan valores ocultos y variantes disponibles');
   const publicShop = await visitor.getShop(fixture.shopId);
   check('Los seis campos guardados por la dueña se leen sin sesión', () => {
     for (const [key, value] of Object.entries(data)) assert.equal(publicShop[key], value);
@@ -56,6 +65,29 @@ try {
   page.on('request', request => { if (request.url().includes('/rest/v1/')) requests.push(request.url()); });
   await page.goto(baseUrl);
   await page.locator('#public-results[aria-busy="false"]').waitFor();
+  await page.locator('#catalog-results[aria-busy="false"]').waitFor();
+  await page.getByRole('button', { name: 'Ropa', exact: true }).click();
+  assert.equal(await page.getByRole('button', { name: 'Ropa', exact: true }).getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.getByRole('button', { name: 'Ver producto: Tejido de prueba', exact: true }).count(), 0);
+  await page.getByRole('button', { name: 'Ver producto: Encargo de prueba', exact: true }).click();
+  const hiddenDialog = page.getByRole('dialog', { name: 'Encargo de prueba' });
+  await hiddenDialog.waitFor();
+  assert.equal(await hiddenDialog.locator('.dialog-price').textContent(), 'Consultar precio');
+  assert.ok(!(await hiddenDialog.textContent()).includes('9.999'));
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('dialog[open]').count(), 0);
+  checks.push('Filtros de categoría, detalle y cierre con Escape funcionan sin revelar el precio oculto');
+  await page.getByRole('button', { name: 'Todos', exact: true }).click();
+  await page.getByRole('button', { name: 'Ver producto: Tejido de prueba', exact: true }).click();
+  const visibleDialog = page.getByRole('dialog', { name: 'Tejido de prueba' });
+  assert.ok((await visibleDialog.locator('.dialog-price').textContent()).includes('18.000'));
+  assert.ok((await visibleDialog.locator('.dialog-price').textContent()).includes('CLP'));
+  await visibleDialog.getByRole('link', { name: 'Conocer la tienda', exact: true }).click();
+  await page.locator('#shop-title').waitFor();
+  assert.equal(await page.locator('#shop-title').textContent(), data.name);
+  checks.push('El detalle de un producto muestra CLP y abre su tienda real');
+  await page.goto(baseUrl);
+  await page.locator('#catalog-results[aria-busy="false"]').waitFor();
   await page.getByRole('searchbox').fill(data.name);
   await page.getByRole('link', { name: `Ver tienda: ${data.name}`, exact: true }).waitFor();
   assert.equal(await page.locator('.public-shop-card').count(), 1);
@@ -72,9 +104,9 @@ try {
   assert.equal(await img.getAttribute('src'), data.logoUrl);
   assert.equal(await page.getByRole('link', { name: 'Enviar correo' }).getAttribute('href'), 'mailto:contacto%40ejemplo.cl');
   checks.push('La ficha muestra nombre, logo, descripción, tipo, sector y contacto reales');
-  check('La navegación pública solo consulta public_shops', () => {
+  check('La navegación pública solo consulta las vistas public_shops y public_products', () => {
     assert.ok(requests.length >= 2);
-    assert.ok(requests.every(url => new URL(url).pathname === '/rest/v1/public_shops'));
+    assert.ok(requests.every(url => ['/rest/v1/public_shops', '/rest/v1/public_products'].includes(new URL(url).pathname)));
   });
   const directUrl = page.url();
   await page.screenshot({ path: new URL('ficha-escritorio.png', output).pathname.replace(/^\/(?=[A-Za-z]:)/, ''), fullPage: true });
@@ -84,7 +116,7 @@ try {
   phone.on('pageerror', error => browserErrors.push(error.message));
   await phone.goto(directUrl);
   await phone.getByRole('heading', { name: data.name, exact: true }).waitFor();
-  await phone.getByRole('img').evaluate(img => img.decode());
+  await phone.getByRole('img', { name: `Logo de ${data.name}`, exact: true }).evaluate(img => img.decode());
   assert.equal(await phone.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await phone.screenshot({ path: new URL('ficha-celular.png', output).pathname.replace(/^\/(?=[A-Za-z]:)/, ''), fullPage: true });
   await phone.reload();
@@ -142,7 +174,7 @@ try {
     await route.fulfill({ json: [] });
   });
   await page.goto(baseUrl);
-  await page.getByRole('link', { name: 'Ingresar' }).click();
+  await page.getByRole('link', { name: 'Ingresar', exact: true }).click();
   await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).waitFor();
   releasePublic();
   await page.waitForLoadState('networkidle');

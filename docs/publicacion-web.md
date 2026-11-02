@@ -23,3 +23,5 @@ La publicación previa de Sites queda como alternativa existente; la dirección 
 La portada publicada muestra tiendas sin pedir una cuenta. Las fichas abren mediante #tienda/ID y consultan public_shops a través de la capa de datos. El panel se abre al usar una cuenta administradora en Ingresar (#ingresar). La publicación inicial de Sites se conserva como versión anterior; no se actualiza automáticamente con Firebase Hosting.
 
 El bloque 2 incorpora un acceso común para ingreso y cierre de sesión: la cuenta de emprendedora abre su tienda y la cuenta administradora abre su panel. La portada no ofrece una sección Administración ni un selector de rol. Ver docs/entrega-4/acceso-emprendedoras.md.
+
+El rediseño incorpora recursos locales de marca y fotos en web/public/assets, galería desde public_products y filtros por categoría. Al publicar, comprobar también que carguen el logo y las fotografías, que el detalle de producto abra su tienda y que los precios ocultos sigan apareciendo como Consultar precio. Referencias y evidencias en docs/entrega-4/redisenio-web.md.

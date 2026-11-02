@@ -129,6 +129,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     if (!alive()) return;
     if (user.role === 'admin') {
       mode = 'admin';
+      busy = false;
       document.title = 'Administración | ConectaSur';
       await showAdmin(user, logout);
     } else if (user.role === 'emprendedora') {

@@ -27,7 +27,7 @@ Editar los datos de la tienda desde la web corresponde a una entrega posterior. 
 
 Se aplica good-taste-design conservando el diseño del bloque 1 y lo descrito en docs/entrega-5/cambios-prototipo.md: fondo claro, verde, botones con texto y navegación sencilla. Se reutilizan el encabezado, pie, logo de tienda, superficies y escala tipográfica existentes.
 
-Paleta de la web: fondo #FAF9F5, texto #123B47, verde de acción #216B47 y fondo de ayuda #EAF0E3. Se mantiene la familia tipográfica de la web, Segoe UI con alternativa sans-serif. Los controles principales tienen al menos 48 px, foco visible y etiquetas persistentes. Mostrar contraseña es una acción voluntaria y se vuelve a ocultar al terminar un intento de ingreso. En celular el formulario aparece antes del bloque de ayuda para la primera visita.
+Paleta actual de la web: fondo claro, texto navy #103D50, verde de acción #17694E y superficies suaves verdes/crema. Se mantiene Segoe UI con alternativa Arial/sans-serif. Los controles principales tienen al menos 48 px, foco visible y etiquetas persistentes. Mostrar contraseña es una acción voluntaria y se vuelve a ocultar al terminar un intento de ingreso. En celular el formulario aparece antes del bloque de ayuda para la primera visita. Ver docs/entrega-4/redisenio-web.md para las referencias y recursos.
 
 No se pide un rol al abrir la web pública ni al ingresar. Ingresar lleva al espacio correspondiente a los permisos reales de la cuenta; esconder un botón no reemplaza las políticas del backend.
 
@@ -45,7 +45,7 @@ No se pide un rol al abrir la web pública ni al ingresar. Ingresar lleva al esp
 
 security/entrepreneur-access-check.mjs crea una cuenta y tienda ficticias propias mediante el administrador. Comprueba la API real y el recorrido en Chromium; sus resultados y capturas quedan en security/reports/entrepreneur-access/. El correo mostrado en las capturas se sustituye por cuenta-ficticia@ejemplo.cl para no guardar identificadores de fixtures efímeros.
 
-La verificación actual del acceso único se registra en security/reports/entrepreneur-access/verification.json: 21 comprobaciones aprobadas, incluida la apertura automática del panel con una cuenta administradora y que una emprendedora no obtiene ese panel escribiendo la ruta anterior. Se repitieron además las 16 comprobaciones de la ficha pública, sin fallos. La compilación web con Vite finalizó correctamente.
+La verificación actual del acceso único se registra en security/reports/entrepreneur-access/verification.json. Incluye la apertura automática del panel con una cuenta administradora y que una emprendedora no obtiene ese panel escribiendo la ruta anterior. La suite de la ficha pública incorpora también la galería y las categorías tras el rediseño.
 
 Para repetir: Vite iniciado en el puerto 5174, CONECTASUR_PRIVATE cargado solo en memoria, Playwright/Chromium disponible y node security/entrepreneur-access-check.mjs. PLAYWRIGHT_MODULE permite indicar su instalación; ENTREPRENEUR_ACCESS_URL permite cambiar la URL de prueba. Los fixtures se eliminan al terminar.
 

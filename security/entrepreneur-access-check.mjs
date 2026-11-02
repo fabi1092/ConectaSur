@@ -117,6 +117,9 @@ try {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await fillLogin(config.accounts.admin.email, config.accounts.admin.password);
   await page.getByRole('heading', { name: 'Panel administrativo', exact: true }).waitFor();
+  await page.waitForFunction(() => !document.querySelector('#dashboard-summary-status')?.textContent.includes('Cargando'));
+  assert.ok(await page.locator('#stat-shops').textContent() !== '—');
+  await page.screenshot({ path: fileURLToPath(new URL('panel-escritorio.png', output)), fullPage: true });
   assert.equal(await page.locator('.owner-home').count(), 0);
   await page.reload();
   await page.getByRole('heading', { name: 'Panel administrativo', exact: true }).waitFor();

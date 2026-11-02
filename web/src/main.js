@@ -4,6 +4,7 @@ import config from '../supabase-config.js';
 import { createDataLayer } from '../supabase-data.js';
 import { showPublicShops, showPublicShop } from './public-shops.js';
 import { showAccountAccess } from './entrepreneur-access.js';
+import { icon, brand } from './visuals.js';
 
 const app = document.querySelector('#app');
 const db = createDataLayer(config);
@@ -12,6 +13,13 @@ app.addEventListener('click', event => {
   if (event.target.closest('.skip-link')) {
     event.preventDefault();
     document.querySelector('#public-content')?.focus();
+  }
+  const link = event.target.closest('[data-section-link]');
+  const section = link && document.querySelector(link.getAttribute('href'));
+  if (section) {
+    event.preventDefault();
+    section.scrollIntoView({ behavior: 'auto' });
+    section.querySelector('h2')?.focus({ preventScroll: true });
   }
 });
 
@@ -39,20 +47,20 @@ function mostrarMensaje(texto, error = false) {
 
 async function mostrarPanel(logout) {
   app.innerHTML = `
-    <div class="dashboard">
+    <div class="dashboard admin-site">
       <aside class="sidebar">
-        <h2>ConectaSur</h2>
+        <a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">${brand()}</a>
         <p>Administración</p>
 
         <nav>
-          <button data-section="inicio">Inicio</button>
-          <button data-section="emprendedoras">Emprendedoras</button>
-          <button data-section="asociaciones">Asociaciones</button>
-          <button data-section="categorias">Categorías</button>
-          <button data-section="tipos">Tipos de productos</button>
+          <button data-section="inicio">${icon('grid')} Inicio</button>
+          <button data-section="emprendedoras">${icon('shop')} Emprendedoras</button>
+          <button data-section="asociaciones">${icon('people')} Asociaciones</button>
+          <button data-section="categorias">${icon('tag')} Categorías</button>
+          <button data-section="tipos">${icon('yarn')} Tipos de productos</button>
         </nav>
 
-        <button id="logout">Cerrar sesión</button>
+        <button id="logout">${icon('exit')} Cerrar sesión</button>
         <a class="sidebar-public-link" href="#inicio">Ver tiendas públicas</a>
       </aside>
 
@@ -82,18 +90,24 @@ async function mostrarPanel(logout) {
 
 async function abrirSeccion(seccion) {
   seccionActual = seccion;
+  document.querySelectorAll('[data-section]').forEach(button => {
+    if (button.dataset.section === seccion) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
 
   const contenido = document.querySelector('#section-content');
 
   if (seccion === 'inicio') {
     contenido.innerHTML = `
-      <div class="welcome-card">
-        <h2>Bienvenido al panel</h2>
-        <p>
-          Desde aquí podrás administrar las tiendas
-          y los datos de ConectaSur.
-        </p>
-      </div>`;
+      <div class="admin-welcome"><div><p class="admin-eyebrow">Tu comunidad, conectada</p><h2>Hagamos crecer lo local.</h2><p>Gestiona las tiendas y la información que da vida a ConectaSur.</p></div><div class="admin-welcome-icon">${icon('shop')}</div></div>
+      <div class="admin-stats">${[['shops','Tiendas registradas','shop'],['associations','Asociaciones','people'],['categories','Categorías','tag'],['types','Tipos de productos','yarn']].map(([id,label,symbol]) => `<div class="admin-stat">${icon(symbol)}<strong id="stat-${id}">—</strong><span>${label}</span></div>`).join('')}</div>
+      <p id="dashboard-summary-status" role="status">Cargando resumen…</p>
+      <h3 class="admin-shortcuts-title">¿Qué necesitas hacer hoy?</h3><div class="admin-shortcuts">${[['emprendedoras','Gestionar emprendedoras','Crea cuentas y revisa sus tiendas.','shop'],['asociaciones','Organizar asociaciones','Conecta a las emprendedoras de tu comunidad.','people'],['categorias','Ordenar el catálogo','Mantén claras las categorías de productos.','tag']].map(([section,title,text,symbol]) => `<button data-shortcut="${section}">${icon(symbol)}<span><strong>${title}</strong><small>${text}</small></span>${icon('arrow')}</button>`).join('')}</div>`;
+    contenido.querySelectorAll('[data-shortcut]').forEach(button => button.addEventListener('click', () => abrirSeccion(button.dataset.shortcut)));
+    const summaries = await Promise.allSettled([db.listShops(), db.listAssociations(), db.listItems('categories'), db.listItems('productTypes')]);
+    if (!contenido.isConnected || seccionActual !== 'inicio') return;
+    ['shops','associations','categories','types'].forEach((id,index) => { contenido.querySelector('#stat-' + id).textContent = summaries[index].status === 'fulfilled' ? summaries[index].value.length : '—'; });
+    contenido.querySelector('#dashboard-summary-status').textContent = summaries.some(item => item.status === 'rejected') ? 'No pudimos cargar todo el resumen. Puedes intentar nuevamente desde Inicio.' : 'Resumen actualizado con los datos de la plataforma.';
     return;
   }
 
@@ -994,6 +1008,11 @@ async function iniciar() {
     await showPublicShop(app, db, id, isCurrent);
   } else {
     await showPublicShops(app, db, isCurrent);
+    if (isCurrent() && ['#productos', '#tiendas'].includes(route)) {
+      const section = document.querySelector(route);
+      section?.scrollIntoView({ behavior: 'auto' });
+      section?.querySelector('h2')?.focus({ preventScroll: true });
+    }
   }
 }
 

@@ -25,7 +25,7 @@ El acceso a datos usa Supabase según la migración acordada por el grupo. El ch
 
 ## Datos y privacidad
 
-La lista usa listPublicShops() y la ficha getShop(), en web/supabase-data.js. Ambas consultan public_shops: la vista filtra tiendas y perfiles activos y expone solo la proyección pública. La pantalla no consulta profiles, productos privados ni ventas, y no requiere una sesión administrativa.
+La lista usa listPublicShops() y la ficha getShop(), en web/supabase-data.js. Ambas consultan public_shops: la vista filtra tiendas y perfiles activos y expone solo la proyección pública. La galería y las imágenes de productos de cada tienda se leen desde public_products. La pantalla no consulta profiles, productos privados ni ventas, y no requiere una sesión administrativa.
 
 Los datos recibidos se escapan antes de mostrarse. Solo se aceptan imágenes HTTPS; los contactos ejecutables no generan enlaces. Se muestran estados explícitos si faltan datos, la tienda no existe, fue desactivada o falla la conexión. La ficha completa no recorta la descripción ni los datos de contacto.
 

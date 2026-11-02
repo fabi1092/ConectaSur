@@ -30,6 +30,7 @@ const product = r => ({
   attributes: r.attributes,
   priceClp: r.price_clp,
   onRequest: r.on_request,
+  soldOut: r.sold_out === true,
   photo: r.photo,
   variants: r.variants,
   updatedAt: r.updated_at
