@@ -1,7 +1,7 @@
 // Pruebas de RLS y RPC con roles reales de PostgreSQL, sin credenciales de la instancia de clase.
 import {before,after,describe,it} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import pg from 'pg';
 let pool;
@@ -13,7 +13,7 @@ before(async()=>{
  const tables=await pool.query("select count(*)::int as n from information_schema.tables where table_schema='public'");
  assert.equal(tables.rows[0].n,0,'La base de pruebas debe estar vacia');
  await pool.query(readFileSync(new URL('./bootstrap-local.sql',import.meta.url),'utf8'));
- await pool.query(readFileSync(new URL('../migrations/001_conectasur.sql',import.meta.url),'utf8'));
+ for(const file of readdirSync(new URL('../migrations/',import.meta.url)).filter(n=>n.endsWith('.sql')).sort())await pool.query(readFileSync(new URL('../migrations/'+file,import.meta.url),'utf8'));
  for(const id of Object.values(ids))await pool.query('insert into auth.users(id) values($1)',[id]);
  await pool.query("update public.profiles set role='admin' where id=$1",[ids.admin]);
  for(const [sid,uid] of [['ana',ids.ana],['bea',ids.bea]]){

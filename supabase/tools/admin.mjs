@@ -1,6 +1,6 @@
 // Administracion de la instancia del grupo mediante Studio Basic Auth.
 // Solo se usa desde un computador de desarrollo, nunca en Android/web. No pide service_role.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
@@ -35,16 +35,15 @@ export async function api(path,{token,method='GET',body,headers={}}={}) {
 }
 export const literal=(value)=>"'"+String(value).replaceAll("'","''")+"'";
 export async function migrate() {
-  const sql=readFileSync(new URL('../migrations/001_conectasur.sql',import.meta.url),'utf8');
+ for(const file of readdirSync(new URL('../migrations/',import.meta.url)).filter(n=>/^\d+.*\.sql$/.test(n)).sort()) {
+  const id=file.slice(0,-4),sql=readFileSync(new URL('../migrations/'+file,import.meta.url),'utf8');
   const sha=createHash('sha256').update(sql.replaceAll('\r\n','\n')).digest('hex');
   const state=await query("select to_regclass('app_private.schema_migrations') as migrations");
-  if(state[0]?.migrations){
-    const previous=await query("select sha256 from app_private.schema_migrations where id='001_conectasur'");
-    if(previous.length){if(previous[0].sha256!==sha)throw new Error('La migracion aplicada fue modificada; crear una nueva');console.log('Migracion 001 ya aplicada.');return;}
-  }
-  const record="create table if not exists app_private.schema_migrations(id text primary key,sha256 text not null,applied_at timestamptz not null default now()); insert into app_private.schema_migrations(id,sha256) values('001_conectasur',"+literal(sha)+");";
-  await query(sql.replace(/commit;\s*$/,record+'\ncommit;'));
-  console.log('Migracion 001 aplicada a la instancia del grupo.');
+  if(state[0]?.migrations){const previous=await query('select sha256 from app_private.schema_migrations where id='+literal(id));
+   if(previous.length){if(previous[0].sha256!==sha)throw new Error('La migracion '+id+' aplicada fue modificada');console.log(id+' ya aplicada');continue;}}
+  const record="create table if not exists app_private.schema_migrations(id text primary key,sha256 text not null,applied_at timestamptz not null default now()); insert into app_private.schema_migrations(id,sha256) values("+literal(id)+","+literal(sha)+");";
+  await query(sql.replace(/commit;\s*$/,record+'\ncommit;'));console.log(id+' aplicada');
+ }
 }
 export async function seed() {
   const config=settings(); const accounts=config.accounts??{};
