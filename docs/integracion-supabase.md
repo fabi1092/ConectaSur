@@ -23,7 +23,7 @@ val shop = RepositoryProvider.shops().getShop(requireNotNull(session.shopId))
 
 Las funciones suspend se invocan desde lifecycleScope. currentSession verifica el perfil activo y renueva el token cuando corresponde. El cierre de sesión limpia los tokens y la caché privada; los borradores permanecen cifrados para la misma cuenta.
 
-Para logos: elegir imagen con el selector del sistema, decodificar/comprimir JPEG hasta 2 MiB y llamar uploadLogo. El método sube el archivo y actualiza logo_url. La huella opcional con BiometricPrompt sigue siendo una tarea de la pantalla de acceso; este cambio no la implementa.
+StoreActivity implementa el acceso y cierre de sesión, el formulario de tienda y el selector de logos con conversión a JPEG hasta 2 MiB antes de llamar uploadLogo. La huella opcional usa BiometricPrompt y una clave de Android Keystore ligada a autenticación por operación. Ver [acceso y tienda de Fabián](fabian/acceso-tienda.md) para detalles y pruebas.
 
 ## Dan: productos y variantes
 
