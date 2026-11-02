@@ -2,9 +2,17 @@
 import './style.css';
 import config from '../supabase-config.js';
 import { createDataLayer } from '../supabase-data.js';
+import { showPublicShops, showPublicShop } from './public-shops.js';
 
 const app = document.querySelector('#app');
 const db = createDataLayer(config);
+
+app.addEventListener('click', event => {
+  if (event.target.closest('.skip-link')) {
+    event.preventDefault();
+    document.querySelector('#public-content')?.focus();
+  }
+});
 
 let usuarioActual = null;
 let tiendas = [];
@@ -34,6 +42,7 @@ function mostrarLogin() {
       <section class="login-card">
         <h1>ConectaSur</h1>
         <p>Panel de administración</p>
+        <a class="public-return" href="#inicio">← Volver a las tiendas</a>
 
         <form id="login-form">
           <label for="email">Correo electrónico</label>
@@ -70,6 +79,8 @@ function mostrarLogin() {
           document.querySelector('#password').value
         );
 
+        if (!mensaje.isConnected) return;
+
         if (usuario.role !== 'admin') {
           await db.logout();
           mensaje.textContent =
@@ -103,6 +114,7 @@ async function mostrarPanel() {
         </nav>
 
         <button id="logout">Cerrar sesión</button>
+        <a class="sidebar-public-link" href="#inicio">Ver tiendas públicas</a>
       </aside>
 
       <main class="content">
@@ -1015,9 +1027,32 @@ function mostrarFormularioLista(seccion) {
 // INICIO
 // ------------------------------------------
 
+let navigationVersion = 0;
+
 async function iniciar() {
+  const version = ++navigationVersion;
+  const isCurrent = () => version === navigationVersion;
+  const route = window.location.hash;
+
+  if (route !== '#administracion') {
+    usuarioActual = null;
+    seccionActual = 'publica';
+    if (route.startsWith('#tienda/')) {
+      let id;
+      try { id = decodeURIComponent(route.slice('#tienda/'.length)); }
+      catch { id = ''; }
+      await showPublicShop(app, db, id, isCurrent);
+    } else {
+      await showPublicShops(app, db, isCurrent);
+    }
+    return;
+  }
+
+  document.title = 'ConectaSur | Administración';
+  app.innerHTML = '<main class="login-container"><p class="login-loading" role="status">Comprobando acceso…</p></main>';
   try {
     const usuario = await db.currentSession();
+    if (!isCurrent()) return;
 
     if (usuario?.role === 'admin') {
       usuarioActual = usuario;
@@ -1026,8 +1061,9 @@ async function iniciar() {
       mostrarLogin();
     }
   } catch {
-    mostrarLogin();
+    if (isCurrent()) mostrarLogin();
   }
 }
 
+window.addEventListener('hashchange', iniciar);
 iniciar();

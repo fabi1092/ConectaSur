@@ -76,7 +76,9 @@ En Android, Mi tienda permite entrar con una cuenta de emprendedora, editar la f
 
 Panel publicado: https://conectasur-dev.web.app
 
-La URL es pública por autorización de Benjamín y exige el inicio de sesión de administrador de ConectaSur para consultar o modificar datos administrativos. No incluye contraseñas de demostración.
+La portada y las fichas de tienda se pueden consultar sin cuenta. Para consultar o modificar datos administrativos se exige el inicio de sesión de administrador de ConectaSur. No incluye contraseñas de demostración.
+
+Revisión de Entrega 4 del 4 de noviembre: [bloque 1, ficha pública de tienda](docs/entrega-4/ficha-publica.md). La portada abre en la URL principal; cada ficha tiene un enlace `#tienda/ID`. El panel continúa en `#administracion`.
 
 En Android: Inicio → Mi tienda → ingresar con una cuenta de emprendedora → Mis productos / Registrar una venta / Historial de ventas. Las preferencias de productos e historial se abren desde Mis productos. La app abre el catálogo público sin preguntar un rol ni pedir huella al inicio.
 

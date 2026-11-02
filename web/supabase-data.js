@@ -285,6 +285,14 @@ export function createDataLayer(config, { storage } = {}) {
       );
     },
 
+    async listPublicShops() {
+      return unwrap(
+        await sdk.from('public_shops')
+          .select('id,name,description,logo_url,entrepreneur_type,sector,contact,show_prices')
+          .order('name')
+      ).map(shop);
+    },
+
     async updateShop(id, changes) {
       const mapped = {};
 

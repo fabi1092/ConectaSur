@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-11-02T20:55:50.038Z",
+  "url": "https://conectasur-dev.web.app",
+  "httpStatus": 200,
+  "publicShops": 4,
+  "directShop": "https://conectasur-dev.web.app/#tienda/shop_demo_ana",
+  "mobileWidth": 390,
+  "checks": [
+    "Portada publicada sin cuenta",
+    "Ficha pública y recarga de enlace directo",
+    "Sin desbordamiento horizontal en portada ni ficha",
+    "Acceso administrativo separado disponible",
+    "Sin errores JavaScript"
+  ],
+  "backend": "Supabase sin cambios de esquema ni permisos",
+  "scope": "Comprobación posterior a publicar; las 16 pruebas de integración completas se ejecutaron localmente contra Supabase real"
+}
