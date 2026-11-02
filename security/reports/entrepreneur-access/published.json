@@ -1,15 +1,15 @@
 {
-  "checkedAt": "2026-11-02T21:21:10.393Z",
-  "url": "https://conectasur-dev.web.app/#mi-tienda",
+  "checkedAt": "2026-11-02T21:36:18.878Z",
+  "url": "https://conectasur-dev.web.app/#ingresar",
   "httpStatus": 200,
   "mobileWidth": 390,
   "checks": [
-    "Ingreso de emprendedora real en la URL publicada",
-    "Vista de tienda propia sin desbordamiento",
-    "Sesión conservada al recargar",
-    "Cierre de sesión y rechazo de restauración al recargar",
+    "La portada ofrece un solo acceso Ingresar",
+    "Cuenta de emprendedora abre su tienda, restaura sesión y permite salir",
+    "Cuenta administradora abre su panel, restaura sesión y permite salir",
+    "Acceso sin desbordamiento en formato móvil",
     "Sin errores JavaScript"
   ],
   "backend": "Supabase",
-  "scope": "Comprobación posterior a publicar, adicional a las 19 comprobaciones locales con fixtures propios"
+  "scope": "Verificación posterior a publicar con las dos cuentas ficticias existentes; las 21 comprobaciones completas se ejecutaron localmente"
 }

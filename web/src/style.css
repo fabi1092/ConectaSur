@@ -367,7 +367,7 @@ button {
 @media (max-width: 650px) {
   .public-header, .public-footer, .public-directory, .public-shop-page, .public-state { width: calc(100% - 36px); }
   .public-header { min-height: 88px; gap: 8px; flex-wrap: wrap; padding-block: 12px; }
-  .public-navigation { justify-content: space-between; width: 100%; gap: 8px; }
+  .public-navigation { gap: 8px; }
   .public-owner-link { font-size: 1rem; padding-inline: 14px; }
   .public-brand { font-size: 1.5rem; }
   .public-admin { padding: 8px 10px; font-size: .875rem; }

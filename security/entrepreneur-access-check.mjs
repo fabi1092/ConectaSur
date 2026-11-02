@@ -9,7 +9,7 @@ import { settings, query, literal } from '../supabase/tools/admin.mjs';
 
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const base = process.env.ENTREPRENEUR_ACCESS_URL || 'http://127.0.0.1:5174/';
-const url = new URL('#mi-tienda', base).href;
+const url = new URL('#ingresar', base).href;
 const output = new URL('./reports/entrepreneur-access/', import.meta.url);
 mkdirSync(output, { recursive: true });
 const config = settings();
@@ -40,15 +40,15 @@ try {
   async function fillLogin(accountEmail = email, accountPassword = password) {
     await page.getByLabel('Correo electrónico', { exact: true }).fill(accountEmail);
     await page.getByLabel('Contraseña', { exact: true }).fill(accountPassword);
-    await page.getByRole('button', { name: 'Entrar a Mi tienda', exact: true }).click();
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
   }
   const expectHome = async () => { await page.getByRole('heading', { name: 'Esta es tu tienda.', exact: true }).waitFor(); };
-  const expectLogin = async () => { await page.getByRole('button', { name: 'Entrar a Mi tienda', exact: true }).waitFor(); };
+  const expectLogin = async () => { await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).waitFor(); };
 
   await page.goto(base);
-  await page.getByRole('link', { name: 'Mi tienda', exact: true }).click();
+  await page.getByRole('link', { name: 'Ingresar', exact: true }).click();
   await expectLogin();
-  checks.push('Mi tienda se abre desde la portada sin preguntar el rol al iniciar');
+  checks.push('Un solo acceso Ingresar se abre desde la portada sin preguntar el rol');
   await page.getByLabel('Contraseña', { exact: true }).fill('no-es-una-clave-real');
   await page.getByLabel('Mostrar contraseña', { exact: true }).check();
   assert.equal(await page.locator('#owner-password').getAttribute('type'), 'text');
@@ -85,7 +85,7 @@ try {
   await page.locator('#shop-title').waitFor();
   assert.equal(await page.locator('.owner-account-email').count(), 0);
   checks.push('El enlace público abre la ficha propia y no muestra información de la sesión');
-  await page.getByRole('link', { name: 'Mi tienda', exact: true }).click();
+  await page.getByRole('link', { name: 'Ingresar', exact: true }).click();
   await expectHome();
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -116,18 +116,27 @@ try {
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await fillLogin(config.accounts.admin.email, config.accounts.admin.password);
-  await page.getByRole('alert').filter({ hasText: 'cuenta de emprendedora' }).waitFor();
-  assert.equal(await page.locator('.owner-home, .dashboard').count(), 0);
-  checks.push('Una cuenta administradora no abre la vista de emprendedora');
+  await page.getByRole('heading', { name: 'Panel administrativo', exact: true }).waitFor();
+  assert.equal(await page.locator('.owner-home').count(), 0);
+  await page.reload();
+  await page.getByRole('heading', { name: 'Panel administrativo', exact: true }).waitFor();
+  checks.push('El mismo formulario reconoce al administrador y restaura su panel al recargar');
+  await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+  await expectLogin();
+  await page.reload();
+  await expectLogin();
+  checks.push('Cerrar sesión de administrador impide restaurar el panel al recargar');
   await fillLogin();
   await expectHome();
-  await page.getByRole('link', { name: 'Administración', exact: true }).click();
-  await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).waitFor();
-  assert.equal(await page.locator('.dashboard').count(), 0);
-  await page.getByRole('link', { name: /Volver a las tiendas/ }).click();
-  await page.getByRole('link', { name: 'Mi tienda', exact: true }).click();
+  await page.goto(new URL('#administracion', base).href);
   await expectHome();
-  checks.push('La sesión de emprendedora no permite abrir la administración y se conserva al volver a su tienda');
+  assert.equal(await page.locator('.dashboard').count(), 0);
+  checks.push('Escribir la antigua ruta de administración no eleva los permisos de una emprendedora');
+  await page.goto(base);
+  assert.equal(await page.getByRole('link', { name: 'Administración', exact: true }).count(), 0);
+  await page.getByRole('link', { name: 'Ingresar', exact: true }).click();
+  await expectHome();
+  checks.push('La cabecera pública tiene un solo acceso y regresa al espacio de la cuenta activa');
 
   await admin.setEmprendedoraActive(fixture.uid, fixture.shopId, false);
   await page.getByRole('button', { name: 'Actualizar información', exact: true }).click();

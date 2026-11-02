@@ -78,9 +78,9 @@ Panel publicado: https://conectasur-dev.web.app
 
 La portada y las fichas de tienda se pueden consultar sin cuenta. Para consultar o modificar datos administrativos se exige el inicio de sesión de administrador de ConectaSur. No incluye contraseñas de demostración.
 
-Revisión de Entrega 4 del 4 de noviembre: [bloque 1, ficha pública de tienda](docs/entrega-4/ficha-publica.md). La portada abre en la URL principal; cada ficha tiene un enlace `#tienda/ID`. El panel continúa en `#administracion`.
+Revisión de Entrega 4 del 4 de noviembre: [bloque 1, ficha pública de tienda](docs/entrega-4/ficha-publica.md). La portada abre en la URL principal; cada ficha tiene un enlace `#tienda/ID`. El único acceso de cuenta es **Ingresar** (`#ingresar`): el rol validado en Supabase abre la tienda propia o el panel administrativo.
 
-[Bloque 2, acceso de emprendedoras](docs/entrega-4/acceso-emprendedoras.md): `#mi-tienda` permite ingresar con las credenciales creadas por el administrador, consultar la tienda propia y cerrar sesión. La edición de su ficha se realiza en Android.
+[Bloque 2, acceso de cuentas](docs/entrega-4/acceso-emprendedoras.md): la emprendedora ingresa con las credenciales creadas por el administrador, consulta la tienda propia y cierra sesión. La edición de su ficha se realiza en Android. Los enlaces anteriores `#mi-tienda` y `#administracion` abren el mismo acceso y respetan el rol de la cuenta.
 
 En Android: Inicio → Mi tienda → ingresar con una cuenta de emprendedora → Mis productos / Registrar una venta / Historial de ventas. Las preferencias de productos e historial se abren desde Mis productos. La app abre el catálogo público sin preguntar un rol ni pedir huella al inicio.
 

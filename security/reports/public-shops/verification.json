@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-11-02T21:19:00.114Z",
+  "checkedAt": "2026-11-02T21:35:06.132Z",
   "url": "http://127.0.0.1:5174/",
   "passed": 16,
   "checks": [
@@ -16,7 +16,7 @@
     "Estado vacío sin datos inventados",
     "Error de conexión y reintento recuperan el listado",
     "Nombres/descripciones se escapan y se rechazan enlaces ejecutables",
-    "Una consulta pública tardía no reemplaza el acceso administrativo",
+    "Una consulta pública tardía no reemplaza el acceso único",
     "Ingreso de administrador, cuatro secciones, logout y regreso a portada conservados",
     "Sin errores JavaScript en el recorrido"
   ],

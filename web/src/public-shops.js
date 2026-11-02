@@ -42,8 +42,7 @@ function shell(content) {
     <header class="public-header">
       <a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">Conecta<span>Sur</span></a>
       <nav class="public-navigation" aria-label="Acceso a tu cuenta">
-        <a class="public-owner-link" href="#mi-tienda">Mi tienda <span aria-hidden="true">→</span></a>
-        <a class="public-admin" href="#administracion">Administración <span aria-hidden="true">↗</span></a>
+        <a class="public-owner-link" href="#ingresar">Ingresar <span aria-hidden="true">→</span></a>
       </nav>
     </header>
     <main id="public-content" tabindex="-1">${content}</main>

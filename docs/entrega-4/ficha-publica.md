@@ -8,7 +8,7 @@ Revisión: miércoles 4 de noviembre de 2026. Alcance de este bloque: portada p�
 2. Abrir Ver tienda. La ficha muestra nombre, logo/foto cuando existe, descripción, tipo, sector y contacto.
 3. Desde Android, iniciar sesión en Mi tienda con la cuenta ficticia correspondiente, modificar su descripción y pulsar Guardar cambios. Recargar la ficha web y mostrar el mismo texto.
 4. Copiar la dirección de la ficha (#tienda/ID) y abrirla sin sesión en otro navegador o celular.
-5. Abrir Administración desde la cabecera para entrar al panel existente. Ver tiendas públicas permite volver sin mezclar controles administrativos con la ficha.
+5. Elegir Ingresar desde la cabecera y usar una cuenta administradora para entrar al panel. Ver tiendas públicas permite volver sin mezclar controles administrativos con la ficha.
 
 ## Trazabilidad al checklist del profesor
 

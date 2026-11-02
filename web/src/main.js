@@ -3,7 +3,7 @@ import './style.css';
 import config from '../supabase-config.js';
 import { createDataLayer } from '../supabase-data.js';
 import { showPublicShops, showPublicShop } from './public-shops.js';
-import { showEntrepreneurAccess } from './entrepreneur-access.js';
+import { showAccountAccess } from './entrepreneur-access.js';
 
 const app = document.querySelector('#app');
 const db = createDataLayer(config);
@@ -37,69 +37,7 @@ function mostrarMensaje(texto, error = false) {
   mensaje.className = error ? 'mensaje error' : 'mensaje';
 }
 
-function mostrarLogin() {
-  app.innerHTML = `
-    <main class="login-container">
-      <section class="login-card">
-        <h1>ConectaSur</h1>
-        <p>Panel de administración</p>
-        <a class="public-return" href="#inicio">← Volver a las tiendas</a>
-
-        <form id="login-form">
-          <label for="email">Correo electrónico</label>
-          <input id="email" type="email" required
-            autocomplete="username"
-            placeholder="Correo de administrador">
-
-          <label for="password">Contraseña</label>
-          <input id="password" type="password" required
-            autocomplete="current-password"
-            placeholder="Tu contraseña">
-
-          <button type="submit">Iniciar sesión</button>
-          <p id="mensaje"></p>
-        </form>
-      </section>
-    </main>`;
-
-  document.querySelector('#login-form')
-    .addEventListener('submit', async e => {
-      e.preventDefault();
-
-      const mensaje = document.querySelector('#mensaje');
-      const boton = e.currentTarget.querySelector(
-        'button[type="submit"]'
-      );
-
-      boton.disabled = true;
-      mensaje.textContent = 'Comprobando acceso...';
-
-      try {
-        const usuario = await db.login(
-          document.querySelector('#email').value,
-          document.querySelector('#password').value
-        );
-
-        if (!mensaje.isConnected) return;
-
-        if (usuario.role !== 'admin') {
-          await db.logout();
-          mensaje.textContent =
-            'Esta cuenta no tiene permisos de administrador.';
-          return;
-        }
-
-        usuarioActual = usuario;
-        await mostrarPanel();
-      } catch (error) {
-        mensaje.textContent = error.message;
-      } finally {
-        if (boton.isConnected) boton.disabled = false;
-      }
-    });
-}
-
-async function mostrarPanel() {
+async function mostrarPanel(logout) {
   app.innerHTML = `
     <div class="dashboard">
       <aside class="sidebar">
@@ -137,14 +75,7 @@ async function mostrarPanel() {
     });
   });
 
-  document.querySelector('#logout').addEventListener(
-    'click',
-    async () => {
-      await db.logout();
-      usuarioActual = null;
-      mostrarLogin();
-    }
-  );
+  document.querySelector('#logout').addEventListener('click', logout);
 
   await abrirSeccion('inicio');
 }
@@ -1038,41 +969,31 @@ async function iniciar() {
   const isCurrent = () => version === navigationVersion;
   const route = window.location.hash;
 
-  if (route === '#mi-tienda') {
+  // Los enlaces anteriores siguen abriendo el mismo acceso; el rol viene del backend.
+  if (['#ingresar', '#mi-tienda', '#administracion'].includes(route)) {
     usuarioActual = null;
-    seccionActual = 'mi-tienda';
-    stopOwnerScreen = showEntrepreneurAccess(app, db, isCurrent);
+    seccionActual = 'cuenta';
+    stopOwnerScreen = showAccountAccess(app, db, isCurrent, async (user, logout) => {
+      if (!isCurrent()) return;
+      usuarioActual = user;
+      await mostrarPanel(async () => {
+        usuarioActual = null;
+        seccionActual = 'cuenta';
+        await logout();
+      });
+    });
     return;
   }
 
-  if (route !== '#administracion') {
-    usuarioActual = null;
-    seccionActual = 'publica';
-    if (route.startsWith('#tienda/')) {
-      let id;
-      try { id = decodeURIComponent(route.slice('#tienda/'.length)); }
-      catch { id = ''; }
-      await showPublicShop(app, db, id, isCurrent);
-    } else {
-      await showPublicShops(app, db, isCurrent);
-    }
-    return;
-  }
-
-  document.title = 'ConectaSur | Administración';
-  app.innerHTML = '<main class="login-container"><p class="login-loading" role="status">Comprobando acceso…</p></main>';
-  try {
-    const usuario = await db.currentSession();
-    if (!isCurrent()) return;
-
-    if (usuario?.role === 'admin') {
-      usuarioActual = usuario;
-      await mostrarPanel();
-    } else {
-      mostrarLogin();
-    }
-  } catch {
-    if (isCurrent()) mostrarLogin();
+  usuarioActual = null;
+  seccionActual = 'publica';
+  if (route.startsWith('#tienda/')) {
+    let id;
+    try { id = decodeURIComponent(route.slice('#tienda/'.length)); }
+    catch { id = ''; }
+    await showPublicShop(app, db, id, isCurrent);
+  } else {
+    await showPublicShops(app, db, isCurrent);
   }
 }
 

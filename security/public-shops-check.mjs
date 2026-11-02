@@ -142,17 +142,17 @@ try {
     await route.fulfill({ json: [] });
   });
   await page.goto(baseUrl);
-  await page.getByRole('link', { name: 'Administración' }).click();
+  await page.getByRole('link', { name: 'Ingresar' }).click();
   await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).waitFor();
   releasePublic();
   await page.waitForLoadState('networkidle');
   assert.equal(await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).count(), 1);
   await page.unroute('**/rest/v1/public_shops?*');
-  checks.push('Una consulta pública tardía no reemplaza el acceso administrativo');
+  checks.push('Una consulta pública tardía no reemplaza el acceso único');
 
-  await page.goto(new URL('#administracion', baseUrl).href);
-  await page.getByLabel('Correo electrónico').fill(config.accounts.admin.email);
-  await page.getByLabel('Contraseña').fill(config.accounts.admin.password);
+  await page.goto(new URL('#ingresar', baseUrl).href);
+  await page.getByLabel('Correo electrónico', { exact: true }).fill(config.accounts.admin.email);
+  await page.getByLabel('Contraseña', { exact: true }).fill(config.accounts.admin.password);
   await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
   await page.getByRole('heading', { name: 'Panel administrativo' }).waitFor();
   for (const section of ['emprendedoras', 'asociaciones', 'categorias', 'tipos']) {
@@ -162,7 +162,7 @@ try {
   }
   await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
   await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).waitFor();
-  await page.getByRole('link', { name: 'Volver a las tiendas' }).click();
+  await page.getByRole('link', { name: 'Ver las tiendas', exact: true }).click();
   await page.getByRole('heading', { name: 'Nuestras tiendas' }).waitFor();
   checks.push('Ingreso de administrador, cuatro secciones, logout y regreso a portada conservados');
   assert.deepEqual(browserErrors, []);

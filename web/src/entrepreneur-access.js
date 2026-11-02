@@ -3,44 +3,45 @@ import { publicShell, shopLogo, wireShopImages, escapeHtml as escape } from './p
 function messageFor(error) {
   if (error.code === 'account_inactive') return 'Tu cuenta está desactivada o no tiene acceso. Consulta al administrador de ConectaSur.';
   if (error.code === 'shop_not_assigned') return 'Tu cuenta aún no tiene una tienda disponible. Pide al administrador que revise la asignación.';
-  if (error.code === 'entrepreneur_required') return 'Para entrar a Mi tienda necesitas una cuenta de emprendedora. Las cuentas administradoras ingresan desde Administración.';
+  if (error.code === 'entrepreneur_required') return 'Esta cuenta no tiene acceso a una tienda ni a la administración. Puedes seguir conociendo las tiendas sin ingresar.';
   if (['invalid_credentials', 'invalid_grant', 'user_not_found'].includes(error.code) || error.status === 400) return 'El correo o la contraseña no coinciden. Revísalos y vuelve a intentarlo.';
   return 'No pudimos comprobar el acceso. Revisa tu conexión y vuelve a intentarlo.';
 }
 
 // Una instancia por ruta: al salir se cancelan los observadores y se ignoran respuestas tardías.
-export function showEntrepreneurAccess(app, db, isCurrent = () => true) {
+export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
   let stopped = false;
   let mode = 'loading';
   let busy = false;
   let checking = false;
   const events = new AbortController();
   const alive = () => !stopped && isCurrent();
-  document.title = 'Mi tienda | ConectaSur';
+  document.title = 'Ingresar | ConectaSur';
 
   function loading(text = 'Comprobando tu sesión…') {
-    app.innerHTML = publicShell(`<section class="owner-state"><p class="public-eyebrow">Mi tienda</p><p role="status">${escape(text)}</p></section>`);
+    app.innerHTML = publicShell(`<section class="owner-state"><p class="public-eyebrow">Tu cuenta en ConectaSur</p><p role="status">${escape(text)}</p></section>`);
   }
 
   function login(message = '', error = false) {
     if (!alive()) return;
     mode = 'login';
     busy = false;
+    document.title = 'Ingresar | ConectaSur';
     app.innerHTML = publicShell(`<section class="owner-access" aria-labelledby="owner-title">
-      <div class="owner-intro"><p class="public-eyebrow">Tu emprendimiento, más cerca</p><h1 id="owner-title" tabindex="-1">Entra a tu tienda.</h1>
-        <p>Revisa cómo se ve tu emprendimiento y encuentra todos sus datos en un solo lugar.</p>
+      <div class="owner-intro"><p class="public-eyebrow">Tu espacio en ConectaSur</p><h1 id="owner-title" tabindex="-1">Ingresa a tu cuenta.</h1>
+        <p>Usa tu correo y contraseña. Te llevaremos directamente a tu espacio.</p>
       </div>
-      <div class="owner-login-card"><h2>Ingresar a Mi tienda</h2><p>Escribe los datos de tu cuenta.</p>
+      <div class="owner-login-card"><h2>Iniciar sesión</h2><p>Escribe los datos de tu cuenta.</p>
         <form id="owner-login-form">
           <label for="owner-email">Correo electrónico</label><input id="owner-email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="254" required placeholder="tu.correo@ejemplo.cl">
           <label for="owner-password">Contraseña</label><input id="owner-password" type="password" autocomplete="current-password" required aria-describedby="owner-password-help">
           <label class="owner-show-password"><input id="owner-show-password" type="checkbox">Mostrar contraseña</label>
           <p id="owner-password-help" class="owner-hint">Escribe tu contraseña tal como te la entregaron.</p>
           <p id="owner-access-status" class="owner-status${error ? ' owner-error' : ''}" role="${error ? 'alert' : 'status'}">${escape(message)}</p>
-          <button class="public-primary" type="submit">Entrar a Mi tienda <span aria-hidden="true">→</span></button>
+          <button class="public-primary" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
         </form>
       </div>
-      <aside class="owner-help"><h2>¿Es tu primera vez?</h2><p>Usa el correo y la contraseña que te entregó el administrador de ConectaSur.</p><p>Puedes seguir conociendo las tiendas sin ingresar.</p><a class="public-text-link" href="#inicio">Ver las tiendas <span aria-hidden="true">→</span></a></aside>
+      <aside class="owner-help"><h2>¿Es tu primera vez?</h2><p>Si te entregaron una cuenta, usa ese correo y contraseña para ingresar.</p><p>Puedes seguir conociendo las tiendas sin ingresar.</p><a class="public-text-link" href="#inicio">Ver las tiendas <span aria-hidden="true">→</span></a></aside>
     </section>`);
     app.querySelector('#owner-title').focus({ preventScroll: true });
     const form = app.querySelector('#owner-login-form');
@@ -65,11 +66,7 @@ export function showEntrepreneurAccess(app, db, isCurrent = () => true) {
         password.value = '';
         password.type = 'password';
         reveal.checked = false;
-        if (user.role !== 'emprendedora') {
-          await db.logout();
-          throw { code: 'entrepreneur_required' };
-        }
-        await loadHome();
+        await openAccount(user);
       } catch (error) {
         if (!alive() || !form.isConnected) return;
         status.textContent = messageFor(error);
@@ -111,6 +108,7 @@ export function showEntrepreneurAccess(app, db, isCurrent = () => true) {
   function home({ user, shop }) {
     if (!alive()) return;
     mode = 'home';
+    document.title = 'Mi tienda | ConectaSur';
     app.innerHTML = publicShell(`<section class="owner-home" aria-labelledby="owner-home-title">
       <div class="owner-topbar"><a class="public-back" href="#inicio">← Volver a las tiendas</a><button id="owner-logout" class="owner-secondary">Cerrar sesión</button></div>
       <div class="owner-welcome"><div><p class="public-eyebrow">Mi espacio en ConectaSur</p><h1 id="owner-home-title" tabindex="-1">Esta es tu tienda.</h1><p>Consulta tus datos y revisa cómo te encuentra tu comunidad.</p></div><span class="owner-session-state">Sesión iniciada</span></div>
@@ -125,6 +123,20 @@ export function showEntrepreneurAccess(app, db, isCurrent = () => true) {
     app.querySelector('#owner-home-title').focus({ preventScroll: true });
     app.querySelector('#owner-logout').addEventListener('click', logout);
     app.querySelector('#owner-refresh').addEventListener('click', () => loadHome());
+  }
+
+  async function openAccount(user) {
+    if (!alive()) return;
+    if (user.role === 'admin') {
+      mode = 'admin';
+      document.title = 'Administración | ConectaSur';
+      await showAdmin(user, logout);
+    } else if (user.role === 'emprendedora') {
+      await loadHome();
+    } else {
+      await db.logout();
+      login(messageFor({ code: 'entrepreneur_required' }), true);
+    }
   }
 
   async function loadHome() {
@@ -159,8 +171,7 @@ export function showEntrepreneurAccess(app, db, isCurrent = () => true) {
       const user = await db.currentSession();
       if (!alive()) return;
       if (!user) login();
-      else if (user.role !== 'emprendedora') login(messageFor({ code: 'entrepreneur_required' }), true);
-      else await loadHome();
+      else await openAccount(user);
     } catch (error) {
       if (!alive()) return;
       if (error.code === 'account_inactive') login(messageFor(error), true);
