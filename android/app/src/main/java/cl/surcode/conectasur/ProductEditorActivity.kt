@@ -30,10 +30,11 @@ class ProductEditorActivity : OwnerActivity() {
     private var step=0
     private var photoTarget="main"
     private var cameraUri:Uri?=null
+    private var deferredPhoto:Uri?=null
     private var dictationField="description"
-    private val types=listOf("artesania","ropa","alimento","planta","hogar","otro")
-    private val typeNames=listOf("Artesanía (incluye flores tejidas y fibras vegetales)","Ropa y tejidos","Alimentos","Planta viva","Hogar y accesorios","Otro producto")
-    private val specific=mapOf(
+    private val types=mutableListOf("artesania","ropa","alimento","planta","hogar","otro")
+    private val typeNames=mutableListOf("Artesanía (incluye flores tejidas y fibras vegetales)","Ropa y tejidos","Alimentos","Planta viva","Hogar y accesorios","Otro producto")
+    private val specific=mutableMapOf(
         "artesania" to listOf("Material","Técnica","Medidas"),"ropa" to listOf("Material","Cuidados"),
         "alimento" to listOf("Ingredientes","Alérgenos","Contenido o porción","Conservación","Fecha de elaboración o vencimiento"),
         "planta" to listOf("Especie","Cuidados","Tamaño"),"hogar" to listOf("Material","Medidas","Cuidados"),"otro" to listOf("Características"))
@@ -60,7 +61,13 @@ class ProductEditorActivity : OwnerActivity() {
                     .put("mode",defaults.getString("stockMode")).put("soldOut",defaults.getString("soldOut")).put("visible",defaults.getBoolean("visible"))
                     .put("showPrice",defaults.getBoolean("showPrice")).put("quantity","1").put("photo","").put("variants",JSONArray())
             }
-            initialized=true;step=draft.optInt("step",0).coerceIn(0,3);build();persist();status("Borrador recuperable. Puedes avanzar o volver sin perder los datos.")
+            val definitions=workspace.productTypes(shopId)
+            for(i in 0 until definitions.length()) { val value=definitions.getJSONObject(i);val id=value.getString("id")
+                if(id !in types){types.add(id);typeNames.add(value.getString("name"));specific[id]=value.optJSONObject("fields")?.keys()?.asSequence()?.toList().orEmpty()}
+            }
+            val currentType=draft.optString("productType")
+            if(currentType !in types){types.add(currentType);typeNames.add(currentType);specific[currentType]=draft.optJSONObject("attributes")?.keys()?.asSequence()?.toList().orEmpty()}
+            initialized=true;step=draft.optInt("step",0).coerceIn(0,3);build();persist();deferredPhoto?.let{deferredPhoto=null;encodePhoto(it)};status("Borrador recuperable. Puedes avanzar o volver sin perder los datos.")
         }
     }
     private fun fromProduct(p:OwnerProduct)=JSONObject().put("id",p.base.id).put("step",1).put("name",p.base.name).put("description",p.base.description)
@@ -136,15 +143,17 @@ class ProductEditorActivity : OwnerActivity() {
     }
     private fun takePhoto(){
         try{
-            val file=File.createTempFile("producto-",".jpg",File(cacheDir,"product_photos").apply{mkdirs()})
+            val file=File(File(cacheDir,"product_photos").apply{mkdirs()},"producto-${UUID.randomUUID()}.jpg").apply{createNewFile()}
             cameraUri=FileProvider.getUriForFile(this,"$packageName.files",file);camera.launch(requireNotNull(cameraUri))
         }catch(_:Exception){status("No se pudo abrir la cámara. Puedes elegir una foto de la galería.")}
     }
-    private fun encodePhoto(uri:Uri){lifecycleScope.launch{
+    private fun encodePhoto(uri:Uri){if(!initialized){deferredPhoto=uri;return};lifecycleScope.launch{
         try{
             val bytes=LogoEncoder.jpeg(contentResolver,uri);val encoded="data:image/jpeg;base64,"+Base64.encodeToString(bytes,Base64.NO_WRAP)
             if(photoTarget=="main")draft.put("photo",encoded)else{val rows=draft.getJSONArray("variants");for(i in 0 until rows.length()){val row=rows.getJSONObject(i);if(row.getString("id")==photoTarget)row.put("photo",encoded)}}
-            persist();renderPhoto();if(photoTarget!="main")renderVariants();status("Foto comprimida y guardada en tu borrador.")
+            persist();renderPhoto();if(photoTarget!="main")renderVariants()
+            if(uri==cameraUri){val fileName=uri.lastPathSegment?.substringAfterLast('/');if(fileName!=null && Regex("producto-[a-fA-F0-9-]+\\.jpg").matches(fileName))File(File(cacheDir,"product_photos"),fileName).delete();cameraUri=null}
+            status("Foto comprimida y guardada en tu borrador.")
         }catch(e:Exception){status(e.message?:"No se pudo preparar la foto. Tu borrador se conserva.")}
     }}
     private fun renderPhoto(){
@@ -178,5 +187,5 @@ class ProductEditorActivity : OwnerActivity() {
         }
     }
     override fun onStop(){persist();super.onStop()}
-    override fun onSaveInstanceState(out:Bundle){out.putString("photoTarget",photoTarget);out.putString("cameraUri",cameraUri?.toString());out.putString("dictationField",dictationField);super.onSaveInstanceState(out)}
+    override fun onSaveInstanceState(outState:Bundle){outState.putString("photoTarget",photoTarget);outState.putString("cameraUri",cameraUri?.toString());outState.putString("dictationField",dictationField);super.onSaveInstanceState(outState)}
 }

@@ -19,6 +19,14 @@ object RepositoryProvider {
     }
     fun auth(): AuthRepository = SupabaseAuthRepository(client())
     fun shops(): ShopRepository = SupabaseShopRepository(client())
+    suspend fun syncPendingOwner() {
+        val api=backend?:return
+        val profile=api.cachedProfile()?:return
+        val shop=profile.shopId?:return
+        if(profile.role!=Role.EMPRENDEDORA)return
+        val repo=OwnerWorkspaceRepository(api)
+        if(repo.hasPendingChanges(shop))repo.sync(shop)
+    }
     fun ownerWorkspace() = OwnerWorkspaceRepository(client())
     fun products(): ProductRepository = SupabaseProductRepository(client())
     fun sales(): SalesRepository = SupabaseSalesRepository(client())

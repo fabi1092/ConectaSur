@@ -19,7 +19,7 @@ class SpeechReader(private val context: Context, private val state: (Boolean) ->
     private fun update(value: Boolean) { active = value; state(value) }
     fun read(text: String, slow: Boolean) {
         stop()
-        pending = text to if (slow) 0.75f else 1f
+        pending = cl.surcode.conectasur.domain.chileanSpeech(text) to if (slow) 0.75f else 1f
         update(true)
         if (engine == null) {
             engine = TextToSpeech(context) { status -> main.post {

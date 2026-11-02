@@ -50,6 +50,13 @@ class Entrega5Test {
   while(android.os.SystemClock.elapsedRealtime()<end){var ok=false;s.onActivity{ok=condition(it)};if(ok)return;android.os.SystemClock.sleep(100)}
   Assert.fail("La pantalla no llegó al estado esperado")
  }
+ private fun <T:OwnerActivity> snapshot(s:ActivityScenario<T>,name:String){
+  if(InstrumentationRegistry.getArguments().getString("captureScreenshots")!="true")return
+  s.onActivity{it.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)}
+  android.os.SystemClock.sleep(400)
+  val bitmap=InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+  java.io.File(context.filesDir,"e5-$name.png").outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()
+ }
  private fun edit(id:Int,value:String){onView(withId(id)).perform(scrollTo(),replaceText(value),closeSoftKeyboard())}
  @Test fun encryptedDraftSurvivesClosingEditor():Unit=runBlocking{
   repo.saveDraft(shop,raw());var scenario=ActivityScenario.launch(ProductEditorActivity::class.java)
@@ -58,12 +65,12 @@ class Entrega5Test {
    onView(withId(R.id.pe_next)).perform(scrollTo(),click());edit(R.id.pe_name,"Borrador recuperable E5");edit(R.id.pe_description,"Flores tejidas con lana")
    scenario.close();scenario=ActivityScenario.launch(ProductEditorActivity::class.java)
    wait(scenario){it.findViewById<View>(R.id.pe_name)?.isShown==true}
-   onView(withId(R.id.pe_name)).check(matches(withText("Borrador recuperable E5")))
+   onView(withId(R.id.pe_name)).check(matches(withText("Borrador recuperable E5")));snapshot(scenario,"borrador")
    val stored=context.getSharedPreferences("supabase_private",Context.MODE_PRIVATE).all.values.joinToString()
    Assert.assertFalse(stored.contains("Borrador recuperable E5"))
   }finally{scenario.close()}
  }
- @Test fun editorPublishesVariantWithOwnPhotoPriceAndStock():Unit=runBlocking{
+ @Test fun editorPublishesPhotoAndVariantWithOwnPriceAndStock():Unit=runBlocking{
   val data=raw();created.add(data.getString("id"));repo.saveDraft(shop,data)
   val scenario=ActivityScenario.launch(ProductEditorActivity::class.java)
   try{
@@ -71,7 +78,7 @@ class Entrega5Test {
    onView(withId(R.id.pe_next)).perform(scrollTo(),click());edit(R.id.pe_name,"Producto UI E5");edit(R.id.pe_price,"8000");edit(R.id.pe_description,"Producto de prueba del flujo completo")
    onView(withId(R.id.pe_next)).perform(scrollTo(),click());onView(withId(R.id.pe_add_variant)).perform(scrollTo(),click())
    edit(R.id.pv_label,"Rojo");edit(R.id.pv_price,"9500");edit(R.id.pv_quantity,"2")
-   onView(withId(R.id.pe_next)).perform(scrollTo(),click());onView(withId(R.id.pe_save)).perform(scrollTo(),click())
+   onView(withId(R.id.pe_next)).perform(scrollTo(),click());snapshot(scenario,"disponibilidad");onView(withId(R.id.pe_save)).perform(scrollTo(),click())
    val end=android.os.SystemClock.elapsedRealtime()+60000;var found:OwnerProduct?=null
    while(android.os.SystemClock.elapsedRealtime()<end){found=repo.sync(shop).products.find{it.base.id==data.getString("id")};if(found!=null)break;android.os.SystemClock.sleep(300)}
    Assert.assertNotNull(found);Assert.assertEquals(9500L,found!!.variants.single().priceClp);Assert.assertEquals(2,found.variants.single().quantity)
@@ -87,7 +94,7 @@ class Entrega5Test {
    wait(scenario){it.findViewById<View>(R.id.sv_register)?.isShown==true}
    onView(withId(R.id.sv_product)).perform(scrollTo(),click());onView(withText("Pieza UI E5")).perform(click())
    edit(R.id.sv_quantity,"1");edit(R.id.sv_place,"Feria prueba E5")
-   onView(withId(R.id.sv_register)).perform(scrollTo(),click());onView(withText("Confirmar")).perform(click())
+   snapshot(scenario,"venta");onView(withId(R.id.sv_register)).perform(scrollTo(),click());onView(withText("Confirmar")).perform(click())
    wait(scenario){it.findViewById<TextView>(R.id.owner_status).text.startsWith("Venta registrada")}
    Assert.assertEquals(0,repo.sync(shop).products.first{it.base.id==id}.base.quantity)
    onView(withId(R.id.sv_history)).perform(scrollTo(),click())

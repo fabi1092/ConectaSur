@@ -86,7 +86,7 @@ class MainActivity : ComponentActivity() {
         showScreen()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch { while (isActive) { repository.refresh(); delay(15000) } }
+                launch { while (isActive) { repository.refresh(); try { RepositoryProvider.syncPendingOwner() } catch(cancelled:kotlinx.coroutines.CancellationException){throw cancelled} catch(_:Exception){}; delay(15000) } }
                 launch { repository.status.collect { if (current.screen == "catalog") bindCatalogStatus() } }
                 repository.publicProducts.collect {
                     products = it

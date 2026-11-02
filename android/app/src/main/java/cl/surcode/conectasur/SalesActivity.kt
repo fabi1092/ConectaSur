@@ -60,7 +60,7 @@ class SalesActivity : OwnerActivity() {
         if(amount==null||amount<=0){status("Escribe una cantidad mayor que cero.");return}
         val place=pending?.optString("place")?:text(R.id.sv_place)
         if(place.length>240){status("El lugar puede tener hasta 240 letras.");return}
-        if(pending==null && product.base.stockMode in listOf(StockMode.UNITS,StockMode.UNIQUE) && amount>(variant?.quantity?:product.base.quantity?:0)){status("No tienes suficientes unidades. Revisa la cantidad.");return}
+        if(pending==null && !(product.base.stockMode==StockMode.UNITS && product.base.quantity==0 && product.base.soldOut=="ORDER") && product.base.stockMode in listOf(StockMode.UNITS,StockMode.UNIQUE) && amount>(variant?.quantity?:product.base.quantity?:0)){status("No tienes suficientes unidades. Revisa la cantidad.");return}
         AlertDialog.Builder(this).setTitle(if(pending==null)"Confirmar venta" else "Confirmar venta pendiente")
             .setMessage("$amount × ${product.base.name}${variant?.let{" · ${it.label}"}?:""}\nPrecio por unidad: ${priceLabel(variant?.priceClp?:product.base.priceClp)}\nLugar: ${place.ifBlank{"No indicado"}}\nEl servidor verificará el stock.")
             .setNegativeButton("Volver",null).setPositiveButton("Confirmar"){_,_->

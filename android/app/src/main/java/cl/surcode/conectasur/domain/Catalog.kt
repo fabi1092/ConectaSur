@@ -46,3 +46,8 @@ fun spokenPrice(pesos: Long?): String = when (pesos) {
     1L -> "1 peso chileno"
     else -> "$pesos pesos chilenos"
 }
+
+/** Evita que un lector pronuncie CLP como dólares al leer textos de la pantalla. */
+fun chileanSpeech(text: String): String = Regex("""\$([0-9.]+)\s*CLP""").replace(text) {
+    spokenPrice(it.groupValues[1].replace(".", "").toLongOrNull())
+}

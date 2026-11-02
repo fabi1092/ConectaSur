@@ -19,6 +19,11 @@ class OwnerWorkspaceRepository(private val client: SupabaseClient) {
     fun draft(shop: String): JSONObject? = client.store.read(prefix(shop)+"draft")?.let(::JSONObject)
     fun saveDraft(shop: String, data: JSONObject) { client.store.write(prefix(shop)+"draft", data.toString()) }
     fun discardDraft(shop: String) { client.store.remove(prefix(shop)+"draft") }
+    suspend fun productTypes(shop: String): JSONArray {
+        val key=prefix(shop)+"types"
+        return try { val rows=client.request("/rest/v1/product_types?select=id,name,fields&order=name") as JSONArray;client.store.write(key,rows.toString());rows }
+        catch(_:IOException){JSONArray(client.store.read(key)?:"[]")}
+    }
     fun saleDraft(shop: String): JSONObject? = client.store.read(prefix(shop)+"sale-draft")?.let(::JSONObject)
     fun saveSaleDraft(shop: String, data: JSONObject) { client.store.write(prefix(shop)+"sale-draft",data.toString()) }
     fun clearSaleDraft(shop: String) { client.store.remove(prefix(shop)+"sale-draft") }
@@ -46,6 +51,7 @@ class OwnerWorkspaceRepository(private val client: SupabaseClient) {
         for(id in pending.keys())result[id]=pending.getJSONObject(id).toOwnerProduct()
         return result.values.sortedBy {it.base.name.lowercase()}
     }
+    fun hasPendingChanges(shop: String): Boolean { val key=prefix(shop);return read(key+"pending").length()>0 || read(key+"deleted").length()>0 }
     fun cached(shop: String): List<OwnerProduct> = applyLocal(shop, JSONArray(client.store.read(prefix(shop)+"cache")?:"[]").rows {it.toOwnerProduct()})
     private fun remember(shop: String, rows: List<OwnerProduct>) { client.store.write(prefix(shop)+"cache",JSONArray().apply {rows.forEach {put(it.toSupabase())}}.toString()) }
     suspend fun sync(shop: String): Snapshot = client.productWriteLock.withLock {

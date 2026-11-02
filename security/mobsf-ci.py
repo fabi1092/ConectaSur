@@ -2,7 +2,7 @@
 import json,os,secrets,subprocess,time,urllib.request,urllib.parse,sys,hashlib
 from pathlib import Path
 apk=Path(sys.argv[1]);out=Path('security/reports/mobsf');out.mkdir(parents=True,exist_ok=True)
-key=secrets.token_hex(32);image='opensecurity/mobile-security-framework-mobsf:latest';container=None
+key=secrets.token_hex(32);image='opensecurity/mobile-security-framework-mobsf@sha256:e5d65aec0385810d31ce95d06396b06ed74712d01bb2f0d12bc3deabaf28ccb9';container=None
 
 def request(path,data=None,content_type='application/x-www-form-urlencoded',timeout=600):
     req=urllib.request.Request('http://127.0.0.1:8000'+path,data=data,headers={'X-Mobsf-Api-Key':key,'Content-Type':content_type})
