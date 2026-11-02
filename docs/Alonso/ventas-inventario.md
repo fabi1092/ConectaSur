@@ -1,5 +1,5 @@
-# Módulo: Ventas, Inventario y Disponibilidad
+# MÃ³dulo: Ventas, Inventario y Disponibilidad
 
-- **Autor**: Alonso Nuñez
-- **Lógica de stock**: Implementación de StockMode (UNITS, UNIQUE, ON_REQUEST).
-- **Regla de ocultamiento**: toPublicOrNull oculta automáticamente piezas únicas vendidas cuando el stock llega a cero.
+- **Autor**: Alonso NuÃ±ez
+- **LÃ³gica de stock**: ImplementaciÃ³n de StockMode (UNITS, UNIQUE, ON_REQUEST).
+- **Regla de ocultamiento**: toPublicOrNull oculta automÃ¡ticamente piezas Ãºnicas vendidas cuando el stock llega a cero.

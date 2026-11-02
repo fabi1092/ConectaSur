@@ -30,3 +30,4 @@ firebase/seed/firebase-config.json
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+web/dist/

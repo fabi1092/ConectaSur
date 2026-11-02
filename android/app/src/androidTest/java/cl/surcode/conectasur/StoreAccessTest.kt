@@ -53,7 +53,7 @@ class StoreAccessTest {
     }
 
     /** Cuenta FICTICIA y configuración explícitas. Restaura la tienda al terminar. */
-    @Test fun liveLoginEditCloseReopenAndLogout() = runBlocking {
+    @Test fun liveLoginEditCloseReopenAndLogout(): Unit = runBlocking {
         val args = InstrumentationRegistry.getArguments()
         assumeTrue(args.getString("supabaseLive") == "true" && RepositoryProvider.supabaseReady())
         val email = requireNotNull(args.getString("testEmail"))

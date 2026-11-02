@@ -8,7 +8,7 @@ Desde el 1 de noviembre se utiliza la instancia del grupo entregada por el profe
 
 Android mantiene Kotlin y Views con XML editables en Design/Palette, navegación simple, ajustes de letras/botones, contraste, lectura opcional y precios en pesos chilenos. El catálogo y la ficha pública consultan Supabase; las fotografías de ejemplo están alojadas en Storage. Los nombres y precios de esos ejemplos son ficticios.
 
-El acceso Android, cierre de sesión, huella opcional y edición de datos/logo de la tienda se implementan en StoreActivity. Ver [entrega de Fabián](docs/fabian/acceso-tienda.md) para configuración y verificación. Las pantallas finales de edición de productos, ventas y panel web siguen bajo responsabilidad de sus integrantes. Sus repositorios y la operación de venta ya están conectados y probados; la migración del backend no significa que esas pantallas pendientes estén terminadas.
+El acceso Android, cierre de sesión, huella opcional y edición de datos/logo de la tienda se implementan en StoreActivity. Ver [entrega de Fabián](docs/fabian/acceso-tienda.md) para configuración y verificación. El panel web administrativo también está integrado. Las pantallas Android de edición de productos y ventas siguen pendientes; sus repositorios y la operación de venta están conectados al backend.
 
 ## Configuración local
 
@@ -63,3 +63,11 @@ Mensajes de commit simples y avances separados. Benjamín solicitó enviar los h
 Fabián: acceso/tienda; Dan: productos; Alonso: ventas; Felipe: backend; Kisho: web; Benjamín: base Android, accesibilidad y pruebas. Los contratos de dominio se mantienen y los adaptadores se llaman SupabaseAuthRepository, SupabaseShopRepository, SupabaseProductRepository y SupabaseSalesRepository.
 
 El cambio de Firestore a Supabase responde a la instrucción del grupo tras recibir la instancia del profesor y queda documentado expresamente.
+
+## Presentación del 2 de noviembre
+
+Los avances publicados por el equipo se reunieron en main. Ver [estado de integración y recorrido](docs/presentacion-2-noviembre.md).
+
+Para abrir el panel: usar Node 24.12 o superior; en web ejecutar npm ci y npm run dev. Abrir la dirección local que indique Vite. La configuración privada de cliente debe estar en web/supabase-config.js. Para generar la versión estática: npm run build; para probarla: npm run preview.
+
+En Android, Mi tienda permite entrar con una cuenta de emprendedora, editar la ficha, cambiar el logo y cerrar sesión. Las cuentas administradoras utilizan el panel web.
