@@ -8,7 +8,7 @@ Desde el 1 de noviembre se utiliza la instancia del grupo entregada por el profe
 
 Android mantiene Kotlin y Views con XML editables en Design/Palette, navegación simple, ajustes de letras/botones, contraste, lectura opcional y precios en pesos chilenos. El catálogo y la ficha pública consultan Supabase; las fotografías de ejemplo están alojadas en Storage. Los nombres y precios de esos ejemplos son ficticios.
 
-Las pantallas finales de acceso/huella, edición de productos, ventas y panel web siguen bajo responsabilidad de sus integrantes. Sus repositorios y la operación de venta ya están conectados y probados; la migración del backend no significa que esas pantallas pendientes estén terminadas.
+El acceso Android, cierre de sesión, huella opcional y edición de datos/logo de la tienda se implementan en StoreActivity. Ver [entrega de Fabián](docs/fabian/acceso-tienda.md) para configuración y verificación. Las pantallas finales de edición de productos, ventas y panel web siguen bajo responsabilidad de sus integrantes. Sus repositorios y la operación de venta ya están conectados y probados; la migración del backend no significa que esas pantallas pendientes estén terminadas.
 
 ## Configuración local
 

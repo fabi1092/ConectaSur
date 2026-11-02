@@ -2,7 +2,6 @@ package cl.surcode.conectasur
 
 import android.app.AlertDialog
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -13,8 +12,6 @@ import android.widget.*
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -25,11 +22,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import cl.surcode.conectasur.data.*
 import cl.surcode.conectasur.domain.*
 import cl.surcode.conectasur.ui.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     private data class Destination(val screen: String, val productId: String = "") {
@@ -52,18 +47,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var content: FrameLayout
     private lateinit var reader: SpeechReader
     private lateinit var page: View
-    private val pickLogo = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            try {
-                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                val previous = prefs.logoUri
-                prefs.logoUri = uri.toString()
-                if (previous != uri.toString()) releaseLogoGrant(previous)
-                if (current.screen == "store") loadLogo()
-            } catch (_: SecurityException) { toast(R.string.logo_unavailable) }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(if (prefs.read().highContrast) R.style.Theme_ConectaSur_HighContrast else R.style.Theme_ConectaSur)
         super.onCreate(savedInstanceState)
@@ -158,7 +141,7 @@ class MainActivity : ComponentActivity() {
         val layout = when (current.screen) {
             "catalog" -> R.layout.screen_catalog
             "detail" -> R.layout.screen_detail
-            "store", "public_store" -> R.layout.screen_store
+            "public_store" -> R.layout.screen_store
             "settings" -> R.layout.screen_settings
             "help" -> R.layout.screen_help
             "sales" -> R.layout.screen_sales
@@ -177,13 +160,15 @@ class MainActivity : ComponentActivity() {
         when (current.screen) {
             "home" -> {
                 page.findViewById<Button>(R.id.open_catalog).setOnClickListener { shopFilter = null; navigate(Destination("catalog")) }
-                page.findViewById<Button>(R.id.open_store).setOnClickListener { navigate(Destination("store")) }
+                page.findViewById<Button>(R.id.open_store).setOnClickListener {
+                    reader.stop()
+                    startActivity(Intent(this, StoreActivity::class.java))
+                }
                 page.findViewById<Button>(R.id.open_settings).setOnClickListener { navigate(Destination("settings")) }
             }
             "catalog" -> bindCatalog()
             "detail" -> bindDetail()
-            "store" -> bindStore(true)
-            "public_store" -> bindStore(false)
+            "public_store" -> bindStore()
             "settings" -> bindSettings()
             "help" -> page.findViewById<Button>(R.id.open_settings).setOnClickListener { navigate(Destination("settings")) }
             "sales" -> page.findViewById<Button>(R.id.go_home).setOnClickListener { navigate(Destination("home"), true) }
@@ -269,62 +254,24 @@ class MainActivity : ComponentActivity() {
             startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, message), getString(R.string.share_title)))
         }
     }
-    private fun bindStore(editable: Boolean) {
-        loadLogo()
-        if (!editable) {
-            page.findViewById<TextView>(R.id.page_title).setText(R.string.public_store_title)
-            listOf(R.id.change_logo, R.id.remove_logo, R.id.local_logo_note, R.id.store_sales).forEach {
-                page.findViewById<View>(it).isVisible = false
-            }
-            page.findViewById<Button>(R.id.store_catalog).setOnClickListener { shopFilter = current.productId; query = ""; navigate(Destination("catalog")) }
-            if (RepositoryProvider.supabaseReady()) {
-                val shopId = current.productId
-                lifecycleScope.launch {
-                    val shop = runCatching { RepositoryProvider.shops().getShop(shopId) }.getOrNull()
-                    if (shop != null && current.screen == "public_store" && current.productId == shopId) {
-                        page.findViewById<TextView>(R.id.store_name).text = shop.name
-                        page.findViewById<TextView>(R.id.store_description).text = shop.description
-                        PublicImageLoader.load(lifecycleScope, page.findViewById(R.id.store_logo), shop.logoUrl, BuildConfig.SUPABASE_URL)
-                    }
-                }
-            }
-            return
+    private fun bindStore() {
+        page.findViewById<TextView>(R.id.page_title).setText(R.string.public_store_title)
+        listOf(R.id.change_logo, R.id.remove_logo, R.id.local_logo_note, R.id.store_sales).forEach {
+            page.findViewById<View>(it).isVisible = false
         }
-        page.findViewById<Button>(R.id.change_logo).setOnClickListener { pickLogo.launch(arrayOf("image/*")) }
-        page.findViewById<Button>(R.id.remove_logo).setOnClickListener { clearLogo(); loadLogo() }
-        page.findViewById<Button>(R.id.store_catalog).setOnClickListener { query = ""; navigate(Destination("catalog")) }
-        page.findViewById<Button>(R.id.store_sales).setOnClickListener { navigate(Destination("sales")) }
-    }
-    private fun releaseLogoGrant(value: String?) {
-        if (value != null) try {
-            contentResolver.releasePersistableUriPermission(value.toUri(), Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        } catch (_: SecurityException) { /* An expired grant needs no cleanup. */ }
-    }
-    private fun clearLogo() {
-        val previous = prefs.logoUri
-        prefs.logoUri = null
-        releaseLogoGrant(previous)
-    }
-    private fun loadLogo() {
-        val image = page.findViewById<ImageView>(R.id.store_logo) ?: return
-        image.setImageResource(R.drawable.ic_shop_logo)
-        val uri = prefs.logoUri
-        page.findViewById<Button>(R.id.remove_logo).isVisible = current.screen == "store" && uri != null
-        if (uri == null) return
-        lifecycleScope.launch {
-            val bitmap = withContext(Dispatchers.IO) {
-                try {
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    contentResolver.openInputStream(uri.toUri())?.use { BitmapFactory.decodeStream(it, null, bounds) }
-                    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) null else {
-                        val options = BitmapFactory.Options().apply { inSampleSize = 1 }
-                        while (maxOf(bounds.outWidth, bounds.outHeight) / options.inSampleSize > 1024) options.inSampleSize *= 2
-                        contentResolver.openInputStream(uri.toUri())?.use { BitmapFactory.decodeStream(it, null, options) }
-                    }
-                } catch (_: Exception) { null }
-            }
-            if (current.screen in listOf("store", "public_store") && prefs.logoUri == uri && image.isAttachedToWindow) {
-                if (bitmap != null) image.setImageBitmap(bitmap) else { clearLogo(); loadLogo(); toast(R.string.logo_unavailable) }
+        page.findViewById<Button>(R.id.store_catalog).setOnClickListener {
+            shopFilter = current.productId; query = ""; navigate(Destination("catalog"))
+        }
+        if (RepositoryProvider.supabaseReady()) {
+            page.findViewById<View>(R.id.store_demo).isVisible = false
+            val shopId = current.productId
+            lifecycleScope.launch {
+                val shop = runCatching { RepositoryProvider.shops().getShop(shopId) }.getOrNull()
+                if (shop != null && current.screen == "public_store" && current.productId == shopId) {
+                    page.findViewById<TextView>(R.id.store_name).text = shop.name
+                    page.findViewById<TextView>(R.id.store_description).text = shop.description
+                    PublicImageLoader.load(lifecycleScope, page.findViewById(R.id.store_logo), shop.logoUrl, BuildConfig.SUPABASE_URL)
+                }
             }
         }
     }
@@ -355,12 +302,10 @@ class MainActivity : ComponentActivity() {
         "catalog" -> "Productos de ejemplo. " + searchProducts(products, query).joinToString(". ") { "${it.name}. ${spokenPrice(it.priceClp)}" }.ifBlank { getString(R.string.empty_search) }
         "detail" -> products.find { it.id == current.productId }?.let { "${it.name}. ${spokenPrice(it.priceClp)}. ${it.description}. Nombre y precio de ejemplo." } ?: getString(R.string.product_missing)
         "public_store" -> "Emprendimiento de ejemplo. Aquí puedes ver el catálogo público."
-        "store" -> "Mi tienda. Demostración. Puedes elegir un logo para este teléfono y ver el catálogo de ejemplo."
         "settings" -> "A tu medida. Cambia las letras a normal, grande o muy grande. Activa botones más grandes o mayor contraste. La lectura puede ser normal o más lenta."
         "sales" -> getString(R.string.sales_pending)
         else -> getString(R.string.help_navigation) + ". " + getString(R.string.help_reading) + ". " + getString(R.string.help_talkback)
     }
-    private fun toast(message: Int) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     override fun onSaveInstanceState(outState: Bundle) {
         saveScroll()
         outState.putString("route", current.encode())

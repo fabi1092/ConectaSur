@@ -81,10 +81,12 @@ class NavigationTest {
         onView(withId(R.id.nav_home)).perform(click())
         onView(withId(R.id.welcome_title)).check(matches(isDisplayed()))
     }
-    @Test fun homeHelpAndStoreAreReachableWithoutLoginOrAutomaticSpeech() {
+    @Test fun ownerAccessRequiresLoginAndPublicHelpRemainsReachable() {
         onView(withId(R.id.read_button)).check(matches(withText(R.string.listen)))
         onView(withId(R.id.open_store)).perform(scrollTo(), click())
-        onView(withId(R.id.change_logo)).check(matches(isDisplayed()))
+        onView(withId(R.id.account_title)).check(matches(withText(R.string.login_title)))
+        onView(withId(R.id.shop_form)).check(matches(withEffectiveVisibility(Visibility.GONE)))
+        pressBack()
         onView(withId(R.id.nav_help)).perform(click())
         onView(withId(R.id.page_title)).check(matches(withText(R.string.help_title)))
         onView(withId(R.id.nav_home)).perform(click())

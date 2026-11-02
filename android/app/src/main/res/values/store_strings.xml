@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="login_title">Entra a tu tienda</string>
+    <string name="login_intro">Usa la cuenta que te entregó el equipo de ConectaSur.</string>
+    <string name="login_email">Correo electrónico</string>
+    <string name="login_password">Contraseña</string>
+    <string name="show_password">Mostrar contraseña</string>
+    <string name="login_button">Ingresar</string>
+    <string name="logout_button">Cerrar sesión</string>
+    <string name="store_account">Cuenta: %1$s</string>
+    <string name="shop_name_label">Nombre del emprendimiento</string>
+    <string name="shop_description_label">Descripción</string>
+    <string name="shop_type_label">Tipo de emprendimiento</string>
+    <string name="shop_sector_label">Sector o localidad</string>
+    <string name="shop_contact_label">Contacto público</string>
+    <string name="shop_prices_label">Mostrar precios en el catálogo</string>
+    <string name="save_shop">Guardar cambios</string>
+    <string name="reload_shop">Volver a cargar la tienda</string>
+    <string name="logo_save_note">Elige una imagen y pulsa Guardar cambios para publicar el logo.</string>
+    <string name="bio_enable">Activar huella en este teléfono</string>
+    <string name="bio_disable">Desactivar huella</string>
+    <string name="bio_intro">La huella es opcional. Protege el acceso a tu sesión al volver a esta pantalla.</string>
+    <string name="bio_unavailable">Para activar la huella, configura una biometría compatible y un bloqueo de pantalla en los ajustes del teléfono.</string>
+    <string name="bio_locked">Tu tienda está bloqueada</string>
+    <string name="bio_unlock">Desbloquear con huella</string>
+    <string name="bio_password">Ingresar con contraseña</string>
+    <string name="bio_title">Desbloquea tu tienda</string>
+    <string name="bio_enroll_title">Activa tu huella</string>
+    <string name="bio_subtitle">Confirma tu identidad para continuar.</string>
+    <string name="bio_cancel">Cancelar</string>
+    <string name="access_not_configured">El acceso a tu cuenta aún no está disponible en esta instalación. Pide al equipo una versión conectada. Puedes seguir viendo el catálogo de ejemplo.</string>
+    <string name="discard_title">¿Descartar los cambios?</string>
+    <string name="discard_message">Tienes cambios que todavía no se han guardado.</string>
+    <string name="discard_button">Descartar</string>
+    <string name="keep_editing">Seguir editando</string>
+    <string name="store_read">Escuchar esta pantalla</string>
+</resources>
