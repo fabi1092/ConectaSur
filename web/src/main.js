@@ -1009,7 +1009,7 @@ async function iniciar() {
   lastRenderedRoute = route;
 
   // Los enlaces anteriores siguen abriendo el mismo acceso; el rol viene del backend.
-  if (['#ingresar', '#mi-tienda', '#administracion'].includes(route)) {
+  if (['#ingresar', '#registro', '#mi-cuenta', '#mi-tienda', '#administracion'].includes(route)) {
     usuarioActual = null;
     seccionActual = 'cuenta';
     stopOwnerScreen = showAccountAccess(app, db, isCurrent, async (user, logout) => {

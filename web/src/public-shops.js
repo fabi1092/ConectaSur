@@ -30,7 +30,7 @@ function imageFallbacks(root) {
   });
 }
 
-function shell(content, { showAccountLink = true } = {}) {
+function shell(content, { showAccountLink = true, accountLocation = 'Estás en tu tienda' } = {}) {
   const account=accountDestination();
   return `<div class="public-site">
     <a class="skip-link" href="#public-content">Ir al contenido</a>
@@ -43,7 +43,7 @@ function shell(content, { showAccountLink = true } = {}) {
       </nav>` : ''}
     </header>
     <main id="public-content" tabindex="-1">${content}</main>
-    <footer class="public-footer"><div class="footer-intro"><a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">${brand()}</a><p>Ideas, oficios y emprendimientos.<br>El sur tiene mucho que compartir.</p></div><div><strong>Conoce lo local</strong><a href="#productos" data-section-link>Explorar productos</a><a href="#tiendas" data-section-link>Conocer las tiendas</a></div><div><strong>Tu espacio</strong>${showAccountLink ? `<a data-account-link data-account-footer href="${account.href}"><span data-account-label>${account.footer}</span></a>` : '<span>Estás en tu tienda</span>'}<span>Puerto Montt · Alerce</span></div><div class="footer-bottom"><span>ConectaSur · Un proyecto de SurCode</span><span>Conectando nuestra comunidad.</span></div></footer>
+    <footer class="public-footer"><div class="footer-intro"><a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">${brand()}</a><p>Ideas, oficios y emprendimientos.<br>El sur tiene mucho que compartir.</p></div><div><strong>Conoce lo local</strong><a href="#productos" data-section-link>Explorar productos</a><a href="#tiendas" data-section-link>Conocer las tiendas</a></div><div><strong>Tu espacio</strong>${showAccountLink ? `<a data-account-link data-account-footer href="${account.href}"><span data-account-label>${account.footer}</span></a>` : `<span>${escape(accountLocation)}</span>`}<span>Puerto Montt · Alerce</span></div><div class="footer-bottom"><span>ConectaSur · Un proyecto de SurCode</span><span>Conectando nuestra comunidad.</span></div></footer>
   </div>`;
 }
 

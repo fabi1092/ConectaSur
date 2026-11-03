@@ -5,6 +5,8 @@ import './accessibility.css';
 const storageKey = 'conectasur-accessibility-v1';
 const defaults = { size: 'normal', contrast: false, slow: true };
 const guides = [
+  ['#buyer-register-form', 'Crea tu cuenta de comprador. Escribe tu nombre, correo y una contraseña de al menos ocho caracteres. Repite la misma contraseña y pulsa Crear mi cuenta. Mostrar contraseñas permite revisar lo escrito. También puedes explorar sin registrarte.'],
+  ['.buyer-home', 'Esta es tu cuenta de comprador. Explorar productos permite conocer las creaciones locales. Conocer las tiendas permite encontrar sus emprendimientos. Para volver aquí usa Mi cuenta. Cierra tu sesión al terminar si compartes este equipo.'],
   ['#owner-login-form', 'Ingresa con tu correo y contraseña. Puedes activar Mostrar contraseña para revisar lo escrito. Después pulsa Iniciar sesión.'],
   ['#shop-editor-form', 'Aquí puedes cambiar los datos y el logo de tu tienda. Elige una imagen para revisarla. Los cambios se publican cuando pulsas Guardar cambios. Cancelar te permite volver sin guardar.'],
   ['.owner-home', 'Esta es tu tienda. En Mis productos puedes agregar fotos, precios y unidades disponibles. Mis ventas permite registrar ventas y consultar tu historial privado. Editar tienda permite cambiar tus datos y logo. Cierra tu sesión al terminar si compartes este equipo.'],

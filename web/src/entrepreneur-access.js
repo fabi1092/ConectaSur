@@ -5,6 +5,7 @@ import { showOwnerSales } from './owner-sales.js';
 import { setAccountNavigation } from './account-navigation.js';
 import { dashboardMetrics, dashboardPanels, loadDashboard } from './owner-dashboard.js';
 import { icon } from './visuals.js';
+import { showBuyerRegistration, showBuyerHome } from './buyer-access.js';
 
 function messageFor(error) {
   if (error.code === 'account_inactive') return 'Tu cuenta está desactivada o no tiene acceso. Consulta al administrador de ConectaSur.';
@@ -45,12 +46,12 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
           <label for="owner-email">Correo electrónico</label><input id="owner-email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="254" required placeholder="tu.correo@ejemplo.cl">
           <label for="owner-password">Contraseña</label><input id="owner-password" type="password" autocomplete="current-password" required aria-describedby="owner-password-help">
           <label class="owner-show-password"><input id="owner-show-password" type="checkbox">Mostrar contraseña</label>
-          <p id="owner-password-help" class="owner-hint">Escribe tu contraseña tal como te la entregaron.</p>
+          <p id="owner-password-help" class="owner-hint">Escribe la contraseña de tu cuenta.</p>
           <p id="owner-access-status" class="owner-status${error ? ' owner-error' : ''}" role="${error ? 'alert' : 'status'}">${escape(message)}</p>
           <button class="public-primary" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
         </form>
       </div>
-      <aside class="owner-help"><h2>¿Es tu primera vez?</h2><p>Si te entregaron una cuenta, usa ese correo y contraseña para ingresar.</p><p>Puedes seguir conociendo las tiendas sin ingresar.</p><a class="public-text-link" href="#inicio">Ver las tiendas <span aria-hidden="true">→</span></a></aside>
+      <aside class="owner-help"><h2>¿Es tu primera vez?</h2><p>Puedes crear una cuenta de comprador con tu correo.</p><a class="owner-secondary" href="#registro">Crear cuenta de comprador</a><p>Si te entregaron una cuenta de emprendedora o administrador, usa sus datos para ingresar.</p><p>Puedes seguir conociendo las tiendas sin ingresar.</p><a class="public-text-link" href="#inicio">Ver las tiendas <span aria-hidden="true">→</span></a></aside>
     </section>`);
     app.querySelector('#owner-title').focus({ preventScroll: true });
     const form = app.querySelector('#owner-login-form');
@@ -108,6 +109,8 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     loading('Cerrando tu sesión…');
     try {
       await db.logout();
+      setAccountNavigation(null);
+      history.replaceState(null, '', '#ingresar');
       login('Cerraste tu sesión. Puedes volver a ingresar cuando quieras.');
     } catch {
       state('No pudimos cerrar tu sesión. Revisa tu conexión y vuelve a intentarlo.', logout, 'Volver a cerrar sesión');
@@ -174,6 +177,10 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
       await showAdmin(user, logout);
     } else if (user.role === 'emprendedora') {
       await loadHome();
+    } else if (user.role === 'comprador') {
+      mode = 'buyer';
+      busy = false;
+      showBuyerHome(app, user, logout);
     } else {
       await db.logout();
       login(messageFor({ code: 'entrepreneur_required' }), true);
@@ -211,7 +218,18 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     try {
       const user = await db.currentSession();
       if (!alive()) return;
-      if (!user) login();
+      if (!user && location.hash === '#registro') {
+        mode = 'register';
+        editor = showBuyerRegistration(app, db, {
+          isCurrent: () => alive() && mode === 'register',
+          onSignedIn: async account => {
+            editor?.(); editor = null;
+            await openAccount(account);
+            if (alive() && mode === 'buyer') showBuyerHome(app, account, logout, 'Tu cuenta está creada. Ya puedes explorar nuestra comunidad.');
+          },
+          onLogin: message => { editor?.(); editor = null; history.replaceState(null, '', '#ingresar'); login(message); }
+        });
+      } else if (!user) login();
       else await openAccount(user);
     } catch (error) {
       if (!alive()) return;
@@ -236,7 +254,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
   window.addEventListener('focus', recheck, { signal: events.signal });
   document.addEventListener('visibilitychange', recheck, { signal: events.signal });
   start();
-  const dispose = () => { stopped = true; events.abort(); editor?.dispose(); };
+  const dispose = () => { stopped = true; events.abort(); if (typeof editor === 'function') editor(); else editor?.dispose(); };
   dispose.canLeave = () => editor?.requestLeave() ?? true;
   return dispose;
 }

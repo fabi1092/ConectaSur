@@ -1,0 +1,174 @@
+// W29–W32: registro, ingreso, salida y aislamiento del comprador contra Supabase real.
+import assert from 'node:assert/strict';
+import { randomUUID, randomBytes } from 'node:crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import { createDataLayer } from '../web/supabase-data.js';
+import { settings, query, literal } from '../supabase/tools/admin.mjs';
+
+const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const base = process.env.BUYER_ACCESS_URL || 'http://127.0.0.1:5174/';
+const output = new URL('./reports/buyer-access/', import.meta.url);
+mkdirSync(output, { recursive: true });
+const config = settings();
+const backend = { url: config.url, anonKey: config.anonKey };
+const api = createDataLayer(backend);
+const forged = createDataLayer(backend);
+const email = `buyer_web_${randomUUID()}@demo.conectasur.cl`;
+const forgedEmail = `buyer_forged_${randomUUID()}@demo.conectasur.cl`;
+const password = randomBytes(24).toString('base64url');
+const name = 'Compradora de prueba';
+const checks = [], errors = [];
+let browser;
+try {
+  browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'es-CL' });
+  const page = await context.newPage();
+  page.on('pageerror', error => errors.push(error.message));
+  let signupRequests = 0;
+  page.on('request', request => { if (request.url().includes('/auth/v1/signup') && request.method() === 'POST') signupRequests++; });
+  const account = async () => page.getByRole('heading', { name: `Hola, ${name}.`, exact: true }).waitFor();
+  const login = async () => page.getByRole('button', { name: 'Iniciar sesión', exact: true }).waitFor();
+  const registration = async () => page.getByRole('heading', { name: 'Cuenta de comprador', exact: true }).waitFor();
+  async function fillRegistration(targetEmail = email) {
+    await page.getByLabel('Tu nombre', { exact: true }).fill(name);
+    await page.getByLabel('Correo electrónico', { exact: true }).fill(targetEmail);
+    await page.getByLabel('Crea una contraseña', { exact: true }).fill(password);
+    await page.getByLabel('Repite tu contraseña', { exact: true }).fill(password);
+  }
+  async function signIn(targetPassword = password) {
+    await page.getByLabel('Correo electrónico', { exact: true }).fill(email);
+    await page.getByLabel('Contraseña', { exact: true }).fill(targetPassword);
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
+  }
+  await page.goto(base);
+  await page.getByRole('link', { name: 'Ingresar', exact: true }).waitFor();
+  assert.equal(await page.locator('#owner-login-form').count(), 0);
+  checks.push('Visitante explora la portada sin iniciar sesión (W32)');
+  await page.getByRole('link', { name: 'Ingresar', exact: true }).click();
+  await login();
+  await page.getByRole('link', { name: 'Crear cuenta de comprador', exact: true }).click();
+  await registration();
+  assert.equal(await page.locator('select[name="role"]').count(), 0);
+  await page.screenshot({ path: fileURLToPath(new URL('registro-escritorio.png', output)), fullPage: true });
+  await fillRegistration();
+  await page.getByLabel('Repite tu contraseña', { exact: true }).fill('clave-distinta');
+  await page.getByRole('button', { name: 'Crear mi cuenta', exact: true }).click();
+  assert.match(await page.locator('#buyer-repeat').evaluate(input => input.validationMessage), /iguales/);
+  assert.equal(signupRequests, 0);
+  await page.getByLabel('Repite tu contraseña', { exact: true }).fill(password);
+  await page.getByLabel('Crea una contraseña', { exact: true }).fill('corta');
+  await page.getByRole('button', { name: 'Crear mi cuenta', exact: true }).click();
+  assert.equal(await page.locator('#buyer-password').evaluate(input => input.validity.tooShort), true);
+  assert.equal(signupRequests, 0);
+  checks.push('Contraseñas diferentes o cortas no envían el registro');
+  await fillRegistration();
+  await page.getByLabel('Mostrar contraseñas', { exact: true }).check();
+  assert.equal(await page.locator('#buyer-password').getAttribute('type'), 'text');
+  assert.equal(await page.locator('#buyer-repeat').getAttribute('type'), 'text');
+  await page.getByLabel('Mostrar contraseñas', { exact: true }).uncheck();
+  assert.equal(await page.locator('#buyer-repeat').getAttribute('type'), 'password');
+  checks.push('Mostrar y ocultar ambas contraseñas es una elección explícita');
+  await page.route('**/auth/v1/signup', route => route.fulfill({ status: 503, json: { msg: 'Servicio temporalmente no disponible' } }));
+  await page.getByRole('button', { name: 'Crear mi cuenta', exact: true }).click();
+  await page.getByRole('alert').filter({ hasText: 'No pudimos confirmar' }).waitFor();
+  assert.equal(await page.locator('#buyer-name').inputValue(), name);
+  await page.unroute('**/auth/v1/signup');
+  checks.push('Fallo de registro mantiene los datos y permite reintentar sin afirmar éxito');
+  await page.getByRole('button', { name: 'Crear mi cuenta', exact: true }).click();
+  await account();
+  await page.getByRole('status').filter({ hasText: 'Tu cuenta está creada' }).waitFor();
+  const user = await api.login(email, password);
+  assert.equal(user.role, 'comprador'); assert.equal(user.shopId, null); assert.equal(user.displayName, name);
+  checks.push('Registro real crea Auth y perfil comprador, abre Mi cuenta (W29)');
+  assert.equal(await page.getByRole('button', { name: 'Mis productos', exact: true }).count(), 0);
+  await assert.rejects(api.entrepreneurHome(), error => error.code === 'entrepreneur_required');
+  await assert.rejects(api.listShops(), /administradora/);
+  for (const table of ['products', 'sales', 'shops']) {
+    const response = await api.client.from(table).select('*').limit(1);
+    assert.ok(response.error || !response.data.length);
+  }
+  const escalation = await api.client.from('profiles').update({ role: 'admin' }).eq('id', user.uid).select();
+  assert.ok(escalation.error || !escalation.data.length);
+  assert.equal((await api.currentSession()).role, 'comprador');
+  checks.push('RLS impide ver inventario/ventas privados, administrar o cambiar el propio rol');
+  await assert.rejects(api.registerBuyer({ displayName: name, email: forgedEmail, password }), error => error.code === 'session_exists');
+  checks.push('Registrar otra cuenta no reemplaza una sesión existente');
+  const forgedSignup = await forged.client.auth.signUp({ email: forgedEmail, password, options: { data: { display_name: name, role: 'admin', active: true, shop_id: 'inexistente' } } });
+  assert.equal(forgedSignup.error, null);
+  const forgedProfile = await forged.currentSession();
+  assert.equal(forgedProfile.role, 'comprador'); assert.equal(forgedProfile.shopId, null);
+  checks.push('Manipular metadatos del registro no concede rol administrador ni tienda');
+  await page.locator('.owner-account-email').evaluate(el => { el.textContent = 'compradora@ejemplo.cl'; });
+  await page.screenshot({ path: fileURLToPath(new URL('cuenta-escritorio.png', output)), fullPage: true });
+  await page.getByRole('link', { name: 'Explorar productos', exact: true }).first().click();
+  await page.locator('.public-owner-link').filter({ hasText: 'Mi cuenta' }).waitFor();
+  assert.equal(await page.locator('.public-owner-link').getAttribute('href'), '#mi-cuenta');
+  await page.reload();
+  await page.locator('.public-owner-link').filter({ hasText: 'Mi cuenta' }).waitFor();
+  await page.locator('.public-owner-link').click();
+  await account();
+  await page.reload(); await account();
+  checks.push('Explorar, recargar y volver a Mi cuenta conserva la sesión sin pedir otra contraseña');
+  for (const route of ['#administracion', '#mi-tienda']) {
+    await page.goto(new URL(route, base).href); await account();
+    assert.equal(await page.locator('.admin-site, #owner-products').count(), 0);
+  }
+  checks.push('Escribir rutas de admin/emprendedora no cambia el espacio ni permisos del comprador');
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.locator('.owner-account-email').evaluate(el => { el.textContent = 'compradora@ejemplo.cl'; });
+  await page.screenshot({ path: fileURLToPath(new URL('cuenta-celular.png', output)), fullPage: true });
+  await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+  await login();
+  assert.equal(await page.evaluate(() => Object.keys(sessionStorage).some(key => key.includes('auth-token'))), false);
+  await page.reload(); await login();
+  await page.goBack();
+  await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).waitFor();
+  checks.push('Cerrar sesión elimina tokens y volver/recargar exige ingreso (W31)');
+  await signIn('clave-incorrecta-de-prueba');
+  await page.getByRole('alert').filter({ hasText: 'no coinciden' }).waitFor();
+  assert.equal(await page.locator('#owner-password').inputValue(), '');
+  await signIn(); await account();
+  checks.push('Comprador ingresa por el formulario común; contraseña errónea se rechaza (W30)');
+  await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click(); await login();
+  await page.getByRole('link', { name: 'Crear cuenta de comprador', exact: true }).click(); await registration();
+  await fillRegistration();
+  await page.getByRole('button', { name: 'Crear mi cuenta', exact: true }).click();
+  await page.getByRole('alert').filter({ hasText: 'No pudimos crear' }).waitFor();
+  assert.equal(await page.locator('.buyer-home').count(), 0);
+  checks.push('Correo registrado no abre una sesión ni crea un perfil duplicado');
+  await page.getByLabel('Correo electrónico', { exact: true }).fill('compradora@ejemplo.cl');
+  await page.locator('#buyer-password').fill('');
+  await page.locator('#buyer-repeat').fill('');
+  await page.screenshot({ path: fileURLToPath(new URL('registro-celular.png', output)), fullPage: true });
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.locator('#access-size').selectOption('largest');
+  await page.getByRole('button', { name: 'Más contraste', exact: true }).click();
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.screenshot({ path: fileURLToPath(new URL('registro-accesible.png', output)), fullPage: true });
+  checks.push('Registro y cuenta se adaptan al celular; a 320 px con letras grandes y alto contraste no hay desborde');
+  await page.locator('#access-size').selectOption('normal');
+  await page.getByRole('button', { name: 'Más contraste', exact: true }).click();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByLabel('Tu nombre', { exact: true }).fill('');
+  await page.route('**/auth/v1/signup', route => route.fulfill({ status: 200, json: { user: { id: randomUUID(), email: 'compradora@ejemplo.cl', identities: [], aud: 'authenticated' }, session: null } }));
+  await fillRegistration('compradora@ejemplo.cl');
+  await page.getByRole('button', { name: 'Crear mi cuenta', exact: true }).click();
+  await login();
+  await page.getByRole('status').filter({ hasText: 'Revisa tu correo' }).waitFor();
+  assert.equal(await page.locator('.buyer-home').count(), 0);
+  await page.unroute('**/auth/v1/signup');
+  checks.push('Respuesta sin sesión solicita confirmación/ingreso, nunca simula autenticación (respuesta simulada)');
+  assert.deepEqual(errors, []);
+  checks.push('Recorrido sin errores JavaScript');
+  writeFileSync(new URL('verification.json', output), JSON.stringify({ checkedAt: new Date().toISOString(), url: base, passed: checks.length, checks,
+    fixture: 'Dos cuentas ficticias propias eliminadas al terminar; no modifica cuentas del grupo',
+    limits: ['Chromium con móvil emulado, sin teléfono físico ni evaluación con usuarias', '503 y confirmación de correo simulados; demás accesos contra backend real', 'No incluye OAuth Google ni recuperación de contraseña'] }, null, 2) + '\n');
+  console.log(JSON.stringify({ passed: checks.length, checks }));
+} finally {
+  await browser?.close();
+  for (const client of [api, forged]) { await client.logout().catch(() => {}); await client.dispose(); }
+  await query(`delete from auth.users where email in (${literal(email)},${literal(forgedEmail)})`);
+}

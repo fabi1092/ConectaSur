@@ -4,7 +4,7 @@ export function accountDestination() {
   if (!account) return {label:'Ingresar', footer:'Ingresar a mi cuenta', href:'#ingresar'};
   if (account.role==='admin') return {label:'Mi panel', footer:'Ir a mi panel', href:'#administracion'};
   if (account.role==='emprendedora') return {label:'Mi tienda', footer:'Ir a mi tienda', href:'#mi-tienda'};
-  return {label:'Mi cuenta', footer:'Ir a mi cuenta', href:'#ingresar'};
+  return {label:'Mi cuenta', footer:'Ir a mi cuenta', href:'#mi-cuenta'};
 }
 export function setAccountNavigation(user) {
   account=user;

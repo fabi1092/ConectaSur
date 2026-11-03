@@ -85,4 +85,5 @@ html[data-contrast='high'] .owner-error { border-left: 4px solid #000; padding-l
  html:not([data-text-size='normal']) :where(.admin-stats,.admin-shortcuts) { grid-template-columns: minmax(0,1fr); }
  html:not([data-text-size='normal']) .admin-site :where(button,button span,.admin-welcome > div) { min-width: 0; overflow-wrap: anywhere; }
  html:not([data-text-size='normal']) .admin-site button { flex-wrap: wrap; }
+ html:not([data-text-size='normal']) :where(#access-contrast,.accessibility-options) { grid-column: 1/-1; }
 }

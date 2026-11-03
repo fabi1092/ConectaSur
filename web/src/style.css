@@ -162,6 +162,17 @@ p, dd, h1, h2, h3 { overflow-wrap: anywhere; }
 .owner-help h2 { font-size: 1.35rem; }
 .owner-help p { margin-top: 12px; color: var(--muted); }
 .owner-help .public-text-link { margin-top: 12px; }
+.owner-help .owner-secondary { margin-top: 18px; }
+.owner-auth-link { display: flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 16px; text-align: center; text-underline-offset: 4px; }
+.buyer-discover { display: flex; gap: 24px; align-items: center; padding: clamp(22px, 4vw, 44px); background: var(--mint); border: 1px solid var(--line); border-radius: 17px; }
+.buyer-discover > div:first-child { flex: 1; min-width: 0; }
+.buyer-discover h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); max-width: 650px; }
+.buyer-discover p:not(.public-eyebrow) { max-width: 680px; color: var(--muted); margin-top: 18px; }
+.buyer-discover-mark { color: var(--green); padding: 30px; background: white; border-radius: 50%; }
+.buyer-discover-mark svg { width: 64px; height: 64px; }
+.buyer-account { margin-top: 24px; }
+.buyer-home h1 { overflow-wrap: anywhere; }
+@media (max-width: 600px) { .buyer-discover-mark { display: none; } .buyer-discover .owner-actions > a { width: 100%; } }
 .owner-login-card { grid-column: 2; grid-row: 1/3; padding: 34px; background: white; border: 1px solid #d6e1d7; border-radius: 17px; box-shadow: 0 8px 24px #143b2d06; min-width: 0; }
 .owner-login-card h2 { font-size: 1.6rem; }
 .owner-login-card > p { color: var(--muted); margin-top: 10px; }

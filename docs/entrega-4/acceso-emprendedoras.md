@@ -22,7 +22,7 @@ La consulta está limitada al perfil activo, rol emprendedora, tienda asignada y
 | W40 | Pantallas separadas de la capa de datos; entrepreneurHome() hace las consultas y respeta RLS. |
 | WA1 | Edición de ficha de tienda desde la web (RF-TIE-02), incorporada por solicitud de Benjamín. En el checklist de esta revisión aparece como adicional de otra entrega. |
 
-El hito de tienda permite editar nombre, descripción, tipo, sector, contacto y visibilidad de precios, además de subir, reemplazar o quitar el logo. El hito siguiente incorpora [productos y stock desde la web](productos-web.md). Las [ventas e historial web](../entrega-5/ventas-web.md) ya están incorporadas. Quedan pendientes registro de compradores, Google y recuperación de contraseña.
+El hito de tienda permite editar nombre, descripción, tipo, sector, contacto y visibilidad de precios, además de subir, reemplazar o quitar el logo. También están incorporados [productos y stock desde la web](productos-web.md), [ventas e historial web](../entrega-5/ventas-web.md) y [registro, ingreso y salida del comprador](acceso-compradores.md). Quedan pendientes Google y recuperación de contraseña.
 
 ## Edición de tienda y logo
 

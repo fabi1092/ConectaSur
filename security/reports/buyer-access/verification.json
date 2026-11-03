@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-11-03T21:20:27.289Z",
+  "url": "https://conectasur-dev.web.app/",
+  "passed": 16,
+  "checks": [
+    "Visitante explora la portada sin iniciar sesión (W32)",
+    "Contraseñas diferentes o cortas no envían el registro",
+    "Mostrar y ocultar ambas contraseñas es una elección explícita",
+    "Fallo de registro mantiene los datos y permite reintentar sin afirmar éxito",
+    "Registro real crea Auth y perfil comprador, abre Mi cuenta (W29)",
+    "RLS impide ver inventario/ventas privados, administrar o cambiar el propio rol",
+    "Registrar otra cuenta no reemplaza una sesión existente",
+    "Manipular metadatos del registro no concede rol administrador ni tienda",
+    "Explorar, recargar y volver a Mi cuenta conserva la sesión sin pedir otra contraseña",
+    "Escribir rutas de admin/emprendedora no cambia el espacio ni permisos del comprador",
+    "Cerrar sesión elimina tokens y volver/recargar exige ingreso (W31)",
+    "Comprador ingresa por el formulario común; contraseña errónea se rechaza (W30)",
+    "Correo registrado no abre una sesión ni crea un perfil duplicado",
+    "Registro y cuenta se adaptan al celular; a 320 px con letras grandes y alto contraste no hay desborde",
+    "Respuesta sin sesión solicita confirmación/ingreso, nunca simula autenticación (respuesta simulada)",
+    "Recorrido sin errores JavaScript"
+  ],
+  "fixture": "Dos cuentas ficticias propias eliminadas al terminar; no modifica cuentas del grupo",
+  "limits": [
+    "Chromium con móvil emulado, sin teléfono físico ni evaluación con usuarias",
+    "503 y confirmación de correo simulados; demás accesos contra backend real",
+    "No incluye OAuth Google ni recuperación de contraseña"
+  ]
+}

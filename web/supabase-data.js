@@ -147,6 +147,29 @@ export function createDataLayer(config, { storage } = {}) {
   const layer = {
     client: sdk,
 
+    async registerBuyer({ displayName, email, password }) {
+      const name = String(displayName ?? '').trim();
+      if (!name || name.length > 120 || typeof email !== 'string' || !email.trim() || typeof password !== 'string' || password.length < 8) {
+        throw Object.assign(new Error('Revisa los datos de registro'), { code: 'invalid_registration' });
+      }
+      if (unwrap(await sdk.auth.getSession())?.session) {
+        throw Object.assign(new Error('Cierra tu sesión antes de crear otra cuenta'), { code: 'session_exists' });
+      }
+      // El trigger del servidor asigna comprador; nunca se acepta un rol desde el formulario.
+      const result = unwrap(await sdk.auth.signUp({
+        email: email.trim(), password, options: { data: { display_name: name } }
+      }));
+      if (!result.session) return { user: null, confirmationRequired: true };
+      try {
+        const user = await profile();
+        if (user.role !== 'comprador') throw Object.assign(new Error('Perfil inesperado'), { code: 'invalid_registration' });
+        return { user, confirmationRequired: false };
+      } catch (error) {
+        await sdk.auth.signOut({ scope: 'local' });
+        throw error;
+      }
+    },
+
     async login(email, password) {
       unwrap(
         await sdk.auth.signInWithPassword({
