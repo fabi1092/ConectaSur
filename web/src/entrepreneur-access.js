@@ -51,6 +51,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
           <p id="owner-access-status" class="owner-status${error ? ' owner-error' : ''}" role="${error ? 'alert' : 'status'}">${escape(message)}</p>
           <button class="public-primary" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
         </form>
+        <a class="owner-auth-link" href="#recuperar">Olvidé mi contraseña</a>
       </div>
       <aside class="owner-help"><h2>¿Es tu primera vez?</h2><p>Puedes crear una cuenta de comprador con tu correo.</p><a class="owner-secondary" href="#registro">Crear cuenta de comprador</a><p>Si te entregaron una cuenta de emprendedora o administrador, usa sus datos para ingresar.</p><p>Puedes seguir conociendo las tiendas sin ingresar.</p><a class="public-text-link" href="#inicio">Ver las tiendas <span aria-hidden="true">→</span></a></aside>
     </section>`);

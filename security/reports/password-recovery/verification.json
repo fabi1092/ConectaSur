@@ -1,0 +1,35 @@
+{
+  "checkedAt": "2026-11-03T21:54:49.667Z",
+  "url": "https://conectasur-dev.web.app/",
+  "passed": 17,
+  "checks": [
+    "Olvidé mi contraseña abre la recuperación desde el ingreso común",
+    "Error de envío conserva el correo y no afirma que se envió el mensaje",
+    "Servidor acepta el correo y genera el desafío de emprendedora; mensaje sin revelar existencia de cuenta",
+    "Enlace ajeno e inválido son rechazados antes de permitir una nueva contraseña",
+    "El enlace se valida con Auth real y se consume una sola vez",
+    "Repetición, mostrar/ocultar y lectura guiada no revelan contraseña ni enlace",
+    "Error de cambio conserva el formulario y permite reintentar sin afirmar éxito",
+    "Nueva contraseña ingresa como owner; la anterior se rechaza y se conserva el rol",
+    "Servidor acepta el correo y genera el desafío de comprador; mensaje sin revelar existencia de cuenta",
+    "El enlace se valida con Auth real y se consume una sola vez, incluso con el alias antiguo envuelto por Outlook",
+    "Repetición, mostrar/ocultar y lectura guiada no revelan contraseña ni enlace",
+    "Formulario sin desborde a 320 px con letras grandes y alto contraste",
+    "Nueva contraseña ingresa como buyer; la anterior se rechaza y se conserva el rol",
+    "Recuperación aislada no reemplaza ni cierra la cuenta distinta que estaba abierta",
+    "Retorno directo preparado limpia tokens de la URL y usa sesión aislada (destino de prueba adaptado)",
+    "Instrucciones para copiar y pegar el enlace disponibles en celular y computador",
+    "Sin errores JavaScript durante la recuperación"
+  ],
+  "emailRouting": {
+    "directRedirectReady": false,
+    "observedOrigin": "https://surcode.supabase.codepulse.cl",
+    "workingAlternative": "Copiar el enlace del botón del correo y pegarlo en ConectaSur"
+  },
+  "limits": [
+    "Aceptación de envío y desafío verificados en servidor; no se comprobó entrega en un buzón real",
+    "Token obtenido mediante SQL solo para cuentas ficticias propias, simulando copiar el enlace recibido; nunca disponible para clientes de producción",
+    "503 y voz simulados; demás verificaciones y cambios de contraseña contra Supabase real",
+    "Celular emulado, sin teléfono físico; la contraseña nueva también sirve para el mismo Auth utilizado por Android"
+  ]
+}

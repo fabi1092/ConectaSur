@@ -4,6 +4,7 @@ import { OWNER_PRODUCT_COLUMNS, privateProduct, normalizeProduct, sameProduct, S
 import { fetchWithReadRetry } from './read-retry.js';
 import { SALE_COLUMNS, saleCommand } from './sales-model.js';
 import { browserAuthStorage, invalidSession } from './auth-session.js';
+import { createPasswordRecovery } from './password-recovery.js';
 
 const unwrap = ({ data, error }) => {
   if (error) throw Object.assign(new Error(error.message), { code: error.code, status: error.status });
@@ -147,6 +148,13 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
 
   const layer = {
     client: sdk,
+
+    passwordRecovery() {
+      return createPasswordRecovery(config, async uid => {
+        const session = unwrap(await sdk.auth.getSession())?.session;
+        if (session?.user.id === uid) unwrap(await sdk.auth.signOut({ scope: 'local' }));
+      });
+    },
 
     async registerBuyer({ displayName, email, password }) {
       const name = String(displayName ?? '').trim();

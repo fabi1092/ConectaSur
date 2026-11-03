@@ -7,7 +7,10 @@ import { showAccountAccess } from './entrepreneur-access.js';
 import { icon, brand } from './visuals.js';
 import { initAccessibility } from './accessibility.js';
 import { setAccountNavigation, knownAccountId } from './account-navigation.js';
+import { takeRecoveryLocation } from '../password-recovery.js';
+import { showPasswordRecovery } from './password-recovery.js';
 
+let incomingRecovery = takeRecoveryLocation();
 const app = document.querySelector('#app');
 const accessibility = initAccessibility(app);
 const db = createDataLayer(config);
@@ -1007,6 +1010,14 @@ async function iniciar() {
   const isCurrent = () => version === navigationVersion;
   const route = window.location.hash;
   lastRenderedRoute = route;
+
+  if (route === '#recuperar') {
+    usuarioActual = null;
+    seccionActual = 'cuenta';
+    const link = incomingRecovery; incomingRecovery = null;
+    stopOwnerScreen = showPasswordRecovery(app, db, isCurrent, link);
+    return;
+  }
 
   // Los enlaces anteriores siguen abriendo el mismo acceso; el rol viene del backend.
   if (['#ingresar', '#registro', '#mi-cuenta', '#mi-tienda', '#administracion'].includes(route)) {

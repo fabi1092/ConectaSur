@@ -164,6 +164,13 @@ p, dd, h1, h2, h3 { overflow-wrap: anywhere; }
 .owner-help .public-text-link { margin-top: 12px; }
 .owner-help .owner-secondary { margin-top: 18px; }
 .owner-auth-link { display: flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 16px; text-align: center; text-underline-offset: 4px; }
+.recovery-steps { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin-top: 26px; font-size: .9rem; }
+.recovery-steps li { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: white; }
+.recovery-steps li[aria-current] { background: var(--green); color: white; }
+.recovery-full { display: flex; width: 100%; margin-top: 18px; }
+.recovery-copy-help { margin-top: 18px; }
+.recovery-copy-help summary { min-height: 48px; cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+.owner-login-card .recovery-account { overflow-wrap: anywhere; color: var(--ink); font-weight: 600; }
 .buyer-discover { display: flex; gap: 24px; align-items: center; padding: clamp(22px, 4vw, 44px); background: var(--mint); border: 1px solid var(--line); border-radius: 17px; }
 .buyer-discover > div:first-child { flex: 1; min-width: 0; }
 .buyer-discover h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); max-width: 650px; }

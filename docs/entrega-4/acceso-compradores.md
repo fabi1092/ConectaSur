@@ -28,4 +28,4 @@ Para repetir: iniciar Vite en el puerto 5174, cargar CONECTASUR_PRIVATE solo en 
 
 Resultado: 16 comprobaciones de compradores aprobadas en local y en la URL pública, 21 de regresión de emprendedoras/administración en local y compilación Vite correcta. Se revisaron las capturas de escritorio y celular. La publicación respondió HTTP 200 y sirvió los mismos archivos de la compilación verificada. Las cuentas temporales se eliminaron al terminar cada ejecución.
 
-La emulación móvil no sustituye pruebas en un teléfono físico ni una evaluación con usuarias. Google (W28) y recuperación de contraseña (W27) permanecen pendientes; este hito no cierra todo el checklist.
+La emulación móvil no sustituye pruebas en un teléfono físico ni una evaluación con usuarias. El hito W27 incorpora [recuperación pegando el enlace del correo](recuperacion-contrasena.md); su apertura automática y Google (W28) siguen pendientes de configuración externa. Este hito no cierra todo el checklist.

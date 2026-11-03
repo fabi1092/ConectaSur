@@ -36,6 +36,8 @@ El hito de compradores incorpora registro, ingreso y cierre de sesión. security
 
 La [sesión persistente](entrega-4/sesion-persistente.md) conserva el acceso al volver a abrir la web. SESSION_ACCESS_URL permite comprobar la URL publicada con security/session-persistence-check.mjs; la prueba cierra completamente Chromium y lo abre de nuevo con el mismo perfil temporal.
 
+La [recuperación de contraseña](entrega-4/recuperacion-contrasena.md) está en #recuperar. La alternativa vigente consiste en copiar el enlace del botón del correo y pegarlo en la web; no depende de cambiar la redirección del servidor del profesor. RECOVERY_URL permite repetir security/password-recovery-check.mjs contra la publicación. No se afirma entrega en un buzón real ni redirección automática configurada.
+
 Mis ventas permite registrar operaciones e historial privado desde la web, usando el mismo RPC transaccional que Android. SALES_URL selecciona la dirección pública para security/owner-sales-check.mjs; la prueba crea y elimina sus propios datos. Ver docs/entrega-5/ventas-web.md.
 
 El dashboard de emprendedora incorpora resumen privado y navegación con sesión. El encabezado muestra Mi tienda o Mi panel según el perfil; DASHBOARD_URL permite comprobar la publicación con security/dashboard-navigation-check.mjs. Ver docs/entrega-4/dashboard-web.md.
