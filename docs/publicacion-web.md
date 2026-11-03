@@ -27,3 +27,5 @@ El bloque 2 incorpora un acceso común para ingreso y cierre de sesión: la cuen
 El rediseño incorpora recursos locales de marca y fotos en web/public/assets, galería desde public_products y filtros por categoría. Al publicar, comprobar también que carguen el logo y las fotografías, que el detalle de producto abra su tienda y que los precios ocultos sigan apareciendo como Consultar precio. Referencias y evidencias en docs/entrega-4/redisenio-web.md.
 
 Editar tienda permite a la emprendedora guardar sus datos y logo desde la misma web. Para comprobarlo sin alterar emprendimientos existentes, security/shop-editor-check.mjs crea sus propios fixtures; SHOP_EDITOR_URL permite ejecutar el recorrido contra la URL publicada. Incluye la subida JPEG real a Storage desde el navegador y la lectura anónima de la ficha actualizada.
+
+Mis productos incorpora creación, edición, fotos, variantes y stock de la emprendedora. El recorrido security/owner-catalog-check.mjs usa fixtures propios y CATALOG_URL para probar la publicación, incluyendo un fallo de escritura y una edición concurrente. Ver docs/entrega-4/productos-web.md.

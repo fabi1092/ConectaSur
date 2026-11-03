@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-11-02T22:41:37.650Z",
-  "url": "https://conectasur-dev.web.app/",
+  "checkedAt": "2026-11-03T00:11:38.111Z",
+  "url": "http://127.0.0.1:5174/",
   "passed": 14,
   "checks": [
     "Solo la dueña puede guardar la tienda asignada; comprador, rol administrador e ID ajeno se rechazan",

@@ -12,6 +12,8 @@ El acceso Android, cierre de sesión, huella opcional y edición de datos/logo d
 
 ## Configuración local
 
+La emprendedora también puede administrar [productos y stock desde la web](docs/entrega-4/productos-web.md): fotos, campos por tipo, variantes y modalidades de disponibilidad. Se accede desde Ingresar → Mis productos. La web usa los mismos registros que Android.
+
 1. Abrir la carpeta real **android** en Android Studio. Usar JDK 21, SDK 36, Build Tools 36.0.0; mínimo provisional Android 8/API 26.
 2. Copiar android/supabase.properties.example a android/supabase.properties y completar únicamente URL y anon key.
 3. Para la web, ejecutar npm ci en web y copiar supabase-config.example.js a supabase-config.js.

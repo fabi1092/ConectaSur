@@ -1,5 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
+import { OWNER_PRODUCT_COLUMNS, privateProduct, normalizeProduct, sameProduct, STOCK_MODES, SOLD_OUT_MODES } from './product-model.js';
+import { fetchWithReadRetry } from './read-retry.js';
 
 const unwrap = ({ data, error }) => {
   if (error) throw Object.assign(new Error(error.message), { code: error.code, status: error.status });
@@ -17,7 +19,8 @@ const shop = r => r && ({
   contact: r.contact,
   showPrices: r.show_prices,
   historyEnabled: r.history_enabled,
-  active: r.active
+  active: r.active,
+  defaultProducts: r.default_products
 });
 
 const product = r => ({
@@ -86,7 +89,7 @@ export function createDataLayer(config, { storage } = {}) {
           headers.set('User-Agent', 'ConectaSur-web-tests');
         }
 
-        return fetch(input, { ...init, headers });
+        return fetchWithReadRetry(input, { ...init, headers });
       }
     }
   });
@@ -130,12 +133,12 @@ export function createDataLayer(config, { storage } = {}) {
     }
   }
 
-  async function uploadShopLogoFile(shopId, file) {
+  async function uploadShopLogoFile(shopId, file, folder = 'logo') {
     if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size <= 0 || file.size > 2097152) {
       throw Object.assign(new Error('Usa una imagen JPEG, PNG o WebP de hasta 2 MiB'), { code: 'invalid_logo' });
     }
     const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
-    const path = shopId + '/logo/' + crypto.randomUUID() + '.' + ext;
+    const path = shopId + '/' + folder + '/' + crypto.randomUUID() + '.' + ext;
     unwrap(await sdk.storage.from('shop-images').upload(path, file, { contentType: file.type, upsert: false }));
     return sdk.storage.from('shop-images').getPublicUrl(path).data.publicUrl;
   }
@@ -184,7 +187,7 @@ export function createDataLayer(config, { storage } = {}) {
       }
       const record = unwrap(
         await sdk.from('shops')
-          .select('id,name,description,logo_url,entrepreneur_type,sector,contact,show_prices')
+          .select('id,name,description,logo_url,entrepreneur_type,sector,contact,show_prices,default_products')
           .eq('id', user.shopId)
           .eq('owner_uid', user.uid)
           .eq('active', true)
@@ -194,6 +197,61 @@ export function createDataLayer(config, { storage } = {}) {
         throw Object.assign(new Error('Tu tienda no está disponible'), { code: 'shop_not_assigned' });
       }
       return { user, shop: shop(record) };
+    },
+
+    async ownerCatalog(expectedShopId) {
+      const current = await layer.entrepreneurHome();
+      if (current.shop.id !== expectedShopId) throw Object.assign(new Error('La tienda asignada cambió. Vuelve a entrar.'), { code: 'shop_changed' });
+      const rows = unwrap(await sdk.from('products').select(OWNER_PRODUCT_COLUMNS).eq('shop_id', expectedShopId).order('name'));
+      return { ...current, products: rows.map(privateProduct) };
+    },
+
+    async saveOwnerProduct(expectedShopId, input, { isNew = false, photoFile = null, variantFiles = new Map(), onUpload = () => {} } = {}) {
+      const current = await layer.entrepreneurHome();
+      if (current.shop.id !== expectedShopId) throw Object.assign(new Error('La tienda asignada cambió. Vuelve a entrar.'), { code: 'shop_changed' });
+      normalizeProduct(input, expectedShopId, { pendingPhoto: !!photoFile, pendingVariants: new Set(variantFiles.keys()) });
+      if (!isNew && !input.updatedAt) throw Object.assign(new Error('Vuelve a cargar el producto antes de guardar.'), { code: 'product_changed' });
+      if ([...variantFiles.keys()].some(id => !input.variants.some(variant => variant.id === id))) throw new Error('Hay una imagen de variante sin asignar.');
+      const draft = structuredClone(input);
+      const folder = 'products/' + encodeURIComponent(draft.id);
+      if (photoFile) { draft.photo = await uploadShopLogoFile(expectedShopId, photoFile, folder); onUpload({ id: null, url: draft.photo }); }
+      for (const [id, file] of [...variantFiles]) {
+        const url = await uploadShopLogoFile(expectedShopId, file, folder);
+        draft.variants.find(variant => variant.id === id).photo = url; onUpload({ id, url });
+      }
+      const row = normalizeProduct(draft, expectedShopId);
+      let result;
+      if (isNew) result = await sdk.from('products').insert(row).select(OWNER_PRODUCT_COLUMNS).maybeSingle();
+      else result = await sdk.from('products').update(row).eq('id', row.id).eq('shop_id', expectedShopId).eq('updated_at', input.updatedAt).select(OWNER_PRODUCT_COLUMNS).maybeSingle();
+      if (!result.error && result.data) return privateProduct(result.data);
+      // Una respuesta perdida no debe duplicar el producto ni reponer stock cambiado en otro equipo.
+      const latest = await sdk.from('products').select(OWNER_PRODUCT_COLUMNS).eq('id', row.id).eq('shop_id', expectedShopId).maybeSingle();
+      if (!latest.error && latest.data && sameProduct(latest.data, row)) return privateProduct(latest.data);
+      if (result.error) unwrap(result);
+      throw Object.assign(new Error('Este producto cambió o fue eliminado desde otro equipo. Vuelve a cargarlo antes de guardar.'), { code: 'product_changed' });
+    },
+
+    async deleteOwnerProduct(expectedShopId, id, updatedAt) {
+      const current = await layer.entrepreneurHome();
+      if (current.shop.id !== expectedShopId || !updatedAt) throw Object.assign(new Error('Vuelve a cargar tu catálogo antes de eliminar.'), { code: 'product_changed' });
+      const rows = unwrap(await sdk.from('products').delete().eq('id', id).eq('shop_id', expectedShopId).eq('updated_at', updatedAt).select('id'));
+      if (rows.length) return;
+      const latest = unwrap(await sdk.from('products').select('id').eq('id', id).eq('shop_id', expectedShopId).maybeSingle());
+      if (latest) throw Object.assign(new Error('El producto cambió desde otro equipo. Actualiza el catálogo antes de eliminar.'), { code: 'product_changed' });
+    },
+
+    async setOwnerAvailability(expectedShopId, { ids = null, category = null, settings }) {
+      const current = await layer.entrepreneurHome();
+      if (current.shop.id !== expectedShopId) throw new Error('Esta tienda no pertenece a tu cuenta.');
+      if (ids && !ids.length) throw new Error('Selecciona al menos un producto.');
+      return unwrap(await sdk.rpc('set_product_availability', { p_shop_id: expectedShopId, p_ids: ids, p_category: category, p_settings: settings }));
+    },
+
+    async saveProductDefaults(expectedShopId, defaults) {
+      const current = await layer.entrepreneurHome();
+      if (current.shop.id !== expectedShopId || !Object.hasOwn(STOCK_MODES, defaults.stockMode) || !Object.hasOwn(SOLD_OUT_MODES, defaults.soldOut) || typeof defaults.visible !== 'boolean' || typeof defaults.showPrice !== 'boolean' || Object.keys(defaults).length !== 4) throw new Error('Revisa las preferencias de tus productos nuevos.');
+      const row = unwrap(await sdk.from('shops').update({ default_products: defaults }).eq('id', expectedShopId).eq('owner_uid', current.user.uid).eq('active', true).select('id').maybeSingle());
+      if (!row) throw new Error('No se pudieron guardar tus preferencias.');
     },
 
     async saveEntrepreneurShop(expectedShopId, changes, { logoFile = null, removeLogo = false } = {}) {

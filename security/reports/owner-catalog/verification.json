@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-11-03T00:18:01.213Z",
+  "url": "https://conectasur-dev.web.app/",
+  "passed": 17,
+  "checks": [
+    "Comprador, administrador de aplicación y tienda ajena no pueden abrir el catálogo privado",
+    "Catálogo vacío explica cómo comenzar y ofrece Agregar producto",
+    "Foto preparada antes de publicar: JPEG de hasta 1024 px, sin subir al elegirla",
+    "Precio 8000 CLP, categoría Artesanías y campos específicos se guardan y aparecen en la proyección pública",
+    "Fallo de escritura conserva formulario y foto; reintentar no duplica el producto ni la subida confirmada",
+    "Reintento idéntico reconoce el registro guardado; una colisión de identificador no sobrescribe otro contenido",
+    "Cancelar y navegación interna piden confirmar antes de descartar cambios",
+    "Edición antigua no repone el stock cambiado en otro dispositivo y permite cargar la versión actual",
+    "Variantes con cantidad, precio y foto propios; cantidad total calculada por el backend",
+    "Unidades agotadas ocultas, visibles o por encargo; pieza única vendida oculta; por encargo y sin conteo funcionan sin exponer stock público",
+    "Rechaza precios negativos, cantidades fraccionarias, tienda manipulada y variantes en piezas únicas",
+    "RLS niega inventario privado a visitante, comprador y admin; comprador no cambia cantidades",
+    "Actualización grupal oculta los seleccionados y los retira del catálogo público",
+    "Preferencias persistidas se aplican a productos nuevos; se permite guardar oculto sin foto",
+    "Buscador filtra por nombre; eliminar exige confirmación y solo borra el producto elegido",
+    "Cuatro pasos sin desbordamiento a 320 px con texto al 200 %, más revisión móvil y escritorio",
+    "Sin errores JavaScript en el recorrido"
+  ],
+  "fixture": "Datos e imágenes ficticios propios, eliminados al finalizar",
+  "limits": [
+    "Navegador móvil emulado; pendiente prueba física con emprendedoras",
+    "Android usa las mismas filas y API; esta prueba no opera un dispositivo Android",
+    "El borrador se conserva mientras el formulario está abierto, no después de cerrar la pestaña"
+  ]
+}
