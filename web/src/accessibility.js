@@ -7,7 +7,7 @@ const defaults = { size: 'normal', contrast: false, slow: true };
 const guides = [
   ['#owner-login-form', 'Ingresa con tu correo y contraseña. Puedes activar Mostrar contraseña para revisar lo escrito. Después pulsa Iniciar sesión.'],
   ['#shop-editor-form', 'Aquí puedes cambiar los datos y el logo de tu tienda. Elige una imagen para revisarla. Los cambios se publican cuando pulsas Guardar cambios. Cancelar te permite volver sin guardar.'],
-  ['.owner-home', 'Esta es tu tienda. En Mis productos puedes agregar fotos, precios y unidades disponibles. Editar tienda permite cambiar tus datos y logo. Cierra tu sesión al terminar si compartes este equipo.'],
+  ['.owner-home', 'Esta es tu tienda. En Mis productos puedes agregar fotos, precios y unidades disponibles. Mis ventas permite registrar ventas y consultar tu historial privado. Editar tienda permite cambiar tus datos y logo. Cierra tu sesión al terminar si compartes este equipo.'],
   ['#owner-product-list', 'Estos son tus productos. Agregar producto te guía para crear uno nuevo. Editar producto permite cambiar sus datos y unidades. Eliminar pide confirmación. Puedes buscar por nombre o elegir una categoría.'],
   ['.admin-site', 'Este es el panel administrativo. Elige una sección para gestionar emprendedoras, asociaciones, categorías o tipos de producto. Usa Cerrar sesión al terminar.']
 ];
@@ -28,8 +28,8 @@ export function initAccessibility(app) {
   tools.innerHTML = `<div class="accessibility-inner"><span class="accessibility-title">${icon('help')}A tu manera</span><button type="button" id="access-read">${icon('volume')}Escuchar esta pantalla</button><div class="accessibility-size"><label for="access-size">Letras y botones</label><select id="access-size"><option value="normal">Tamaño normal</option><option value="large">Grande</option><option value="largest">Muy grande</option></select></div><button type="button" id="access-contrast" aria-pressed="false">${icon('contrast')}Más contraste</button><details class="accessibility-options"><summary>Más ayudas</summary><div><label class="accessibility-check"><input id="access-slow" type="checkbox">Leer más despacio</label><p>Escuchar lee las instrucciones. Hablar para escribir permite dictar el nombre y la descripción del producto.</p><p>El micrófono se activa al pulsar Hablar. El dictado depende de tu navegador y puede necesitar Internet. También puedes usar el micrófono del teclado.</p><button type="button" id="access-reset">Restablecer tamaño y contraste</button></div></details><div class="accessibility-playback" hidden><button type="button" id="access-pause">Pausar lectura</button><button type="button" id="access-stop">Detener lectura</button></div><p id="access-status" role="status" aria-live="polite"></p></div>`;
   app.before(tools);
   const status = tools.querySelector('#access-status');
-  function tell(message, error = false) {
-    const local=document.querySelector('dialog[open] [data-reading-status]') || app.querySelector('[data-voice-guide]:not(dialog) [data-reading-status]');
+  function tell(message, error = false, scope = readingScope) {
+    const local=(scope?.isConnected && scope.querySelector('[data-reading-status]')) || document.querySelector('dialog[open] [data-reading-status]') || app.querySelector('[data-voice-guide]:not(dialog) [data-reading-status]');
     status.textContent=local ? '' : message;
     const target=local || status;target.textContent=message;target.setAttribute('role',error ? 'alert' : 'status');
   }
@@ -45,12 +45,13 @@ export function initAccessibility(app) {
     tools.querySelector('.accessibility-playback').hidden = !reading;
     tools.querySelector('#access-pause').textContent = paused ? 'Continuar lectura' : 'Pausar lectura';
     tools.querySelector('#access-read').setAttribute('aria-pressed',String(reading));
-    document.querySelectorAll('[data-stop-reading]').forEach(button=>{button.hidden=!reading;});
-    document.querySelectorAll('[data-pause-reading]').forEach(button=>{button.hidden=!reading;button.textContent=paused ? 'Continuar lectura' : 'Pausar lectura';});
+    document.querySelectorAll('[data-stop-reading]').forEach(button=>{button.hidden=!reading || !readingScope?.contains(button);});
+    document.querySelectorAll('[data-pause-reading]').forEach(button=>{button.hidden=!reading || !readingScope?.contains(button);button.textContent=paused ? 'Continuar lectura' : 'Pausar lectura';});
   }
   function stopReading(announce = false) {
+    const previousScope=readingScope;
     readVersion++; reading = false; paused = false; readingScope = null; utterance = null;
-    synthesis?.cancel(); playback(); if(announce) tell('Lectura detenida.');
+    synthesis?.cancel(); playback(); if(announce) tell('Lectura detenida.',false,previousScope);
   }
   async function voices() {
     const current = synthesis.getVoices();
@@ -80,7 +81,7 @@ export function initAccessibility(app) {
       if(version !== readVersion || !reading) return;
       utterance = new SpeechSynthesisUtterance(chunks[index]);
       utterance.voice = voice; utterance.lang = voice.lang; utterance.rate = settings.slow ? .8 : 1;
-      utterance.onend = () => { if(version !== readVersion) return; if(++index < chunks.length) play(); else { reading=false;paused=false;readingScope=null;playback();tell('Terminó la lectura.'); } };
+      utterance.onend = () => { if(version !== readVersion) return; if(++index < chunks.length) play(); else { const previousScope=readingScope;reading=false;paused=false;readingScope=null;playback();tell('Terminó la lectura.',false,previousScope); } };
       utterance.onerror = () => { if(version !== readVersion) return; stopReading();tell('No pudimos reproducir la lectura. Revisa el volumen y la voz en español de tu dispositivo.',true); };
       try { synthesis.speak(utterance); } catch { stopReading(); tell('No pudimos iniciar la lectura. Intenta nuevamente.',true); }
     };

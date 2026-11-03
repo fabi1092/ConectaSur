@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { OWNER_PRODUCT_COLUMNS, privateProduct, normalizeProduct, sameProduct, STOCK_MODES, SOLD_OUT_MODES } from './product-model.js';
 import { fetchWithReadRetry } from './read-retry.js';
+import { SALE_COLUMNS, saleCommand } from './sales-model.js';
 
 const unwrap = ({ data, error }) => {
   if (error) throw Object.assign(new Error(error.message), { code: error.code, status: error.status });
@@ -187,7 +188,7 @@ export function createDataLayer(config, { storage } = {}) {
       }
       const record = unwrap(
         await sdk.from('shops')
-          .select('id,name,description,logo_url,entrepreneur_type,sector,contact,show_prices,default_products')
+          .select('id,name,description,logo_url,entrepreneur_type,sector,contact,show_prices,default_products,history_enabled')
           .eq('id', user.shopId)
           .eq('owner_uid', user.uid)
           .eq('active', true)
@@ -595,6 +596,45 @@ export function createDataLayer(config, { storage } = {}) {
           p_request_id: requestId
         })
       );
+    },
+
+    async recordOwnerSale(expectedShopId, input) {
+      const current=await layer.entrepreneurHome();
+      if(current.shop.id!==expectedShopId)throw Object.assign(new Error('La tienda asignada cambió. Vuelve a entrar.'),{code:'shop_changed'});
+      const command=saleCommand(input);
+      // El RPC valida y descuenta dentro de la transacción; el mismo ID permite reintentar sin duplicar.
+      return layer.registerSale(expectedShopId,command.productId,command.variantId,command.quantity,command.place,command.requestId);
+    },
+
+    async ownerSaleReceipt(expectedShopId, id) {
+      const current=await layer.entrepreneurHome();
+      if(current.shop.id!==expectedShopId)throw Object.assign(new Error('Esta tienda no pertenece a tu cuenta.'),{code:'shop_changed'});
+      return unwrap(await sdk.from('sales').select(SALE_COLUMNS).eq('shop_id',expectedShopId).eq('id',id).maybeSingle());
+    },
+
+    async ownerSalesHistory(expectedShopId) {
+      const current=await layer.entrepreneurHome();
+      if(current.shop.id!==expectedShopId)throw Object.assign(new Error('Esta tienda no pertenece a tu cuenta.'),{code:'shop_changed'});
+      const rows=[];let cursor=null;
+      // Paginación por fecha e ID: no se pierden registros al superar el límite de 1000 del servidor.
+      while(true) {
+        let query=sdk.from('sales').select(SALE_COLUMNS).eq('shop_id',expectedShopId).order('date_millis',{ascending:false}).order('id',{ascending:true}).limit(200);
+        if(cursor)query=query.or(`date_millis.lt.${cursor.date_millis},and(date_millis.eq.${cursor.date_millis},id.gt.${cursor.id})`);
+        const page=unwrap(await query);rows.push(...page);
+        if(page.length<200)break;
+        const last=page.at(-1);
+        if(!Number.isSafeInteger(Number(last.date_millis)) || !/^[\da-f-]{36}$/i.test(last.id))throw new Error('No pudimos continuar la consulta del historial.');
+        cursor=last;
+      }
+      return {...current,sales:rows};
+    },
+
+    async setOwnerHistoryEnabled(expectedShopId, enabled) {
+      const current=await layer.entrepreneurHome();
+      if(current.shop.id!==expectedShopId || typeof enabled!=='boolean')throw new Error('Revisa la preferencia del historial.');
+      const row=unwrap(await sdk.from('shops').update({history_enabled:enabled}).eq('id',expectedShopId).eq('owner_uid',current.user.uid).eq('active',true).select('history_enabled').maybeSingle());
+      if(!row)throw new Error('No pudimos guardar la preferencia del historial.');
+      return row.history_enabled;
     },
 
     async salesHistory(shopId) {

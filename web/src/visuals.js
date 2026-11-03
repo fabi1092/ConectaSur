@@ -1,6 +1,8 @@
 // Íconos de interfaz originales en SVG, siempre acompañados por texto en las acciones.
 export function icon(name, extra = '') {
   const paths = {
+    receipt: '<path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3ZM8 7h8M8 11h8M8 15h4"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
     volume: '<path d="M4 9h4l5-4v14l-5-4H4ZM17 8c3 2 3 6 0 8m3-11c5 4 5 10 0 14"/>',
     microphone: '<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/>',
     contrast: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M12 7h6M12 11h9M12 15h8M12 19h5"/>',

@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-11-03T01:30:45.784Z",
-  "url": "https://conectasur-dev.web.app/",
+  "checkedAt": "2026-11-03T02:09:32.278Z",
+  "url": "http://127.0.0.1:5174/",
   "passed": 18,
   "checks": [
     "Tamaño y contraste persisten al recargar; controles ampliados alcanzan al menos 68 px",

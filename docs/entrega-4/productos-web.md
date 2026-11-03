@@ -42,4 +42,4 @@ Verificación del hito inicial de productos, 2 de noviembre de 2026: 17 comproba
 
 Hito de ayudas de lectura y dictado, 2 de noviembre: 18 comprobaciones de las ayudas aprobadas contra la web publicada, con voz y micrófono simulados y guardado real. También pasaron 17 del catálogo, 14 de tienda/logo y 19 de la portada y fichas públicas, para un total de 68 comprobaciones. Se revisaron capturas de escritorio y celular. La compilación de producción coincide con la publicada; no se cambió el backend ni se añadieron servicios de pago.
 
-Este hito no incorpora registro de ventas o historial web. Tampoco completa los pendientes del checklist sobre compradores, Google y recuperación de contraseña.
+El hito posterior incorpora [registro de ventas e historial web](../entrega-5/ventas-web.md). Continúan pendientes el acceso de compradores, Google y recuperación de contraseña.

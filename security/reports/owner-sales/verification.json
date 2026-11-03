@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-11-03T02:12:54.620Z",
+  "url": "https://conectasur-dev.web.app/",
+  "passed": 15,
+  "checks": [
+    "Solo la dueña activa puede registrar ventas y consultar el historial de su tienda",
+    "Revisión muestra cantidad, lugar, precio y total CLP sin descontar; lectura recibe pesos chilenos",
+    "Respuesta perdida después de registrar: recarga conserva la solicitud por cuenta/tienda; reintentar usa el mismo ID y no duplica venta ni descuento",
+    "Tallas/colores usan su precio propio y solo descuentan la opción elegida; volver a corregir no registra",
+    "Opción agotada, cero, negativos y fracciones se rechazan antes de registrar",
+    "Dos ventas simultáneas para la última unidad: solo una se registra; no hay cantidad negativa y la vitrina se actualiza",
+    "Pieza única se vende una vez; por encargo, sin conteo y agotado que recibe encargos mantienen sus cantidades; repetir ID no duplica",
+    "Visitante, comprador, administrador y otra dueña no leen ventas ajenas; cuenta desactivada no registra",
+    "Historial supera 1000 registros sin perder ni duplicar filas, incluidas fechas idénticas y productos retirados",
+    "Filtros inclusivos de Chile, nombre sin acentos y lugar calculan totales completos; interfaz pagina de 20 en 20 y lee solo el registro elegido",
+    "Rangos de fecha invertidos no muestran resultados o totales anteriores como si fueran válidos",
+    "Desactivar historial pide confirmar, conserva ventas anteriores y descuenta una sola vez sin guardar detalle nuevo",
+    "Error de consulta muestra reintento en lugar de un historial vacío inventado",
+    "Registro e historial sin desborde a 320 px con texto muy grande y contraste",
+    "Sin errores JavaScript en el recorrido"
+  ],
+  "limits": [
+    "Solo datos ficticios propios; se eliminan al finalizar junto con las solicitudes idempotentes",
+    "Voz simulada para comprobar integración y texto CLP; móvil emulado, sin prueba física con emprendedoras",
+    "La solicitud pendiente se conserva por cuenta y tienda en sessionStorage de esta pestaña; no se promete recuperación al cerrar la pestaña",
+    "El RPC usa el precio vigente al registrar; el resumen previo es una referencia y el historial conserva el precio registrado"
+  ]
+}

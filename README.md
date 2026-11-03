@@ -16,6 +16,8 @@ La emprendedora también puede administrar [productos y stock desde la web](docs
 
 La barra A tu manera permite ampliar letras/botones, activar contraste y escuchar instrucciones. El producto admite dictado revisable para nombre/descripción y un resumen escuchable antes de confirmar el guardado. Voz y micrófono dependen de la compatibilidad del dispositivo; las pruebas automatizadas de estos estados usan servicios de voz simulados.
 
+Mi tienda → Mis ventas permite [registrar ventas y consultar el historial desde la web](docs/entrega-5/ventas-web.md). Comparte el descuento transaccional y las preferencias de historial con Android; permite reintentar la misma solicitud sin duplicarla y filtrar el historial privado por fechas de Chile, producto y lugar.
+
 1. Abrir la carpeta real **android** en Android Studio. Usar JDK 21, SDK 36, Build Tools 36.0.0; mínimo provisional Android 8/API 26.
 2. Copiar android/supabase.properties.example a android/supabase.properties y completar únicamente URL y anon key.
 3. Para la web, ejecutar npm ci en web y copiar supabase-config.example.js a supabase-config.js.
