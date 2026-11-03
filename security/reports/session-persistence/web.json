@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-11-03T21:35:33.537Z",
+  "url": "https://conectasur-dev.web.app/",
+  "passed": 15,
+  "checks": [
+    "Cerrar el proceso de Chromium y abrirlo con el mismo perfil restaura comprador sin contraseña",
+    "Renovar el token vencido conserva comprador al volver a abrir",
+    "Cerrar sesión de comprador impide restaurar el acceso al reabrir el navegador",
+    "Cerrar el proceso de Chromium y abrirlo con el mismo perfil restaura emprendedora sin contraseña",
+    "Renovar el token vencido conserva emprendedora al volver a abrir",
+    "Cerrar sesión de emprendedora impide restaurar el acceso al reabrir el navegador",
+    "Cerrar el proceso de Chromium y abrirlo con el mismo perfil restaura administrador sin contraseña",
+    "Renovar el token vencido conserva administrador al volver a abrir",
+    "Cerrar sesión de administrador impide restaurar el acceso al reabrir el navegador",
+    "Cerrar sesión en otra pestaña también retira la vista privada de la primera",
+    "Una sesión anterior en sessionStorage migra a persistente sin pedir otra contraseña",
+    "Fallo temporal de perfil conserva la sesión y el reintento recupera el acceso",
+    "Una pestaña antigua no resucita la sesión después de cerrar sesión explícitamente",
+    "Una cuenta desactivada no recupera acceso aunque haya guardado tokens antes",
+    "Sin errores JavaScript durante el recorrido de persistencia"
+  ],
+  "limits": [
+    "Chromium real de escritorio; perfil temporal y cierre completo entre visitas",
+    "503 simulado; registro, ingreso, renovación y desactivación contra Supabase real",
+    "Almacenamiento del navegador permitido; modo privado o borrar datos impide conservar la sesión"
+  ]
+}

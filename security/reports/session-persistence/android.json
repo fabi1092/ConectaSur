@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-11-03T21:30:54.237Z",
+  "passed": 5,
+  "checks": [
+    "Ingreso real guarda la sesión en el almacén cifrado de Android",
+    "Después de force-stop, otro proceso recupera el mismo usuario sin contraseña",
+    "Un StoreViewModel nuevo recupera la sesión y tienda desde el repositorio real",
+    "Token vencido se renueva contra Supabase sin pedir otra contraseña",
+    "Cerrar sesión impide que un cliente nuevo recupere el acceso"
+  ],
+  "phases": 2,
+  "environment": "Emulador Pixel 7 API 36; dos procesos separados con force-stop; Supabase real",
+  "limits": [
+    "Sin prueba física de teléfono",
+    "Almacén y cuenta temporales propios; la prueba no reemplaza la sesión personal del emulador"
+  ]
+}

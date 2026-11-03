@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { OWNER_PRODUCT_COLUMNS, privateProduct, normalizeProduct, sameProduct, STOCK_MODES, SOLD_OUT_MODES } from './product-model.js';
 import { fetchWithReadRetry } from './read-retry.js';
 import { SALE_COLUMNS, saleCommand } from './sales-model.js';
+import { browserAuthStorage, invalidSession } from './auth-session.js';
 
 const unwrap = ({ data, error }) => {
   if (error) throw Object.assign(new Error(error.message), { code: error.code, status: error.status });
@@ -57,7 +58,7 @@ const listTables = {
   entrepreneurTypes: 'entrepreneur_types'
 };
 
-export function createDataLayer(config, { storage } = {}) {
+export function createDataLayer(config, { storage, storageKey } = {}) {
   const url = new URL(config.url);
 
   if (
@@ -71,14 +72,14 @@ export function createDataLayer(config, { storage } = {}) {
     throw new Error('Falta la clave anon de Supabase');
   }
 
-  const sessionStorage =
-    storage ??
-    (typeof window === 'undefined' ? undefined : window.sessionStorage);
+  const authStorageKey = storageKey ?? `sb-${url.hostname.split('.')[0]}-auth-token`;
+  const authStorage = storage ?? browserAuthStorage(authStorageKey);
 
   const sdk = createClient(config.url, config.anonKey, {
     auth: {
-      persistSession: !!sessionStorage,
-      storage: sessionStorage,
+      persistSession: !!authStorage,
+      storage: authStorage,
+      storageKey: authStorageKey,
       autoRefreshToken: true,
       detectSessionInUrl: false
     },
@@ -196,7 +197,8 @@ export function createDataLayer(config, { storage } = {}) {
       try {
         return await profile();
       } catch (error) {
-        await sdk.auth.signOut({ scope: 'local' });
+        // Un corte de red no equivale a una sesión revocada.
+        if (invalidSession(error)) await sdk.auth.signOut({ scope: 'local' });
         throw error;
       }
     },
@@ -312,7 +314,7 @@ export function createDataLayer(config, { storage } = {}) {
 
     onSession(callback) {
       const { data } = sdk.auth.onAuthStateChange(
-        (_event, session) => callback(session?.user ?? null)
+        (event, session) => callback(session?.user ?? null, event)
       );
 
       return () => data.subscription.unsubscribe();
@@ -344,7 +346,10 @@ export function createDataLayer(config, { storage } = {}) {
       };
 
       const secondary = createDataLayer(config, {
-        storage: isolatedStorage
+        storage: isolatedStorage,
+        // El alta de una emprendedora no cambia la sesión del administrador
+        // ni transmite su sesión temporal a las otras pestañas.
+        storageKey: authStorageKey + '-provision-' + crypto.randomUUID()
       });
 
       try {

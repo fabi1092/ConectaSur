@@ -58,7 +58,7 @@ Las fotografías de ejemplo se han cargado y vinculado. No se usa este bucket p�
 
 Android guarda sesión, caché privada y borradores cifrados con una clave de Android Keystore. Conserva catálogo público para lectura offline y una cola de productos por UID. Al volver la red, solo la misma cuenta puede reenviar sus borradores; el servidor valida nuevamente. La pantalla de edición debe usar pendingDrafts para restaurarlos y mostrar errores pendientes.
 
-La web guarda sesión por pestaña mediante sessionStorage y consulta datos sin caché persistente de tablas. La navegación offline completa de la web no está implementada.
+La web guarda los tokens de sesión mediante localStorage para recuperar el acceso al cerrar y volver a abrir el mismo navegador/perfil. Cerrar sesión los elimina; un fallo de red no los borra. Consulta datos sin caché persistente de tablas. La navegación offline completa de la web no está implementada. Ver [sesión persistente](../entrega-4/sesion-persistente.md).
 
 La consulta del catálogo se actualiza mientras la pantalla está activa, cada 15 segundos. Es consulta periódica, no una suscripción a Supabase Realtime.
 

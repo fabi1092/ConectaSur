@@ -101,7 +101,7 @@ try {
   await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
   await expectLogin();
   await page.getByRole('status').filter({ hasText: 'Cerraste tu sesión' }).waitFor();
-  const stored = await page.evaluate(() => Object.keys(sessionStorage).filter(key => key.includes('auth-token')));
+  const stored = await page.evaluate(() => Object.keys(localStorage).filter(key => key.endsWith('-auth-token')));
   assert.deepEqual(stored, []);
   await page.reload();
   await expectLogin();

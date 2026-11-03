@@ -122,7 +122,7 @@ try {
   await page.screenshot({ path: fileURLToPath(new URL('cuenta-celular.png', output)), fullPage: true });
   await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
   await login();
-  assert.equal(await page.evaluate(() => Object.keys(sessionStorage).some(key => key.includes('auth-token'))), false);
+  assert.equal(await page.evaluate(() => Object.keys(localStorage).some(key => key.endsWith('-auth-token'))), false);
   await page.reload(); await login();
   await page.goBack();
   await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).waitFor();

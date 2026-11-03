@@ -65,6 +65,6 @@ Resultado del hito del 2 de noviembre: 14 comprobaciones de edición aprobadas t
 
 Para repetir: Vite iniciado en el puerto 5174, CONECTASUR_PRIVATE cargado solo en memoria, Playwright/Chromium disponible y node security/entrepreneur-access-check.mjs. PLAYWRIGHT_MODULE permite indicar su instalación; ENTREPRENEUR_ACCESS_URL permite cambiar la URL de prueba. Los fixtures se eliminan al terminar.
 
-La revisión móvil es emulada, no un ensayo con un teléfono físico o emprendedoras. Se usa sessionStorage: conserva el acceso al recargar esa pestaña, sin prometer una sesión persistente al cerrar el navegador. Los tokens se gestionan con el cliente de Supabase, no se guardan contraseñas en el código ni en informes. No se modifica el esquema ni las políticas RLS de la instancia.
+La revisión móvil es emulada, no un ensayo con un teléfono físico o emprendedoras. La [sesión persistente](sesion-persistente.md) usa localStorage: conserva el acceso al cerrar y volver a abrir el mismo navegador/perfil, hasta la salida explícita o la invalidación del acceso. Los tokens se gestionan con el cliente de Supabase, no se guardan contraseñas en el código ni en informes. No se modifica el esquema ni las políticas RLS de la instancia.
 
 El hito del 3 de noviembre convierte Mi tienda en un dashboard con datos reales y corrige la navegación con sesión. Al recuperar el foco se comprueba el acceso sin reconstruir una pantalla válida. El resumen, sus límites y la verificación están en [dashboard y navegación](dashboard-web.md).

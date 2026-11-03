@@ -34,6 +34,8 @@ La barra A tu manera incorpora tamaño/contraste persistentes y lectura; el edit
 
 El hito de compradores incorpora registro, ingreso y cierre de sesión. security/buyer-access-check.mjs admite BUYER_ACCESS_URL para comprobar la publicación y limpia sus cuentas ficticias al finalizar. Ver [recorrido y límites](entrega-4/acceso-compradores.md).
 
+La [sesión persistente](entrega-4/sesion-persistente.md) conserva el acceso al volver a abrir la web. SESSION_ACCESS_URL permite comprobar la URL publicada con security/session-persistence-check.mjs; la prueba cierra completamente Chromium y lo abre de nuevo con el mismo perfil temporal.
+
 Mis ventas permite registrar operaciones e historial privado desde la web, usando el mismo RPC transaccional que Android. SALES_URL selecciona la dirección pública para security/owner-sales-check.mjs; la prueba crea y elimina sus propios datos. Ver docs/entrega-5/ventas-web.md.
 
 El dashboard de emprendedora incorpora resumen privado y navegación con sesión. El encabezado muestra Mi tienda o Mi panel según el perfil; DASHBOARD_URL permite comprobar la publicación con security/dashboard-navigation-check.mjs. Ver docs/entrega-4/dashboard-web.md.

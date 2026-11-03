@@ -7,7 +7,7 @@ Hito del 3 de noviembre de 2026. Cubre W29 (registro con correo y contraseña), 
 1. Abrir https://conectasur-dev.web.app/#ingresar y elegir Crear cuenta de comprador.
 2. Escribir nombre, correo y una contraseña de al menos ocho caracteres. Repetir la misma contraseña. Mostrar contraseñas permite revisar ambas de forma voluntaria.
 3. Crear mi cuenta abre Mi cuenta cuando Auth entrega una sesión válida. En la instancia de clase el profesor habilitó la autoconfirmación de correo: este recorrido no demuestra propiedad del correo. Si el servidor entrega una respuesta sin sesión, se pide revisar el correo o ingresar con la cuenta existente; no se muestra una sesión ficticia.
-4. Explorar productos o conocer las tiendas. La cabecera cambia de Ingresar a Mi cuenta y permite volver con un clic, también al recargar la misma pestaña.
+4. Explorar productos o conocer las tiendas. La cabecera cambia de Ingresar a Mi cuenta y permite volver con un clic, también al cerrar y volver a abrir el mismo navegador/perfil.
 5. Cerrar sesión y recargar. Se vuelve a pedir el acceso. El mismo formulario de Ingresar reconoce también emprendedoras y administradores según el perfil del servidor.
 
 La cuenta de comprador no tiene tienda ni panel administrativo. Registrarse no convierte una cuenta en emprendedora. No se incluyen compras en línea, carrito, favoritos o seguimiento en este hito.
@@ -16,7 +16,7 @@ La cuenta de comprador no tiene tienda ni panel administrativo. Registrarse no c
 
 Las pantallas llaman a registerBuyer/login/currentSession/logout de la capa de datos web; no consultan directamente al SDK. Solo se envía display_name como metadato del registro. El trigger existente crea profiles con rol comprador y sin shop_id. Los permisos efectivos dependen de RLS, no de enlaces ocultos. No se cambió el esquema ni se desplegaron nuevas políticas.
 
-Se valida la repetición de contraseña y se impide enviar dos veces mientras el registro está pendiente. Un fallo conserva los datos para reintentar y no afirma que la cuenta se haya creado. Una sesión abierta no puede ser sustituida por otro registro. Los tokens se mantienen en sessionStorage mediante Supabase: recargar conserva la sesión en la pestaña, sin prometer permanencia al cerrar el navegador. Las contraseñas no se guardan en archivos, informes ni localStorage.
+Se valida la repetición de contraseña y se impide enviar dos veces mientras el registro está pendiente. Un fallo conserva los datos para reintentar y no afirma que la cuenta se haya creado. Una sesión abierta no puede ser sustituida por otro registro. Los tokens se mantienen en localStorage mediante Supabase: cerrar y volver a abrir el mismo navegador/perfil conserva la sesión. Cerrar sesión, borrar los datos del navegador o invalidar el acceso impide restaurarla. Las contraseñas no se guardan en archivos, informes ni localStorage. Ver [sesión persistente](sesion-persistente.md).
 
 Se mantiene la guía visual, controles grandes, foco, etiquetas, aumento de texto, contraste y lectura de instrucciones. La lectura guiada no incluye los valores de los campos de contraseña. En celular con letras ampliadas los controles de contraste y ayudas ocupan una fila completa para evitar palabras partidas.
 

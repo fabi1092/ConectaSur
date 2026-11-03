@@ -24,6 +24,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
   let editor = null;
   let dashboardVersion = 0;
   let homeIdentity = null;
+  let accountUid = null;
   const events = new AbortController();
   const alive = () => !stopped && isCurrent();
   document.title = 'Ingresar | ConectaSur';
@@ -169,6 +170,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
 
   async function openAccount(user) {
     if (!alive()) return;
+    accountUid = user.uid;
     setAccountNavigation(user);
     if (user.role === 'admin') {
       mode = 'admin';
@@ -214,6 +216,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
   }
 
   async function start() {
+    mode = 'loading';
     loading();
     try {
       const user = await db.currentSession();
@@ -253,8 +256,21 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
   };
   window.addEventListener('focus', recheck, { signal: events.signal });
   document.addEventListener('visibilitychange', recheck, { signal: events.signal });
+  const privateScreen = () => ['home', 'buyer', 'admin', 'products', 'sales', 'edit'].includes(mode);
+  const unsubscribe = db.onSession((user, event) => {
+    if (!alive() || !privateScreen()) return;
+    if (event !== 'SIGNED_OUT' && user?.id === accountUid) return;
+    // Fuera del bloqueo de Auth. Cerrar/cambiar la sesión en otra pestaña retira
+    // también esta vista privada, incluidos formularios con cambios pendientes.
+    setTimeout(() => {
+      if (!alive() || !privateScreen()) return;
+      if (typeof editor === 'function') editor(); else editor?.dispose();
+      editor = null;
+      start();
+    }, 0);
+  });
   start();
-  const dispose = () => { stopped = true; events.abort(); if (typeof editor === 'function') editor(); else editor?.dispose(); };
+  const dispose = () => { stopped = true; events.abort(); unsubscribe(); if (typeof editor === 'function') editor(); else editor?.dispose(); };
   dispose.canLeave = () => editor?.requestLeave() ?? true;
   return dispose;
 }
