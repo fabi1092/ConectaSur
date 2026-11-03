@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-11-03T00:18:01.213Z",
-  "url": "https://conectasur-dev.web.app/",
+  "checkedAt": "2026-11-03T01:23:42.955Z",
+  "url": "http://127.0.0.1:5174/",
   "passed": 17,
   "checks": [
     "Comprador, administrador de aplicación y tienda ajena no pueden abrir el catálogo privado",

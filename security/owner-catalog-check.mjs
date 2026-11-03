@@ -13,7 +13,7 @@ const output = new URL('./reports/owner-catalog/', import.meta.url); mkdirSync(o
 const config = settings(), clientConfig = {url:config.url,anonKey:config.anonKey};
 const admin = createDataLayer(clientConfig), owner = createDataLayer(clientConfig), visitor = createDataLayer(clientConfig), buyer = createDataLayer(clientConfig);
 const email = `catalog_${randomUUID()}@demo.conectasur.cl`, password = randomBytes(24).toString('base64url');
-const checks = [], errors = [], uploadedPaths = new Set(); let fixture, browser;
+const checks = [], errors = [], uploadedPaths = new Set(); let fixture, browser, page;
 try {
   await admin.login(config.accounts.admin.email,config.accounts.admin.password);
   fixture = await admin.createEmprendedora({email,password,displayName:'Prueba de catálogo web',shopName:'Taller del Sur (prueba)'});
@@ -25,7 +25,7 @@ try {
 
   browser = await chromium.launch({headless:true});
   const context = await browser.newContext({viewport:{width:1440,height:1100},locale:'es-CL'});
-  const page = await context.newPage();page.on('pageerror',error => errors.push(error.message));
+  page = await context.newPage();page.on('pageerror',error => errors.push(error.message));
   page.on('request',request => {const url = new URL(request.url()),marker = '/storage/v1/object/shop-images/';if(request.method() === 'POST' && url.pathname.startsWith(marker))uploadedPaths.add(decodeURIComponent(url.pathname.slice(marker.length)));});
   await page.goto(new URL('#ingresar',base).href);
   await page.getByLabel('Correo electrónico',{exact:true}).fill(email);await page.getByLabel('Contraseña',{exact:true}).fill(password);
@@ -34,7 +34,8 @@ try {
   const list = async () => {await page.getByRole('button',{name:'Agregar producto',exact:true}).waitFor();};
   const next = () => page.getByRole('button',{name:'Continuar',exact:true}).click();
   const edit = async () => {await page.getByRole('button',{name:'Editar producto',exact:true}).first().click();};
-  const save = async () => {await page.getByRole('button',{name:'Guardar producto',exact:true}).click();await list();await page.locator('#catalog-status').filter({hasText:'Guardamos tu producto'}).waitFor();};
+  const submit = async () => {await page.getByRole('button',{name:'Revisar producto',exact:true}).click();if(await page.locator('#product-review[open]').count())await page.locator('#product-review [data-action=confirm-save]').click();};
+  const save = async () => {await submit();await list();await page.locator('#catalog-status').filter({hasText:'Guardamos tu producto'}).waitFor();};
   await list();assert.equal(await page.locator('.owner-product-card').count(),0);
   checks.push('Catálogo vacío explica cómo comenzar y ofrece Agregar producto');
   await page.getByRole('button',{name:'Agregar producto',exact:true}).click();
@@ -48,14 +49,14 @@ try {
   await page.getByLabel('Categoría',{exact:true}).fill('Artesanías');
   await page.getByLabel('Tipo de producto',{exact:true}).selectOption('artesania');
   await page.getByLabel('material',{exact:true}).fill('Fibras vegetales');
-  await next();await next();await page.getByRole('button',{name:'Guardar producto',exact:true}).click();
+  await next();await next();await submit();
   await page.locator('#catalog-status').filter({hasText:'sin puntos ni comas'}).waitFor();
   assert.equal(uploadedPaths.size,0);await page.getByLabel('Precio en pesos chilenos',{exact:true}).fill('8000');
   await next();await next();await page.getByLabel('Unidades disponibles',{exact:true}).fill('3');
   // Primera escritura falla: el formulario y la foto ya subida deben poder reutilizarse.
   const productRoute = '**/rest/v1/products*';let failInsert = true;
   await page.route(productRoute,async route => {if(failInsert && route.request().method() === 'POST'){failInsert=false;await route.abort('failed');}else await route.continue();});
-  await page.getByRole('button',{name:'Guardar producto',exact:true}).click();
+  await submit();
   await page.locator('#catalog-status').filter({hasText:'Tus cambios siguen'}).waitFor();
   const uploadsBeforeRetry = uploadedPaths.size;assert.equal(uploadsBeforeRetry,1);
   await page.unroute(productRoute);await save();assert.equal(uploadedPaths.size,uploadsBeforeRetry);
@@ -83,7 +84,7 @@ try {
   // Simula stock cambiado desde Android mientras la edición antigua sigue abierta.
   const update = await owner.client.from('products').update({quantity:2}).eq('id',stored.id);if(update.error)throw update.error;
   await assert.rejects(owner.deleteOwnerProduct(fixture.shopId,stored.id,stored.updatedAt),error=>error.code==='product_changed');
-  await next();await next();await page.getByRole('button',{name:'Guardar producto',exact:true}).click();
+  await next();await next();await submit();
   await page.getByRole('button',{name:'Cargar versión actual',exact:true}).waitFor();
   assert.equal((await owner.ownerCatalog(fixture.shopId)).products[0].quantity,2);
   page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Cargar versión actual',exact:true}).click();
@@ -150,6 +151,9 @@ try {
   assert.deepEqual(errors,[]);checks.push('Sin errores JavaScript en el recorrido');
   writeFileSync(new URL('verification.json',output),JSON.stringify({checkedAt:new Date().toISOString(),url:base,passed:checks.length,checks,fixture:'Datos e imágenes ficticios propios, eliminados al finalizar',limits:['Navegador móvil emulado; pendiente prueba física con emprendedoras','Android usa las mismas filas y API; esta prueba no opera un dispositivo Android','El borrador se conserva mientras el formulario está abierto, no después de cerrar la pestaña']},null,2)+'\n');
   console.log(JSON.stringify({passed:checks.length,checks}));
+} catch(error) {
+  if(page && !page.isClosed()) console.error(JSON.stringify({completed:checks.length,lastStatus:await page.locator('#catalog-status').textContent({timeout:2000}).catch(()=>null),headings:await page.locator('h1,h2').allTextContents()}));
+  throw error;
 } finally {
   await browser?.close();
   try{if(fixture){if(uploadedPaths.size){const result=await owner.client.storage.from('shop-images').remove([...uploadedPaths]);if(result.error)throw result.error;}await query(`begin;delete from public.shop_associations where shop_id=${literal(fixture.shopId)};update public.profiles set role='comprador',shop_id=null where id=${literal(fixture.uid)};delete from public.shops where id=${literal(fixture.shopId)};delete from auth.users where id=${literal(fixture.uid)};commit;`);}}

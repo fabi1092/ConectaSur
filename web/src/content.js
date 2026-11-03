@@ -16,3 +16,10 @@ export function priceLabel(product) {
   const prefix = prices.some(value => value !== price) ? 'Desde ' : '';
   return prefix + new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(price) + ' CLP';
 }
+
+export function chileanSpeech(text) {
+  return String(text ?? '').replace(/\$\s*([\d.,]+)(?:\s*CLP)?|([\d.,]+)\s*CLP\b/g,(_match,amount,clpAmount)=>{
+    const digits=(amount || clpAmount).replace(/[.,]/g,'');
+    return `${digits} ${digits === '1' ? 'peso chileno' : 'pesos chilenos'}`;
+  });
+}

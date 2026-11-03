@@ -5,8 +5,10 @@ import { createDataLayer } from '../supabase-data.js';
 import { showPublicShops, showPublicShop } from './public-shops.js';
 import { showAccountAccess } from './entrepreneur-access.js';
 import { icon, brand } from './visuals.js';
+import { initAccessibility } from './accessibility.js';
 
 const app = document.querySelector('#app');
+const accessibility = initAccessibility(app);
 const db = createDataLayer(config);
 
 app.addEventListener('click', event => {
@@ -983,6 +985,7 @@ async function iniciar() {
     return;
   }
   stopOwnerScreen();
+  accessibility.stop();
   stopOwnerScreen = () => {};
   const version = ++navigationVersion;
   const isCurrent = () => version === navigationVersion;

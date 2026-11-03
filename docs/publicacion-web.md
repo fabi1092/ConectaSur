@@ -29,3 +29,5 @@ El rediseño incorpora recursos locales de marca y fotos en web/public/assets, g
 Editar tienda permite a la emprendedora guardar sus datos y logo desde la misma web. Para comprobarlo sin alterar emprendimientos existentes, security/shop-editor-check.mjs crea sus propios fixtures; SHOP_EDITOR_URL permite ejecutar el recorrido contra la URL publicada. Incluye la subida JPEG real a Storage desde el navegador y la lectura anónima de la ficha actualizada.
 
 Mis productos incorpora creación, edición, fotos, variantes y stock de la emprendedora. El recorrido security/owner-catalog-check.mjs usa fixtures propios y CATALOG_URL para probar la publicación, incluyendo un fallo de escritura y una edición concurrente. Ver docs/entrega-4/productos-web.md.
+
+La barra A tu manera incorpora tamaño/contraste persistentes y lectura; el editor admite dictado revisable y resumen antes de confirmar. security/accessibility-web-check.mjs usa ACCESSIBILITY_URL para probar la dirección pública, con síntesis y reconocimiento simulados. La revisión de voces, micrófono y TalkBack físicos queda pendiente. Solo se publica Hosting; el backend sigue en Supabase.

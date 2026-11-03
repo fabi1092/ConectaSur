@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-11-03T01:30:45.784Z",
+  "url": "https://conectasur-dev.web.app/",
+  "passed": 18,
+  "checks": [
+    "Tamaño y contraste persisten al recargar; controles ampliados alcanzan al menos 68 px",
+    "Lectura usa español y velocidad pausada; pausa, continúa y detiene; no lee la contraseña del formulario",
+    "Cambiar ayudas conserva lo escrito; las instrucciones de cada paso se pueden escuchar y detener",
+    "Micrófono solo se solicita al pulsar Hablar; resultado editable y escuchable requiere Usar este texto; todavía no guarda en el backend",
+    "Cancelar dictado y respuestas tardías no reemplazan el texto del formulario",
+    "Permiso de micrófono rechazado explica alternativas y conserva los datos",
+    "Navegador sin reconocimiento ofrece teclado; Escape cancela y devuelve el foco",
+    "Dictado demasiado largo no se trunca ni se aplica; corregirlo permite continuar",
+    "Descripción admite dictado; categoría visual mantiene Artesanías sin reclasificar por mencionar plantas",
+    "Resumen previo requiere confirmar; volver a corregir conserva el borrador sin escribir en Supabase",
+    "El resumen de 8000 se envía a la voz como pesos chilenos, sin símbolo dólar ni sigla CLP",
+    "Confirmar guarda nombre, descripción, precio y cantidad reales; producto oculto sigue privado; localStorage solo conserva preferencias",
+    "Tamaño muy grande y contraste sin desborde en catálogo y panel administrativo a 320 px",
+    "Sin voz española instalada se informa el límite y no se utiliza una voz inglesa",
+    "Sin síntesis de voz se explica el límite y el formulario sigue funcionando",
+    "Almacenamiento bloqueado no rompe las ayudas: se aplican y se informa que no se recordarán",
+    "Ficha pública tiene lectura propia; al cerrarla, Escuchar esta pantalla vuelve al contenido de la portada",
+    "Sin errores JavaScript en los recorridos probados"
+  ],
+  "limits": [
+    "Síntesis y reconocimiento simulados: se verifica integración, estados y texto CLP, no sonido ni exactitud de micrófono reales",
+    "Navegador móvil emulado; pendiente validar voces, permisos, TalkBack y comprensión con emprendedoras en sus teléfonos",
+    "Conexión y guardado comprobados contra Supabase real mediante fixtures propios eliminados al terminar"
+  ]
+}
