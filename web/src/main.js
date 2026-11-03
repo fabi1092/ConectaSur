@@ -2,13 +2,18 @@
 import './style.css';
 import config from '../supabase-config.js';
 import { createDataLayer } from '../supabase-data.js';
-import { showPublicShops, showPublicShop } from './public-shops.js';
+import { showPublicShops, showPublicShop, shopLogo, wireShopImages } from './public-shops.js';
 import { showAccountAccess } from './entrepreneur-access.js';
 import { icon, brand } from './visuals.js';
 import { initAccessibility } from './accessibility.js';
 import { setAccountNavigation, knownAccountId } from './account-navigation.js';
 import { takeRecoveryLocation } from '../password-recovery.js';
 import { showPasswordRecovery } from './password-recovery.js';
+import { showAssociationEditor } from './association-editor.js';
+
+let associationEditor=null;
+function releaseAssociationEditor(){associationEditor?.dispose();associationEditor=null;}
+function leaveAssociationEditor(){if(associationEditor && !associationEditor.requestLeave())return false;releaseAssociationEditor();return true;}
 
 let incomingRecovery = takeRecoveryLocation();
 const app = document.querySelector('#app');
@@ -104,12 +109,13 @@ async function mostrarPanel(logout) {
     });
   });
 
-  document.querySelector('#logout').addEventListener('click', logout);
+  document.querySelector('#logout').addEventListener('click', () => { if(leaveAssociationEditor())logout(); });
 
   await abrirSeccion('inicio');
 }
 
 async function abrirSeccion(seccion) {
+  if(!leaveAssociationEditor())return;
   seccionActual = seccion;
   document.querySelectorAll('[data-section]').forEach(button => {
     if (button.dataset.section === seccion) button.setAttribute('aria-current', 'page');
@@ -466,10 +472,11 @@ async function cargarAsociaciones() {
       mostrarFormularioAsociacion();
     });
 
+  const region=contenido.querySelector('#lista-asociaciones');
   try {
     const asociaciones = await db.listAssociations();
 
-    if (seccionActual !== 'asociaciones') return;
+    if (seccionActual !== 'asociaciones' || !region.isConnected) return;
 
     const lista = document.querySelector('#lista-asociaciones');
 
@@ -493,7 +500,7 @@ async function cargarAsociaciones() {
           <tbody>
             ${asociaciones.map(a => `
               <tr>
-                <td>${escapar(a.name)}</td>
+                <td><div class="association-name">${shopLogo({name:a.name,logoUrl:a.logo_url})}<span>${escapar(a.name)}</span></div></td>
                 <td>${escapar(a.sector || '—')}</td>
                 <td>${a.active ? 'Activa' : 'Inactiva'}</td>
 
@@ -516,6 +523,7 @@ async function cargarAsociaciones() {
         </table>
       </div>`;
 
+    wireShopImages(lista);
     lista.querySelectorAll('[data-members]').forEach(boton => {
       boton.addEventListener('click', () => {
         const asociacion = asociaciones.find(
@@ -775,80 +783,11 @@ async function mostrarIntegrantesAsociacion(asociacion) {
 }
 
 function mostrarFormularioAsociacion(asociacion = null) {
-  const contenido = document.querySelector('#section-content');
-
-  contenido.innerHTML = `
-    <div class="form-card">
-      <button id="volver-asociaciones" class="secondary">
-        ← Volver
-      </button>
-
-      <h2>
-        ${asociacion ? 'Editar asociación' : 'Crear asociación'}
-      </h2>
-
-      <form id="asociacion-form">
-        <label for="assoc-nombre">Nombre</label>
-        <input id="assoc-nombre" required maxlength="120"
-          value="${escapar(asociacion?.name || '')}">
-
-        <label for="assoc-descripcion">Descripción</label>
-        <textarea id="assoc-descripcion" rows="3">${
-          escapar(asociacion?.description || '')
-        }</textarea>
-
-        <label for="assoc-sector">Sector</label>
-        <input id="assoc-sector"
-          value="${escapar(asociacion?.sector || '')}">
-
-        <label for="assoc-contacto">Contacto</label>
-        <input id="assoc-contacto"
-          value="${escapar(asociacion?.contact || '')}">
-
-        <button type="submit">Guardar asociación</button>
-        <p id="form-mensaje" role="status"></p>
-      </form>
-    </div>`;
-
-  document.querySelector('#volver-asociaciones')
-    .addEventListener('click', cargarAsociaciones);
-
-  document.querySelector('#asociacion-form')
-    .addEventListener('submit', async e => {
-      e.preventDefault();
-
-      const mensaje = document.querySelector('#form-mensaje');
-
-      const boton = e.currentTarget.querySelector(
-        'button[type="submit"]'
-      );
-
-      boton.disabled = true;
-
-      try {
-        await db.saveAssociation(
-          asociacion?.id || crypto.randomUUID(),
-          {
-            name: document.querySelector('#assoc-nombre').value.trim(),
-            description: document.querySelector(
-              '#assoc-descripcion'
-            ).value.trim(),
-            sector: document.querySelector('#assoc-sector').value.trim(),
-            contact: document.querySelector(
-              '#assoc-contacto'
-            ).value.trim(),
-            active: asociacion?.active ?? true
-          }
-        );
-
-        mostrarMensaje('Asociación guardada.');
-        await cargarAsociaciones();
-      } catch (error) {
-        mensaje.textContent = error.message;
-      } finally {
-        if (boton.isConnected) boton.disabled = false;
-      }
-    });
+  if(!leaveAssociationEditor())return;
+  associationEditor=showAssociationEditor(document.querySelector('#section-content'),db,asociacion,{
+    onCancel:()=>{if(leaveAssociationEditor())cargarAsociaciones();},
+    onSaved:()=>{releaseAssociationEditor();cargarAsociaciones();mostrarMensaje('Asociación guardada.');}
+  });
 }
 
 // ------------------------------------------
@@ -1023,7 +962,7 @@ async function iniciar() {
   if (['#ingresar', '#registro', '#mi-cuenta', '#mi-tienda', '#administracion'].includes(route)) {
     usuarioActual = null;
     seccionActual = 'cuenta';
-    stopOwnerScreen = showAccountAccess(app, db, isCurrent, async (user, logout) => {
+    const stopAccount = showAccountAccess(app, db, isCurrent, async (user, logout) => {
       if (!isCurrent()) return;
       usuarioActual = user;
       await mostrarPanel(async () => {
@@ -1032,6 +971,8 @@ async function iniciar() {
         await logout();
       });
     });
+    stopOwnerScreen=()=>{releaseAssociationEditor();stopAccount();};
+    stopOwnerScreen.canLeave=()=>(associationEditor?.requestLeave() ?? true) && stopAccount.canLeave();
     return;
   }
 

@@ -52,6 +52,8 @@ El UUID de solicitud evita descontar dos veces tras un reintento de la misma ope
 
 Bucket shop-images, público para imágenes publicables. MIME permitidos: JPEG, PNG, WebP, hasta 2 MiB. Los objetos se agrupan por shop_id como primera carpeta; RLS limita las escrituras a la dueña activa o admin. Cada cliente comprime antes de subir.
 
+Bucket association-images para logos públicos de asociaciones, con los mismos límites de formato y tamaño. La migración 005 lo separa de las imágenes de tienda: sus políticas de escritura, listado y borrado requieren administrador activo. associations.logo_url guarda la referencia HTTPS. El panel reduce la imagen antes de subirla y confirma los cambios al guardar. Ver [logos de asociaciones](../entrega-4/logos-asociaciones.md).
+
 Las fotografías de ejemplo se han cargado y vinculado. No se usa este bucket público para documentos privados. La validación de MIME/metadatos no sustituye una inspección antivirus.
 
 ## Sesiones y funcionamiento sin conexión

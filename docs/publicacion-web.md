@@ -38,6 +38,8 @@ La [sesión persistente](entrega-4/sesion-persistente.md) conserva el acceso al 
 
 La [recuperación de contraseña](entrega-4/recuperacion-contrasena.md) está en #recuperar. La alternativa vigente consiste en copiar el enlace del botón del correo y pegarlo en la web; no depende de cambiar la redirección del servidor del profesor. RECOVERY_URL permite repetir security/password-recovery-check.mjs contra la publicación. No se afirma entrega en un buzón real ni redirección automática configurada.
 
+El panel permite [guardar el logo de las asociaciones](entrega-4/logos-asociaciones.md). Antes de publicar esta versión hay que aplicar la migración 005_logos_asociaciones.sql mediante el procedimiento de migraciones existente. ASSOCIATION_LOGO_URL permite probar security/association-logo-check.mjs contra la publicación.
+
 Mis ventas permite registrar operaciones e historial privado desde la web, usando el mismo RPC transaccional que Android. SALES_URL selecciona la dirección pública para security/owner-sales-check.mjs; la prueba crea y elimina sus propios datos. Ver docs/entrega-5/ventas-web.md.
 
 El dashboard de emprendedora incorpora resumen privado y navegación con sesión. El encabezado muestra Mi tienda o Mi panel según el perfil; DASHBOARD_URL permite comprobar la publicación con security/dashboard-navigation-check.mjs. Ver docs/entrega-4/dashboard-web.md.

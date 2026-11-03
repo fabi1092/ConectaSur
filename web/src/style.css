@@ -164,6 +164,12 @@ p, dd, h1, h2, h3 { overflow-wrap: anywhere; }
 .owner-help .public-text-link { margin-top: 12px; }
 .owner-help .owner-secondary { margin-top: 18px; }
 .owner-auth-link { display: flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 16px; text-align: center; text-underline-offset: 4px; }
+.association-name { display: flex; align-items: center; gap: 14px; }
+.association-name .shop-logo { width: 48px; height: 48px; min-width: 48px; }
+.association-editor { max-width: 1100px; }
+.association-editor fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.association-editor .editor-card > label:first-child { margin-top: 0; }
+.association-editor .editor-logo-card h3 { font-size: 1.35rem; }
 .recovery-steps { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin-top: 26px; font-size: .9rem; }
 .recovery-steps li { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: white; }
 .recovery-steps li[aria-current] { background: var(--green); color: white; }

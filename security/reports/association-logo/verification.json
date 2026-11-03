@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-11-03T22:12:15.819Z",
+  "url": "https://conectasur-dev.web.app/",
+  "passed": 13,
+  "checks": [
+    "Storage y RLS reales: solo administrador escribe, reemplaza o retira logos; lectura pública funciona",
+    "Se rechazan SVG, archivos grandes, rutas inválidas y URL de logo no HTTPS",
+    "Elegir logo prepara vista previa y no sube ni crea la asociación antes de Guardar",
+    "Crear guarda datos y logo JPEG reducido; el listado lo muestra y el archivo es público",
+    "Logo y asociación se conservan al recargar con sesión",
+    "Editar otros datos conserva el logo guardado",
+    "Salir con cambios pide confirmación; cancelar descarta la imagen preparada sin publicar",
+    "Imagen inválida muestra un error y conserva el logo anterior",
+    "Fallos de subida o guardado conservan el formulario; reintentar reutiliza la imagen ya subida",
+    "Si se pierde la respuesta tras guardar, reintentar no duplica subida ni borra el logo confirmado",
+    "Editor usable sin desbordes a 390 px y a 320 px con letra grande y alto contraste",
+    "Quitar logo se confirma al guardar y permanece retirado después de recargar",
+    "Sin errores JavaScript durante creación, edición, cancelación y reintentos"
+  ],
+  "limits": [
+    "Chromium con celular emulado; sin teléfono físico ni prueba con usuarias",
+    "503 y pérdida de respuesta simulados; permisos, Storage y guardados contra Supabase real",
+    "Retirar/reemplazar actualiza la referencia; archivos anteriores no se borran automáticamente para evitar borrar una imagen confirmada tras una respuesta perdida",
+    "Solo asociaciones, tienda, cuenta y archivos ficticios propios; limpieza al finalizar"
+  ]
+}

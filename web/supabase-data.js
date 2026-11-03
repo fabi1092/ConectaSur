@@ -472,8 +472,30 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
       }
     },
 
+    async uploadAssociationLogo(id, file) {
+      await requireAdmin();
+      if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,120}$/.test(id) || !file ||
+          !['image/jpeg','image/png','image/webp'].includes(file.type) || file.size <= 0 || file.size > 2097152) {
+        throw Object.assign(new Error('Elige una imagen JPG, PNG o WebP de hasta 2 MiB.'), { code: 'invalid_association_logo' });
+      }
+      const ext = { 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp' }[file.type];
+      const path = id + '/' + crypto.randomUUID() + '.' + ext;
+      unwrap(await sdk.storage.from('association-images').upload(path, file, { contentType:file.type, upsert:false }));
+      return sdk.storage.from('association-images').getPublicUrl(path).data.publicUrl;
+    },
+
     async saveAssociation(id, data) {
       await requireAdmin();
+      if (!data || typeof data.name !== 'string' || !data.name.trim() || data.name.trim().length > 120 ||
+          ['description','sector','contact'].some(key => key in data && (typeof data[key] !== 'string' || data[key].length > (key === 'description' ? 1000 : 240))) ||
+          ('active' in data && typeof data.active !== 'boolean')) {
+        throw Object.assign(new Error('Revisa el nombre y los datos de la asociación.'), { code:'invalid_association' });
+      }
+      if (data.logoUrl != null) {
+        let valid = false;
+        try { valid = typeof data.logoUrl === 'string' && data.logoUrl.length <= 2048 && new URL(data.logoUrl).protocol === 'https:'; } catch {}
+        if (!valid) throw Object.assign(new Error('El logo no tiene una dirección válida.'), { code:'invalid_association_logo' });
+      }
 
       const allowed = [
         'name',
@@ -486,16 +508,14 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
       const values = { id, active: true };
 
       for (const key of allowed) {
-        if (key in data) values[key] = data[key];
+        if (key in data) values[key] = typeof data[key] === 'string' ? data[key].trim() : data[key];
       }
 
       if ('logoUrl' in data) {
         values.logo_url = data.logoUrl;
       }
 
-      unwrap(
-        await sdk.from('associations').upsert(values)
-      );
+      return unwrap(await sdk.from('associations').upsert(values).select('*').single());
     },
 
     async setAssociationActive(id, active) {
