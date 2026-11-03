@@ -33,3 +33,5 @@ Mis productos incorpora creación, edición, fotos, variantes y stock de la empr
 La barra A tu manera incorpora tamaño/contraste persistentes y lectura; el editor admite dictado revisable y resumen antes de confirmar. security/accessibility-web-check.mjs usa ACCESSIBILITY_URL para probar la dirección pública, con síntesis y reconocimiento simulados. La revisión de voces, micrófono y TalkBack físicos queda pendiente. Solo se publica Hosting; el backend sigue en Supabase.
 
 Mis ventas permite registrar operaciones e historial privado desde la web, usando el mismo RPC transaccional que Android. SALES_URL selecciona la dirección pública para security/owner-sales-check.mjs; la prueba crea y elimina sus propios datos. Ver docs/entrega-5/ventas-web.md.
+
+El dashboard de emprendedora incorpora resumen privado y navegación con sesión. El encabezado muestra Mi tienda o Mi panel según el perfil; DASHBOARD_URL permite comprobar la publicación con security/dashboard-navigation-check.mjs. Ver docs/entrega-4/dashboard-web.md.

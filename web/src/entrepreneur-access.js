@@ -2,6 +2,9 @@ import { publicShell, shopLogo, wireShopImages, escapeHtml as escape } from './p
 import { showShopEditor } from './shop-editor.js';
 import { showOwnerCatalog } from './owner-catalog.js';
 import { showOwnerSales } from './owner-sales.js';
+import { setAccountNavigation } from './account-navigation.js';
+import { dashboardMetrics, dashboardPanels, loadDashboard } from './owner-dashboard.js';
+import { icon } from './visuals.js';
 
 function messageFor(error) {
   if (error.code === 'account_inactive') return 'Tu cuenta está desactivada o no tiene acceso. Consulta al administrador de ConectaSur.';
@@ -18,6 +21,8 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
   let busy = false;
   let checking = false;
   let editor = null;
+  let dashboardVersion = 0;
+  let homeIdentity = null;
   const events = new AbortController();
   const alive = () => !stopped && isCurrent();
   document.title = 'Ingresar | ConectaSur';
@@ -112,22 +117,31 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
   function home(data, notice = '') {
     if (!alive()) return;
     const { user, shop } = data;
+    const version=++dashboardVersion;
+    homeIdentity={uid:user.uid,shopId:shop.id};
+    setAccountNavigation(user);
     mode = 'home';
     document.title = 'Mi tienda | ConectaSur';
     app.innerHTML = publicShell(`<section class="owner-home" aria-labelledby="owner-home-title">
-      <div class="owner-topbar"><a class="public-back" href="#inicio">← Volver a las tiendas</a><button id="owner-logout" class="owner-secondary">Cerrar sesión</button></div>
-      <div class="owner-welcome"><div><p class="public-eyebrow">Mi espacio en ConectaSur</p><h1 id="owner-home-title" tabindex="-1">Esta es tu tienda.</h1><p>Consulta tus datos y revisa cómo te encuentra tu comunidad.</p></div><span class="owner-session-state">Sesión iniciada</span></div>
+      <div class="owner-topbar"><a class="public-back" href="#tiendas">← Volver a las tiendas</a><button id="owner-logout" class="owner-secondary">Cerrar sesión</button></div>
+      <div class="owner-welcome"><div><p class="public-eyebrow">Panel de mi tienda</p><h1 id="owner-home-title" tabindex="-1">Esta es tu tienda.</h1><p><strong>${escape(shop.name)}</strong>. Tus productos, ventas y pendientes en un solo lugar.</p></div><span class="owner-session-state">Sesión iniciada</span></div>
       ${notice ? `<p class="owner-save-success" role="status">${escape(notice)}</p>` : ''}
+      ${dashboardMetrics()}
+      <div class="owner-actions owner-shortcuts"><button class="public-primary" id="owner-products" type="button" aria-label="Mis productos">${icon('yarn')}<span>Mis productos<small>Agrega productos y revisa sus unidades.</small></span></button><button class="owner-secondary" id="owner-sales" type="button" aria-label="Mis ventas">${icon('receipt')}<span>Mis ventas<small>Registra una venta o consulta el historial.</small></span></button><button class="owner-secondary" id="owner-edit" type="button" aria-label="Editar tienda">${icon('shop')}<span>Editar tienda<small>Cambia tus datos y tu logo.</small></span></button></div>
+      ${dashboardPanels()}
       <div class="owner-summary">
         <div class="owner-shop-heading">${shopLogo(shop, true)}<div><h2>${escape(shop.name)}</h2><p class="public-category">${escape(shop.entrepreneurType || 'Tipo por informar')}</p><p class="public-sector">${escape(shop.sector || 'Sector por informar')}</p></div></div>
         <div class="owner-details"><section aria-labelledby="owner-about-title"><h3 id="owner-about-title">Acerca de tu tienda</h3><p class="public-description">${escape(shop.description || 'Tu tienda aún no tiene una descripción.')}</p></section><section aria-labelledby="owner-contact-title"><h3 id="owner-contact-title">Datos de contacto</h3><p class="public-description">${escape(shop.contact || 'Tu tienda aún no tiene datos de contacto.')}</p></section></div>
-        <div class="owner-actions"><button class="public-primary" id="owner-products" type="button">Mis productos</button><button class="owner-secondary" id="owner-sales" type="button">Mis ventas</button><button class="owner-secondary" id="owner-edit" type="button">Editar tienda</button><a class="owner-secondary" href="#tienda/${escape(encodeURIComponent(shop.id))}">Ver mi ficha pública <span aria-hidden="true">↗</span></a><button class="owner-secondary" id="owner-refresh">Actualizar información</button></div>
+        <div class="owner-actions"><a class="owner-secondary" href="#tienda/${escape(encodeURIComponent(shop.id))}">Ver mi ficha pública <span aria-hidden="true">↗</span></a><button class="owner-secondary" id="owner-refresh">Actualizar información</button></div>
       </div>
       <div class="owner-bottom"><section class="owner-update-help"><h2>Tu tienda, en ambos lugares</h2><p>Los datos y el logo que guardes aquí también se verán en Android y en tu ficha pública. Puedes editar tu tienda desde cualquiera de los dos.</p></section><section class="owner-account"><h2>Tu cuenta</h2><p>Ingresaste con</p><p class="owner-account-email">${escape(user.email)}</p><p>Si compartes este equipo, cierra tu sesión al terminar.</p></section></div>
     </section>`);
     wireShopImages(app);
     app.querySelector('#owner-home-title').focus({ preventScroll: true });
     window.scrollTo(0, 0);
+    const root=app.querySelector('.owner-home');
+    loadDashboard(root,db,data,()=>alive() && mode==='home' && dashboardVersion===version);
+    root.querySelectorAll('[data-dashboard-open]').forEach(button=>button.addEventListener('click',()=>root.querySelector(button.dataset.dashboardOpen==='sales' ? '#owner-sales' : '#owner-products').click()));
     app.querySelector('#owner-logout').addEventListener('click', logout);
     app.querySelector('#owner-refresh').addEventListener('click', () => loadHome());
     app.querySelector('#owner-sales').addEventListener('click',()=>{
@@ -152,6 +166,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
 
   async function openAccount(user) {
     if (!alive()) return;
+    setAccountNavigation(user);
     if (user.role === 'admin') {
       mode = 'admin';
       busy = false;
@@ -205,7 +220,19 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     }
   }
 
-  const recheck = () => { if (mode === 'home' && document.visibilityState === 'visible') loadHome(); };
+  let rechecking=false;
+  const recheck = async () => {
+    if(mode!=='home' || document.visibilityState!=='visible' || checking || rechecking)return;
+    rechecking=true;
+    try{
+      const current=await db.entrepreneurHome();
+      if(alive() && mode==='home' && (current.user.uid!==homeIdentity?.uid || current.shop.id!==homeIdentity?.shopId))await loadHome();
+    }catch(error){
+      if(alive() && mode==='home' && (['account_inactive','shop_not_assigned','entrepreneur_required','session_expired','session_not_found','bad_jwt'].includes(error.code) || error.status===401))await loadHome();
+      // Recuperar el foco no reconstruye la pantalla ni elimina un enlace bajo el clic.
+      // Un fallo transitorio conserva la vista; Actualizar información permite reintentar.
+    }finally{rechecking=false;}
+  };
   window.addEventListener('focus', recheck, { signal: events.signal });
   document.addEventListener('visibilitychange', recheck, { signal: events.signal });
   start();

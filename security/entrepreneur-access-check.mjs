@@ -85,7 +85,7 @@ try {
   await page.locator('#shop-title').waitFor();
   assert.equal(await page.locator('.owner-account-email').count(), 0);
   checks.push('El enlace público abre la ficha propia y no muestra información de la sesión');
-  await page.getByRole('link', { name: 'Ingresar', exact: true }).click();
+  await page.getByRole('link', { name: 'Mi tienda', exact: true }).click();
   await expectHome();
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -137,7 +137,7 @@ try {
   checks.push('Escribir la antigua ruta de administración no eleva los permisos de una emprendedora');
   await page.goto(base);
   assert.equal(await page.getByRole('link', { name: 'Administración', exact: true }).count(), 0);
-  await page.getByRole('link', { name: 'Ingresar', exact: true }).click();
+  await page.getByRole('link', { name: 'Mi tienda', exact: true }).click();
   await expectHome();
   checks.push('La cabecera pública tiene un solo acceso y regresa al espacio de la cuenta activa');
 

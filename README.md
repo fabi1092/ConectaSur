@@ -104,3 +104,5 @@ Pruebas SQL aisladas: npm test en supabase con TEST_DATABASE_URL de una base loc
 Pruebas Android: ./gradlew assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug. Entrega5Test, StoreAccessTest y LaunchTest se ejecutan con el runner AndroidJUnitRunner en un emulador con supabaseLive=true y una cuenta ficticia por argumentos testEmail/testPassword. Para la navegación local: ./gradlew -PconectaDemo=true -Pandroid.testInstrumentationRunnerArguments.class=cl.surcode.conectasur.LaunchTest,cl.surcode.conectasur.NavigationTest connectedDebugAndroidTest.
 
 El workflow Analisis MobSF analiza el APK en un contenedor del runner y guarda el informe como artefacto. No se sube el APK a un analizador público ni se incluyen credenciales de Supabase en el APK de CI.
+
+La web incorpora un [dashboard de emprendedora y navegación con sesión](docs/entrega-4/dashboard-web.md): productos, ventas guardadas del día, disponibilidad y retorno directo a Mi tienda desde la vitrina.

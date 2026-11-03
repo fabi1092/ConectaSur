@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-11-03T16:02:00.566Z",
+  "url": "https://conectasur-dev.web.app/",
+  "passed": 13,
+  "checks": [
+    "Ingreso reconoce la sesión: cabecera Mi tienda y pie Ir a mi tienda; desaparece Ingresar",
+    "Resumen usa catálogo privado y vitrina reales; ventas del día chileno separadas de ayer; total exacto CLP y avisos de stock contado",
+    "Recuperar el foco conserva la pantalla; Volver a las tiendas funciona con un solo clic y abre el directorio",
+    "Desde el directorio se vuelve directamente a Mi tienda sin formulario ni contraseña",
+    "Mi tienda funciona también desde un subpanel que comparte el mismo hash, con un solo clic",
+    "La cabecera conserva Mi tienda al visitar la ficha pública y al recargar el directorio con sesión",
+    "Atrás y adelante del navegador conservan la sesión y muestran la ruta correcta",
+    "Fallo parcial de ventas muestra no disponible, mantiene productos y permite reintentar sin inventar totales cero",
+    "Historial desactivado avisa que las operaciones sin detalle no se incluyen; conserva lo guardado",
+    "Panel y accesos sin desborde a 390 px y 320 px con letra muy grande y contraste",
+    "Cerrar sesión restablece Ingresar y retira el dashboard privado",
+    "Administrador conserva su propio dashboard: Mi panel permite volver desde la portada sin exponer inventario o ventas de dueñas",
+    "Sin errores JavaScript en los recorridos"
+  ],
+  "limits": [
+    "Cuenta y productos ficticios propios, eliminados al terminar",
+    "Móvil emulado; pendiente validar comprensión y ayudas con emprendedoras en teléfonos reales",
+    "Las ventas del resumen son las guardadas con el historial activado; no representan periodos sin detalle"
+  ]
+}

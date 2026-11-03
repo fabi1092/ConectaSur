@@ -1,0 +1,64 @@
+// Navegación y resumen reales; todas las escrituras usan una tienda ficticia propia.
+import assert from 'node:assert/strict';
+import {randomUUID,randomBytes} from 'node:crypto';
+import {createRequire} from 'node:module';
+import {mkdirSync,writeFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {createDataLayer} from '../web/supabase-data.js';
+import {settings,query,literal} from '../supabase/tools/admin.mjs';
+const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const base=process.env.DASHBOARD_URL || 'http://127.0.0.1:5174/',output=new URL('./reports/dashboard-navigation/',import.meta.url);mkdirSync(output,{recursive:true});
+const config=settings(),clientConfig={url:config.url,anonKey:config.anonKey},admin=createDataLayer(clientConfig),owner=createDataLayer(clientConfig),visitor=createDataLayer(clientConfig);
+const email=`dashboard_${randomUUID()}@demo.conectasur.cl`,password=randomBytes(24).toString('base64url');
+let fixture,browser;const checks=[],errors=[];
+try{
+ await admin.login(config.accounts.admin.email,config.accounts.admin.password);
+ fixture=await admin.createEmprendedora({email,password,displayName:'Prueba del panel de tienda',shopName:'Manos de Alerce (prueba)'});await owner.login(email,password);
+ const photo=(await visitor.listPublicProducts()).find(product=>product.photo)?.photo || '';
+ const add=overrides=>owner.saveOwnerProduct(fixture.shopId,{id:randomUUID(),shopId:fixture.shopId,name:'Tejido de prueba',description:'Producto ficticio del panel.',category:'Artesanías',productType:'artesania',attributes:{},priceClp:8000,showPrice:true,stockMode:'UNITS',soldOut:'HIDE',quantity:2,visible:false,photo,variants:[],...overrides},{isNew:true});
+ const visible=await add({name:'Flores tejidas (prueba)',visible:true});await add({name:'Bandeja agotada (prueba)',quantity:0});await add({name:'Chaleco por encargo (prueba)',stockMode:'ON_REQUEST',quantity:null});await add({name:'Pieza única (prueba)',stockMode:'UNIQUE',quantity:1});
+ await owner.recordOwnerSale(fixture.shopId,{requestId:randomUUID(),productId:visible.id,variantId:null,quantity:1,place:'Feria de prueba'});
+ await query(`insert into public.sales(id,shop_id,product_id,product_name,quantity,price_clp,place,date_millis) values(gen_random_uuid(),${literal(fixture.shopId)},'retirado','Venta de ayer (prueba)',2,5000,'Feria anterior',${Date.now()-86400000});`);
+ browser=await chromium.launch({headless:true});const context=await browser.newContext({viewport:{width:1440,height:1080},locale:'es-CL'}),page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+ const home=()=>page.locator('#owner-home-title').waitFor();
+ const ready=()=>page.locator('#owner-dashboard-status').filter({hasText:'Resumen actualizado'}).waitFor();
+ const login=async(accountEmail=email,accountPassword=password)=>{await page.getByLabel('Correo electrónico',{exact:true}).fill(accountEmail);await page.getByLabel('Contraseña',{exact:true}).fill(accountPassword);await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();};
+ await page.goto(base);await page.locator('.public-owner-link').filter({hasText:'Ingresar'}).click();await login();await home();await ready();
+ assert.equal(await page.locator('.public-owner-link').innerText(),'Mi tienda');assert.equal(await page.getByRole('link',{name:'Ingresar',exact:true}).count(),0);assert.equal(await page.locator('[data-account-footer]').innerText(),'Ir a mi tienda');
+ checks.push('Ingreso reconoce la sesión: cabecera Mi tienda y pie Ir a mi tienda; desaparece Ingresar');
+ assert.equal(await page.locator('#dashboard-products').innerText(),'4');assert.equal(await page.locator('#dashboard-public').innerText(),'1');assert.equal(await page.locator('#dashboard-sales').innerText(),'1');assert.equal(await page.locator('#dashboard-total').innerText(),'8.000 pesos chilenos');
+ assert.match(await page.locator('#dashboard-stock').innerText(),/Bandeja agotada/);assert.match(await page.locator('#dashboard-stock').innerText(),/Pieza única/);assert.equal(await page.locator('.dashboard-recent-list li').count(),2);
+ checks.push('Resumen usa catálogo privado y vitrina reales; ventas del día chileno separadas de ayer; total exacto CLP y avisos de stock contado');
+ await page.evaluate(()=>window.__dashboardRoot=document.querySelector('.owner-home'));
+ await Promise.all([page.waitForResponse(response=>response.url().includes('/rest/v1/shops?')),page.evaluate(()=>window.dispatchEvent(new Event('focus')))]);
+ await page.waitForFunction(()=>document.querySelector('.owner-home')===window.__dashboardRoot && document.querySelector('#owner-dashboard-status').textContent.includes('Resumen actualizado'));
+ await page.getByRole('link',{name:/Volver a las tiendas/}).click();await page.locator('#directory-title').waitFor();assert.equal(new URL(page.url()).hash,'#tiendas');
+ checks.push('Recuperar el foco conserva la pantalla; Volver a las tiendas funciona con un solo clic y abre el directorio');
+ await page.getByRole('link',{name:'Mi tienda',exact:true}).click();await home();await ready();assert.equal(new URL(page.url()).hash,'#mi-tienda');
+ checks.push('Desde el directorio se vuelve directamente a Mi tienda sin formulario ni contraseña');
+ await page.getByRole('button',{name:'Mis productos',exact:true}).click();await page.getByRole('button',{name:'Agregar producto',exact:true}).waitFor();await page.getByRole('link',{name:'Mi tienda',exact:true}).click();await home();await ready();
+ checks.push('Mi tienda funciona también desde un subpanel que comparte el mismo hash, con un solo clic');
+ await page.getByRole('link',{name:'Ver mi ficha pública',exact:true}).click();await page.locator('#shop-title').waitFor();assert.equal(await page.locator('.public-owner-link').innerText(),'Mi tienda');await page.getByRole('link',{name:'Mi tienda',exact:true}).click();await home();
+ await page.getByRole('link',{name:/Volver a las tiendas/}).click();await page.locator('#directory-title').waitFor();await page.reload();await page.getByRole('link',{name:'Mi tienda',exact:true}).waitFor();await page.getByRole('link',{name:'Mi tienda',exact:true}).click();await home();await ready();
+ checks.push('La cabecera conserva Mi tienda al visitar la ficha pública y al recargar el directorio con sesión');
+ await page.goBack();await page.locator('#directory-title').waitFor();await page.goForward();await home();await ready();
+ checks.push('Atrás y adelante del navegador conservan la sesión y muestran la ruta correcta');
+ await page.route('**/rest/v1/sales*',route=>route.fulfill({status:503,json:{message:'Fallo ficticio de lectura'}}));await page.getByRole('button',{name:'Actualizar información',exact:true}).click();await page.locator('#owner-dashboard-status').filter({hasText:'Parte del resumen'}).waitFor();assert.equal(await page.locator('#dashboard-sales').innerText(),'—');assert.equal(await page.locator('#dashboard-total').innerText(),'—');assert.equal(await page.locator('#dashboard-products').innerText(),'4');
+ await page.unroute('**/rest/v1/sales*');await page.getByRole('button',{name:'Actualizar información',exact:true}).click();await ready();
+ checks.push('Fallo parcial de ventas muestra no disponible, mantiene productos y permite reintentar sin inventar totales cero');
+ await owner.setOwnerHistoryEnabled(fixture.shopId,false);await page.getByRole('button',{name:'Actualizar información',exact:true}).click();await ready();await page.locator('.dashboard-history-warning').waitFor();assert.equal(await page.locator('#dashboard-total').innerText(),'8.000 pesos chilenos');await owner.setOwnerHistoryEnabled(fixture.shopId,true);await page.getByRole('button',{name:'Actualizar información',exact:true}).click();await ready();
+ checks.push('Historial desactivado avisa que las operaciones sin detalle no se incluyen; conserva lo guardado');
+ await page.locator('.owner-account-email').evaluate(element=>element.textContent='cuenta-ficticia@ejemplo.cl');
+ await page.screenshot({path:fileURLToPath(new URL('panel-escritorio.png',output)),fullPage:true});
+ await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:fileURLToPath(new URL('panel-celular.png',output)),fullPage:true});
+ await page.setViewportSize({width:320,height:740});await page.locator('#access-size').selectOption('largest');await page.locator('#access-contrast').click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:fileURLToPath(new URL('panel-ampliado.png',output)),fullPage:true});
+ checks.push('Panel y accesos sin desborde a 390 px y 320 px con letra muy grande y contraste');
+ await page.getByRole('button',{name:'Cerrar sesión',exact:true}).click();await page.getByRole('button',{name:'Iniciar sesión',exact:true}).waitFor();assert.equal(await page.locator('.public-owner-link').innerText(),'Ingresar');assert.equal(await page.locator('.owner-home').count(),0);
+ checks.push('Cerrar sesión restablece Ingresar y retira el dashboard privado');
+ await page.locator('#access-size').selectOption('normal');await page.locator('#access-contrast').click();await page.setViewportSize({width:1440,height:1080});await login(config.accounts.admin.email,config.accounts.admin.password);await page.getByRole('heading',{name:'Panel administrativo',exact:true}).waitFor();await page.locator('.sidebar-public-link').click();await page.locator('#public-title').waitFor();await page.getByRole('link',{name:'Mi panel',exact:true}).click();await page.getByRole('heading',{name:'Panel administrativo',exact:true}).waitFor();assert.equal(await page.locator('.owner-home').count(),0);
+ checks.push('Administrador conserva su propio dashboard: Mi panel permite volver desde la portada sin exponer inventario o ventas de dueñas');
+ await page.getByRole('button',{name:'Cerrar sesión',exact:true}).click();await page.getByRole('button',{name:'Iniciar sesión',exact:true}).waitFor();assert.deepEqual(errors,[]);checks.push('Sin errores JavaScript en los recorridos');
+ writeFileSync(new URL('verification.json',output),JSON.stringify({checkedAt:new Date().toISOString(),url:base,passed:checks.length,checks,limits:['Cuenta y productos ficticios propios, eliminados al terminar','Móvil emulado; pendiente validar comprensión y ayudas con emprendedoras en teléfonos reales','Las ventas del resumen son las guardadas con el historial activado; no representan periodos sin detalle']},null,2)+'\n');console.log(JSON.stringify({passed:checks.length,checks}));
+}finally{
+ await browser?.close();try{if(fixture)await query(`begin;delete from public.sales where shop_id=${literal(fixture.shopId)};delete from app_private.sale_requests where owner_uid=${literal(fixture.uid)};delete from public.shop_associations where shop_id=${literal(fixture.shopId)};update public.profiles set role='comprador',shop_id=null where id=${literal(fixture.uid)};delete from public.shops where id=${literal(fixture.shopId)};delete from auth.users where id=${literal(fixture.uid)};commit;`);}finally{for(const layer of [admin,owner,visitor]){await layer.logout().catch(()=>{});await layer.dispose();}}
+}

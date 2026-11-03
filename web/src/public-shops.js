@@ -1,6 +1,7 @@
 // Las pantallas públicas reciben un repositorio; no acceden al SDK ni a tablas privadas.
 import { escapeHtml as escape, safeImageUrl as imageUrl } from './content.js';
 import { icon, brand } from './visuals.js';
+import { accountDestination } from './account-navigation.js';
 import { photo, wirePhotos, productCard, wireProducts } from './public-products.js';
 
 const shopLink = id => '#tienda/' + encodeURIComponent(id);
@@ -30,6 +31,7 @@ function imageFallbacks(root) {
 }
 
 function shell(content) {
+  const account=accountDestination();
   return `<div class="public-site">
     <a class="skip-link" href="#public-content">Ir al contenido</a>
     <div class="community-strip">${icon('pin')} Puerto Montt y Alerce <span>Un lugar para conectar con lo nuestro.</span></div>
@@ -37,11 +39,11 @@ function shell(content) {
       <a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">${brand()}</a>
       <nav class="public-main-links" aria-label="Explorar ConectaSur"><a href="#productos" data-section-link>Productos</a><a href="#tiendas" data-section-link>Tiendas locales</a></nav>
       <nav class="public-navigation" aria-label="Acceso a tu cuenta">
-        <a class="public-owner-link" href="#ingresar">${icon('user')} Ingresar</a>
+        <a class="public-owner-link" data-account-link href="${account.href}">${icon('user')} <span data-account-label>${account.label}</span></a>
       </nav>
     </header>
     <main id="public-content" tabindex="-1">${content}</main>
-    <footer class="public-footer"><div class="footer-intro"><a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">${brand()}</a><p>Ideas, oficios y emprendimientos.<br>El sur tiene mucho que compartir.</p></div><div><strong>Conoce lo local</strong><a href="#productos" data-section-link>Explorar productos</a><a href="#tiendas" data-section-link>Conocer las tiendas</a></div><div><strong>Tu espacio</strong><a href="#ingresar">Ingresar a mi cuenta</a><span>Puerto Montt · Alerce</span></div><div class="footer-bottom"><span>ConectaSur · Un proyecto de SurCode</span><span>Conectando nuestra comunidad.</span></div></footer>
+    <footer class="public-footer"><div class="footer-intro"><a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">${brand()}</a><p>Ideas, oficios y emprendimientos.<br>El sur tiene mucho que compartir.</p></div><div><strong>Conoce lo local</strong><a href="#productos" data-section-link>Explorar productos</a><a href="#tiendas" data-section-link>Conocer las tiendas</a></div><div><strong>Tu espacio</strong><a data-account-link data-account-footer href="${account.href}"><span data-account-label>${account.footer}</span></a><span>Puerto Montt · Alerce</span></div><div class="footer-bottom"><span>ConectaSur · Un proyecto de SurCode</span><span>Conectando nuestra comunidad.</span></div></footer>
   </div>`;
 }
 

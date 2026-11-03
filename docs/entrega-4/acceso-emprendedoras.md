@@ -4,7 +4,7 @@ Revisión del miércoles 4 de noviembre de 2026. Continúa la portada y ficha p�
 
 ## Qué se implementa
 
-La cabecera pública ofrece un solo acceso, Ingresar (#ingresar). Después de validar correo y contraseña, se consulta el perfil activo en Supabase: admin abre el panel de plataforma y emprendedora abre su tienda. No se reconoce al administrador por una coincidencia de texto en el correo ni se le permite escoger su rol.
+Sin sesión, la cabecera pública ofrece Ingresar (#ingresar). Con una sesión activa cambia a Mi tienda (#mi-tienda) para la emprendedora o Mi panel (#administracion) para el administrador, también desde las páginas públicas. Después de validar correo y contraseña, se consulta el perfil activo en Supabase: admin abre el panel de plataforma y emprendedora abre su tienda. No se reconoce al administrador por una coincidencia de texto en el correo ni se le permite escoger su rol.
 
 La emprendedora consulta y edita la tienda asignada, cambia su logo, abre su ficha pública, vuelve a consultar la información y cierra su sesión. Recargar la pestaña conserva una sesión válida de cualquiera de los dos perfiles; después de salir, recargar o usar Atrás no vuelve a abrir la vista privada. Los enlaces anteriores #mi-tienda y #administracion son alias del mismo acceso: escribirlos no cambia los permisos.
 
@@ -22,7 +22,7 @@ La consulta está limitada al perfil activo, rol emprendedora, tienda asignada y
 | W40 | Pantallas separadas de la capa de datos; entrepreneurHome() hace las consultas y respeta RLS. |
 | WA1 | Edición de ficha de tienda desde la web (RF-TIE-02), incorporada por solicitud de Benjamín. En el checklist de esta revisión aparece como adicional de otra entrega. |
 
-El hito de tienda permite editar nombre, descripción, tipo, sector, contacto y visibilidad de precios, además de subir, reemplazar o quitar el logo. El hito siguiente incorpora [productos y stock desde la web](productos-web.md). Quedan pendientes ventas web, registro de compradores, Google y recuperación de contraseña.
+El hito de tienda permite editar nombre, descripción, tipo, sector, contacto y visibilidad de precios, además de subir, reemplazar o quitar el logo. El hito siguiente incorpora [productos y stock desde la web](productos-web.md). Las [ventas e historial web](../entrega-5/ventas-web.md) ya están incorporadas. Quedan pendientes registro de compradores, Google y recuperación de contraseña.
 
 ## Edición de tienda y logo
 
@@ -47,7 +47,7 @@ No se pide un rol al abrir la web pública ni al ingresar. Ingresar lleva al esp
 1. Abrir https://conectasur-dev.web.app y elegir Ingresar.
 2. Ingresar con una cuenta ficticia de emprendedora creada en el panel administrativo.
 3. Mostrar el nombre, logo o inicial, descripción, tipo, sector y contacto de esa tienda. Recargar y comprobar que no vuelve a pedir la contraseña.
-4. Abrir Ver mi ficha pública y regresar con Ingresar. Actualizar información permite volver a consultar los cambios guardados desde Android.
+4. Abrir Ver mi ficha pública y regresar con Mi tienda. Volver a las tiendas abre el directorio con un clic y conserva el acceso a Mi tienda en la cabecera. Actualizar información permite volver a consultar los cambios guardados desde Android.
 5. Cerrar sesión; recargar y comprobar que se pide el acceso de nuevo.
 6. Usar el mismo formulario con una cuenta administradora y mostrar que abre su panel. Recargar, salir y comprobar que el acceso vuelve a pedirse.
 7. Desactivar la cuenta ficticia de emprendedora desde el panel e intentar ingresar con ella: el acceso debe rechazarse. Reactivar la cuenta al finalizar la demostración.
@@ -66,3 +66,5 @@ Resultado del hito del 2 de noviembre: 14 comprobaciones de edición aprobadas t
 Para repetir: Vite iniciado en el puerto 5174, CONECTASUR_PRIVATE cargado solo en memoria, Playwright/Chromium disponible y node security/entrepreneur-access-check.mjs. PLAYWRIGHT_MODULE permite indicar su instalación; ENTREPRENEUR_ACCESS_URL permite cambiar la URL de prueba. Los fixtures se eliminan al terminar.
 
 La revisión móvil es emulada, no un ensayo con un teléfono físico o emprendedoras. Se usa sessionStorage: conserva el acceso al recargar esa pestaña, sin prometer una sesión persistente al cerrar el navegador. Los tokens se gestionan con el cliente de Supabase, no se guardan contraseñas en el código ni en informes. No se modifica el esquema ni las políticas RLS de la instancia.
+
+El hito del 3 de noviembre convierte Mi tienda en un dashboard con datos reales y corrige la navegación con sesión. Al recuperar el foco se comprueba el acceso sin reconstruir una pantalla válida. El resumen, sus límites y la verificación están en [dashboard y navegación](dashboard-web.md).

@@ -6,12 +6,28 @@ import { showPublicShops, showPublicShop } from './public-shops.js';
 import { showAccountAccess } from './entrepreneur-access.js';
 import { icon, brand } from './visuals.js';
 import { initAccessibility } from './accessibility.js';
+import { setAccountNavigation, knownAccountId } from './account-navigation.js';
 
 const app = document.querySelector('#app');
 const accessibility = initAccessibility(app);
 const db = createDataLayer(config);
+let sessionNavigationVersion=0;
+// El callback de Auth permanece síncrono: no consulta al SDK bajo el bloqueo de Auth.
+db.onSession(user=>{
+  sessionNavigationVersion++;
+  if(!user)setAccountNavigation(null);
+  else if(knownAccountId()!==user.id)setAccountNavigation({uid:user.id});
+});
+const initialNavigationVersion=sessionNavigationVersion;
+db.currentSession().then(user=>{
+  if(knownAccountId()===user?.uid || sessionNavigationVersion===initialNavigationVersion)setAccountNavigation(user);
+}).catch(()=>{ /* Auth retira la sesión inválida; la portada sigue siendo pública. */ });
 
 app.addEventListener('click', event => {
+  const accountLink=event.target.closest('[data-account-link]');
+  if(accountLink && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey && accountLink.hash===location.hash){
+    event.preventDefault();iniciar();return;
+  }
   if (event.target.closest('.skip-link')) {
     event.preventDefault();
     document.querySelector('#public-content')?.focus();
