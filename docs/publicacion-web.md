@@ -40,6 +40,8 @@ La [recuperación de contraseña](entrega-4/recuperacion-contrasena.md) está en
 
 El panel permite [guardar el logo de las asociaciones](entrega-4/logos-asociaciones.md). Antes de publicar esta versión hay que aplicar la migración 005_logos_asociaciones.sql mediante el procedimiento de migraciones existente. ASSOCIATION_LOGO_URL permite probar security/association-logo-check.mjs contra la publicación.
 
+El panel también permite [crear, editar y buscar tipos de emprendimiento](entrega-4/tipos-emprendimiento.md). ENTREPRENEUR_TYPES_URL permite ejecutar security/entrepreneur-types-check.mjs contra la publicación. Este hito utiliza el catálogo existente y no requiere otra migración.
+
 Mis ventas permite registrar operaciones e historial privado desde la web, usando el mismo RPC transaccional que Android. SALES_URL selecciona la dirección pública para security/owner-sales-check.mjs; la prueba crea y elimina sus propios datos. Ver docs/entrega-5/ventas-web.md.
 
 El dashboard de emprendedora incorpora resumen privado y navegación con sesión. El encabezado muestra Mi tienda o Mi panel según el perfil; DASHBOARD_URL permite comprobar la publicación con security/dashboard-navigation-check.mjs. Ver docs/entrega-4/dashboard-web.md.

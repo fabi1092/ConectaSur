@@ -10,10 +10,11 @@ import { setAccountNavigation, knownAccountId } from './account-navigation.js';
 import { takeRecoveryLocation } from '../password-recovery.js';
 import { showPasswordRecovery } from './password-recovery.js';
 import { showAssociationEditor } from './association-editor.js';
+import { showEntrepreneurTypes } from './entrepreneur-types.js';
 
-let associationEditor=null;
-function releaseAssociationEditor(){associationEditor?.dispose();associationEditor=null;}
-function leaveAssociationEditor(){if(associationEditor && !associationEditor.requestLeave())return false;releaseAssociationEditor();return true;}
+let adminEditor=null;
+function releaseAdminEditor(){adminEditor?.dispose();adminEditor=null;}
+function leaveAdminEditor(){if(adminEditor && !adminEditor.requestLeave())return false;releaseAdminEditor();return true;}
 
 let incomingRecovery = takeRecoveryLocation();
 const app = document.querySelector('#app');
@@ -82,6 +83,7 @@ async function mostrarPanel(logout) {
           <button data-section="inicio">${icon('grid')} Inicio</button>
           <button data-section="emprendedoras">${icon('shop')} Emprendedoras</button>
           <button data-section="asociaciones">${icon('people')} Asociaciones</button>
+          <button data-section="tipos-emprendimiento">${icon('shop')} Tipos de emprendimiento</button>
           <button data-section="categorias">${icon('tag')} Categorías</button>
           <button data-section="tipos">${icon('yarn')} Tipos de productos</button>
         </nav>
@@ -109,13 +111,13 @@ async function mostrarPanel(logout) {
     });
   });
 
-  document.querySelector('#logout').addEventListener('click', () => { if(leaveAssociationEditor())logout(); });
+  document.querySelector('#logout').addEventListener('click', () => { if(leaveAdminEditor())logout(); });
 
   await abrirSeccion('inicio');
 }
 
 async function abrirSeccion(seccion) {
-  if(!leaveAssociationEditor())return;
+  if(!leaveAdminEditor())return;
   seccionActual = seccion;
   document.querySelectorAll('[data-section]').forEach(button => {
     if (button.dataset.section === seccion) button.setAttribute('aria-current', 'page');
@@ -150,6 +152,9 @@ async function abrirSeccion(seccion) {
 
   if (seccion === 'categorias' || seccion === 'tipos') {
     await cargarLista(seccion);
+  }
+  if (seccion === 'tipos-emprendimiento') {
+    adminEditor=showEntrepreneurTypes(contenido,db);
   }
 }
 
@@ -389,8 +394,9 @@ function mostrarFormularioEdicion(tienda) {
           value="${escapar(tienda.contact || '')}">
 
         <label for="tipo">Tipo de emprendimiento</label>
-        <input id="tipo" maxlength="100"
-          value="${escapar(tienda.entrepreneurType || '')}">
+        <input id="tipo" maxlength="120"
+          value="${escapar(tienda.entrepreneurType || '')}" list="admin-shop-type-options">
+        <datalist id="admin-shop-type-options"></datalist>
 
         <label class="check-label">
           <input id="precios" type="checkbox"
@@ -411,6 +417,11 @@ function mostrarFormularioEdicion(tienda) {
 
   document.querySelector('#volver-tiendas')
     .addEventListener('click', cargarEmprendedoras);
+
+  const typeOptions=contenido.querySelector('#admin-shop-type-options');
+  db.listItems('entrepreneurTypes').then(items=>{
+    if(typeOptions.isConnected)typeOptions.innerHTML=items.map(item=>`<option value="${escapar(item.name)}"></option>`).join('');
+  }).catch(()=>{ /* El texto guardado sigue disponible si falla la lista de sugerencias. */ });
 
   document.querySelector('#editar-form')
     .addEventListener('submit', async e => {
@@ -783,10 +794,10 @@ async function mostrarIntegrantesAsociacion(asociacion) {
 }
 
 function mostrarFormularioAsociacion(asociacion = null) {
-  if(!leaveAssociationEditor())return;
-  associationEditor=showAssociationEditor(document.querySelector('#section-content'),db,asociacion,{
-    onCancel:()=>{if(leaveAssociationEditor())cargarAsociaciones();},
-    onSaved:()=>{releaseAssociationEditor();cargarAsociaciones();mostrarMensaje('Asociación guardada.');}
+  if(!leaveAdminEditor())return;
+  adminEditor=showAssociationEditor(document.querySelector('#section-content'),db,asociacion,{
+    onCancel:()=>{if(leaveAdminEditor())cargarAsociaciones();},
+    onSaved:()=>{releaseAdminEditor();cargarAsociaciones();mostrarMensaje('Asociación guardada.');}
   });
 }
 
@@ -971,8 +982,8 @@ async function iniciar() {
         await logout();
       });
     });
-    stopOwnerScreen=()=>{releaseAssociationEditor();stopAccount();};
-    stopOwnerScreen.canLeave=()=>(associationEditor?.requestLeave() ?? true) && stopAccount.canLeave();
+    stopOwnerScreen=()=>{releaseAdminEditor();stopAccount();};
+    stopOwnerScreen.canLeave=()=>(adminEditor?.requestLeave() ?? true) && stopAccount.canLeave();
     return;
   }
 

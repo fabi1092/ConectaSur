@@ -10,6 +10,8 @@ Android mantiene Kotlin y Views con XML editables en Design/Palette, navegación
 
 El acceso Android, cierre de sesión, huella opcional y edición de datos/logo de la tienda se implementan en StoreActivity. Ver [entrega de Fabián](docs/fabian/acceso-tienda.md) para configuración y verificación. El panel web administrativo también está integrado. Los productos, el flujo guiado con borradores recuperables, las variantes, la disponibilidad, las ventas y el historial también están integrados. Ver la [Entrega 5](docs/entrega-5/informe.md).
 
+El panel web permite [guardar logos de asociaciones](docs/entrega-4/logos-asociaciones.md) y [crear, editar y buscar tipos de emprendimiento](docs/entrega-4/tipos-emprendimiento.md). Los tipos vigentes se sugieren en los editores web de tienda; renombrarlos no reclasifica las tiendas ya guardadas.
+
 ## Configuración local
 
 La emprendedora también puede administrar [productos y stock desde la web](docs/entrega-4/productos-web.md): fotos, campos por tipo, variantes y modalidades de disponibilidad. Se accede desde Ingresar → Mis productos. La web usa los mismos registros que Android.

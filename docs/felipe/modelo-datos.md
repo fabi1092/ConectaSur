@@ -20,6 +20,8 @@ El ID de usuario es el UUID de auth.users. Una nueva cuenta recibe únicamente e
 | admin_actions | id secuencial; actor, acción, tabla, destino y fecha | Admin | Triggers; clientes sin permisos de escritura |
 | app_private.sale_requests | UUID + dueño + huella de solicitud | Sin acceso de clientes | RPC; garantiza reintentos idempotentes |
 
+El panel permite crear, editar y buscar entrepreneur_types. Su ID se conserva al editar. shops.entrepreneur_type sigue siendo texto: renombrar una opción del catálogo no modifica automáticamente las tiendas. Los formularios web sugieren los nombres vigentes. Ver [tipos de emprendimiento](../entrega-4/tipos-emprendimiento.md).
+
 ## Proyecciones públicas
 
 public_shops expone únicamente la ficha publicable de tiendas activas con dueña activa. public_products calcula el catálogo público desde products y shops:

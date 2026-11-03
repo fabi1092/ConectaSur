@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-11-03T22:38:30.369Z",
+  "url": "https://conectasur-dev.web.app/",
+  "passed": 14,
+  "checks": [
+    "Lectura pública del catálogo y escritura exclusiva del administrador, también con RLS directo",
+    "Nombres vacíos, largos o repetidos sin distinguir mayúsculas/tildes se rechazan",
+    "Sección propia con búsqueda que ignora tildes/mayúsculas y estado sin resultados",
+    "Agregar genera el identificador automáticamente; reintentar una respuesta perdida conserva una sola fila",
+    "El nuevo tipo se conserva después de recargar el panel",
+    "Cambiar a Tipos de emprendimiento respeta los cambios pendientes del editor de asociaciones",
+    "Editar y cancelar pide confirmación y no modifica el registro",
+    "Renombrar conserva el ID y acepta reintentos; no reclasifica las tiendas ya guardadas",
+    "Un formulario desactualizado no sobrescribe el nombre guardado por otra sesión",
+    "Fallo de lectura muestra un reintento y recupera la lista desde Supabase",
+    "Listado y edición sin desbordes en celular, incluidos 320 px con letra grande y alto contraste",
+    "La edición de tienda del administrador sugiere los tipos vigentes",
+    "La emprendedora puede elegir el tipo renombrado desde la web y guardarlo en su ficha compartida",
+    "Sin errores JavaScript durante la gestión y la edición de tienda"
+  ],
+  "limits": [
+    "Chromium con celular emulado; sin prueba física con usuarias",
+    "Lecturas, RLS y guardados reales; fallos de lectura/pérdida de respuesta simulados",
+    "Cambiar el nombre del catálogo no modifica las cadenas ya guardadas en tiendas; no se añade migración de clasificación",
+    "Los tipos con nombres repetidos se detectan antes de guardar; no se añade una restricción única de nombres concurrentes en la base",
+    "Se comprueban selectores web; Android mantiene su campo de texto y el mismo dato del backend"
+  ]
+}

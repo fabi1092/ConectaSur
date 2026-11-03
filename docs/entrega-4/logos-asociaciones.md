@@ -30,4 +30,4 @@ ASSOCIATION_LOGO_URL permite elegir la web local o publicada. Resultados y captu
 
 Resultado: 13 comprobaciones aprobadas en local y 13 en https://conectasur-dev.web.app. Se revisaron las capturas de escritorio/celular, la compilación Vite terminó correctamente y la publicación respondió HTTP 200 con los mismos archivos de la compilación verificada. La migración 005 quedó aplicada en la instancia del grupo. Los fixtures propios se eliminaron al finalizar.
 
-Este hito cubre la capacidad W12 y comprueba que los otros datos de asociación se conservan. No cierra los pendientes de tipos de emprendimiento, otras cuentas administradoras, búsqueda/filtros ni Google.
+Este hito cubre la capacidad W12 y comprueba que los otros datos de asociación se conservan. La gestión y búsqueda de tipos se incorporan en [Tipos de emprendimiento](tipos-emprendimiento.md). Continúan pendientes otras cuentas administradoras, búsqueda/filtros en las demás secciones y Google.

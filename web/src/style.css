@@ -170,6 +170,15 @@ p, dd, h1, h2, h3 { overflow-wrap: anywhere; }
 .association-editor fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .association-editor .editor-card > label:first-child { margin-top: 0; }
 .association-editor .editor-logo-card h3 { font-size: 1.35rem; }
+.admin-type-search { max-width: 480px; margin-block: 20px; }
+.admin-type-search p { margin-top: 8px; font-size: .9rem; }
+.admin-type-list { list-style: none; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.admin-type-list li { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px; background: white; }
+.admin-type-list li + li { border-top: 1px solid var(--line); }
+.admin-type-list strong { min-width: 0; overflow-wrap: anywhere; }
+.admin-type-list button { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.entrepreneur-types .form-card { max-width: 760px; }
+@media(max-width: 540px) { .admin-type-list li { align-items: stretch; flex-direction: column; gap: 12px; } }
 .recovery-steps { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin-top: 26px; font-size: .9rem; }
 .recovery-steps li { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: white; }
 .recovery-steps li[aria-current] { background: var(--green); color: white; }

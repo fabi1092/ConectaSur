@@ -582,6 +582,33 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
       );
     },
 
+    async saveEntrepreneurType({ id, name, expectedName = null }) {
+      await requireAdmin();
+      if (typeof id !== 'string' || !id.trim() || id.length > 120 || typeof name !== 'string' ||
+          !name.trim() || name.trim().length > 120 || (expectedName !== null && typeof expectedName !== 'string')) {
+        throw Object.assign(new Error('Escribe un nombre de entre 1 y 120 caracteres.'), {code:'invalid_entrepreneur_type'});
+      }
+      const value=name.trim().replace(/\s+/g,' ');
+      const normalize=text=>text.trim().replace(/\s+/g,' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es-CL');
+      const records=unwrap(await sdk.from('entrepreneur_types').select('id,name'));
+      if(records.some(item=>item.id!==id && normalize(item.name)===normalize(value))){
+        throw Object.assign(new Error('Ya existe un tipo con ese nombre. Revisa la lista antes de agregarlo.'),{code:'duplicate_entrepreneur_type'});
+      }
+      if(expectedName===null){
+        const result=await sdk.from('entrepreneur_types').insert({id,name:value}).select('id,name').single();
+        if(!result.error)return result.data;
+        if(result.error.code!=='23505')unwrap(result);
+      }else{
+        const result=unwrap(await sdk.from('entrepreneur_types').update({name:value}).eq('id',id).eq('name',expectedName).select('id,name').maybeSingle());
+        if(result)return result;
+      }
+      // Confirma un reintento cuya primera respuesta se perdió, sin sobrescribir
+      // un nombre diferente guardado por otro administrador.
+      const current=unwrap(await sdk.from('entrepreneur_types').select('id,name').eq('id',id).maybeSingle());
+      if(current?.name===value)return current;
+      throw Object.assign(new Error('El tipo cambió o ya no está disponible. Vuelve a la lista para revisarlo.'),{code:'entrepreneur_type_changed'});
+    },
+
     async listItems(collectionName) {
       const table = listTables[collectionName];
 
