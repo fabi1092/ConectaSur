@@ -5,6 +5,7 @@ import { fetchWithReadRetry } from './read-retry.js';
 import { SALE_COLUMNS, saleCommand } from './sales-model.js';
 import { browserAuthStorage, invalidSession } from './auth-session.js';
 import { createPasswordRecovery } from './password-recovery.js';
+import { adminCreation } from './admin-creation.js';
 
 const unwrap = ({ data, error }) => {
   if (error) throw Object.assign(new Error(error.message), { code: error.code, status: error.status });
@@ -129,7 +130,10 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
   }
 
   async function requireAdmin() {
-    if ((await profile()).role !== 'admin') {
+    let user;
+    try { user=await profile(); }
+    catch(error){if(invalidSession(error))await sdk.auth.signOut({scope:'local'});throw error;}
+    if (user.role !== 'admin') {
       throw new Error(
         'Esta accion requiere una cuenta administradora activa'
       );
@@ -148,6 +152,22 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
 
   const layer = {
     client: sdk,
+
+    async listAdministrators(){
+      await requireAdmin();
+      return unwrap(await sdk.rpc('list_platform_admins')).map(row=>({uid:row.uid,displayName:row.display_name,email:row.email,active:row.active,createdAt:row.created_at}));
+    },
+
+    async updateAdministrator({uid,displayName,active,expectedName,expectedActive}){
+      await requireAdmin();
+      unwrap(await sdk.rpc('update_platform_admin',{p_uid:uid,p_name:displayName,p_active:active,p_expected_name:expectedName,p_expected_active:expectedActive}));
+    },
+
+    administratorCreation(){
+      const values=new Map();
+      const secondary=createDataLayer(config,{storage:{getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)},storageKey:authStorageKey+'-admin-'+crypto.randomUUID()});
+      return adminCreation(secondary,async args=>unwrap(await sdk.rpc('provision_platform_admin',args)),requireAdmin);
+    },
 
     passwordRecovery() {
       return createPasswordRecovery(config, async uid => {

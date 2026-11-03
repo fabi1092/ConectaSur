@@ -11,6 +11,7 @@ import { takeRecoveryLocation } from '../password-recovery.js';
 import { showPasswordRecovery } from './password-recovery.js';
 import { showAssociationEditor } from './association-editor.js';
 import { showEntrepreneurTypes } from './entrepreneur-types.js';
+import { showAdminAccounts } from './admin-accounts.js';
 
 let adminEditor=null;
 function releaseAdminEditor(){adminEditor?.dispose();adminEditor=null;}
@@ -24,7 +25,7 @@ let sessionNavigationVersion=0;
 // El callback de Auth permanece síncrono: no consulta al SDK bajo el bloqueo de Auth.
 db.onSession(user=>{
   sessionNavigationVersion++;
-  if(!user)setAccountNavigation(null);
+  if(!user){setAccountNavigation(null);releaseAdminEditor();}
   else if(knownAccountId()!==user.id)setAccountNavigation({uid:user.id});
 });
 const initialNavigationVersion=sessionNavigationVersion;
@@ -82,6 +83,7 @@ async function mostrarPanel(logout) {
         <nav>
           <button data-section="inicio">${icon('grid')} Inicio</button>
           <button data-section="emprendedoras">${icon('shop')} Emprendedoras</button>
+          <button data-section="administradores">${icon('user')} Administradores</button>
           <button data-section="asociaciones">${icon('people')} Asociaciones</button>
           <button data-section="tipos-emprendimiento">${icon('shop')} Tipos de emprendimiento</button>
           <button data-section="categorias">${icon('tag')} Categorías</button>
@@ -125,6 +127,11 @@ async function abrirSeccion(seccion) {
   });
 
   const contenido = document.querySelector('#section-content');
+
+  if(seccion==='administradores'){
+    adminEditor=showAdminAccounts(contenido,db,usuarioActual.uid);
+    return;
+  }
 
   if (seccion === 'inicio') {
     contenido.innerHTML = `

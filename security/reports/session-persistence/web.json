@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-11-03T21:35:33.537Z",
-  "url": "https://conectasur-dev.web.app/",
+  "checkedAt": "2026-11-03T23:02:26.770Z",
+  "url": "http://127.0.0.1:5174/",
   "passed": 15,
   "checks": [
     "Cerrar el proceso de Chromium y abrirlo con el mismo perfil restaura comprador sin contraseña",

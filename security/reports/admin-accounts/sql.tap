@@ -1,0 +1,179 @@
+TAP version 13
+# Subtest: PostgreSQL: RLS y RPC
+    # Subtest: solo el administrador activo lista cuentas administrativas
+    ok 1 - solo el administrador activo lista cuentas administrativas
+      ---
+      duration_ms: 15.7704
+      type: 'test'
+      ...
+    # Subtest: ni el admin salta los RPC escribiendo directamente roles o borrando perfiles
+    ok 2 - ni el admin salta los RPC escribiendo directamente roles o borrando perfiles
+      ---
+      duration_ms: 4.8383
+      type: 'test'
+      ...
+    # Subtest: el único administrador no puede desactivar su propia cuenta
+    ok 3 - el único administrador no puede desactivar su propia cuenta
+      ---
+      duration_ms: 5.7856
+      type: 'test'
+      ...
+    # Subtest: edita su nombre sin desactivar ni cambiar el rol
+    ok 4 - edita su nombre sin desactivar ni cambiar el rol
+      ---
+      duration_ms: 6.2183
+      type: 'test'
+      ...
+    # Subtest: rechaza promover una cuenta existente fuera de la solicitud y una emprendedora
+    ok 5 - rechaza promover una cuenta existente fuera de la solicitud y una emprendedora
+      ---
+      duration_ms: 7.4061
+      type: 'test'
+      ...
+    # Subtest: alta idempotente, edición, conflicto y desactivación conservan la identidad
+    ok 6 - alta idempotente, edición, conflicto y desactivación conservan la identidad
+      ---
+      duration_ms: 15.6878
+      type: 'test'
+      ...
+    # Subtest: un actor inactivo no conserva permisos usando un JWT existente
+    ok 7 - un actor inactivo no conserva permisos usando un JWT existente
+      ---
+      duration_ms: 7.6563
+      type: 'test'
+      ...
+    # Subtest: no reutiliza una solicitud de alta para otro nombre
+    ok 8 - no reutiliza una solicitud de alta para otro nombre
+      ---
+      duration_ms: 8.9139
+      type: 'test'
+      ...
+    # Subtest: las bajas simultáneas no dejan la plataforma sin administrador
+    ok 9 - las bajas simultáneas no dejan la plataforma sin administrador # SKIP
+      ---
+      duration_ms: 0.1786
+      type: 'test'
+      ...
+    # Subtest: el visitante lee la proyeccion publica sin stock
+    ok 10 - el visitante lee la proyeccion publica sin stock
+      ---
+      duration_ms: 3.4314
+      type: 'test'
+      ...
+    # Subtest: el visitante NO tiene permisos sobre productos privados
+    ok 11 - el visitante NO tiene permisos sobre productos privados
+      ---
+      duration_ms: 2.6806
+      type: 'test'
+      ...
+    # Subtest: comprador y administrador NO leen stock privado
+    ok 12 - comprador y administrador NO leen stock privado
+      ---
+      duration_ms: 5.6005
+      type: 'test'
+      ...
+    # Subtest: la dueña lee y edita su producto
+    ok 13 - la dueña lee y edita su producto
+      ---
+      duration_ms: 5.1703
+      type: 'test'
+      ...
+    # Subtest: otra emprendedora NO puede editar el producto
+    ok 14 - otra emprendedora NO puede editar el producto
+      ---
+      duration_ms: 3.8875
+      type: 'test'
+      ...
+    # Subtest: el comprador NO escala su rol
+    ok 15 - el comprador NO escala su rol
+      ---
+      duration_ms: 3.0264
+      type: 'test'
+      ...
+    # Subtest: rechaza stock negativo
+    ok 16 - rechaza stock negativo
+      ---
+      duration_ms: 5.0336
+      type: 'test'
+      ...
+    # Subtest: rechaza variantes duplicadas
+    ok 17 - rechaza variantes duplicadas
+      ---
+      duration_ms: 5.807
+      type: 'test'
+      ...
+    # Subtest: ocultar precio de tienda cambia la proyeccion inmediatamente
+    ok 18 - ocultar precio de tienda cambia la proyeccion inmediatamente
+      ---
+      duration_ms: 7.6808
+      type: 'test'
+      ...
+    # Subtest: la emprendedora NO modifica campos administrativos de tienda
+    ok 19 - la emprendedora NO modifica campos administrativos de tienda
+      ---
+      duration_ms: 2.5627
+      type: 'test'
+      ...
+    # Subtest: la venta descuenta y guarda historial, con recibo idempotente
+    ok 20 - la venta descuenta y guarda historial, con recibo idempotente
+      ---
+      duration_ms: 11.0039
+      type: 'test'
+      ...
+    # Subtest: no acepta una venta sin stock suficiente
+    ok 21 - no acepta una venta sin stock suficiente
+      ---
+      duration_ms: 2.5013
+      type: 'test'
+      ...
+    # Subtest: el administrador NO puede registrar ventas de otra persona
+    ok 22 - el administrador NO puede registrar ventas de otra persona
+      ---
+      duration_ms: 2.3512
+      type: 'test'
+      ...
+    # Subtest: el cliente NO puede insertar una venta evitando el RPC
+    ok 23 - el cliente NO puede insertar una venta evitando el RPC
+      ---
+      duration_ms: 2.1799
+      type: 'test'
+      ...
+    # Subtest: los cambios administrativos generan auditoria de solo lectura
+    ok 24 - los cambios administrativos generan auditoria de solo lectura
+      ---
+      duration_ms: 4.7315
+      type: 'test'
+      ...
+    # Subtest: el comprador NO falsifica auditoria
+    ok 25 - el comprador NO falsifica auditoria
+      ---
+      duration_ms: 1.7098
+      type: 'test'
+      ...
+    # Subtest: la politica Storage permite la carpeta propia
+    ok 26 - la politica Storage permite la carpeta propia
+      ---
+      duration_ms: 3.2314
+      type: 'test'
+      ...
+    # Subtest: la politica Storage rechaza la carpeta ajena
+    ok 27 - la politica Storage rechaza la carpeta ajena
+      ---
+      duration_ms: 2.3989
+      type: 'test'
+      ...
+    1..27
+ok 1 - PostgreSQL: RLS y RPC
+  ---
+  duration_ms: 1335.8585
+  type: 'suite'
+  ...
+1..1
+# tests 27
+# suites 1
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 1525.4987

@@ -42,6 +42,8 @@ El panel permite [guardar el logo de las asociaciones](entrega-4/logos-asociacio
 
 El panel también permite [crear, editar y buscar tipos de emprendimiento](entrega-4/tipos-emprendimiento.md). ENTREPRENEUR_TYPES_URL permite ejecutar security/entrepreneur-types-check.mjs contra la publicación. Este hito utiliza el catálogo existente y no requiere otra migración.
 
+La sección [Administradores](entrega-4/cuentas-administradoras.md) corresponde a W23: altas, edición de nombre y activación/desactivación de otras cuentas. Requiere la migración 006_cuentas_administradoras.sql antes de publicar. ADMIN_ACCOUNTS_URL permite ejecutar security/admin-accounts-check.mjs sobre la URL publicada. El cliente usa únicamente anon y la sesión del usuario; las credenciales de Studio quedan fuera de la publicación.
+
 Mis ventas permite registrar operaciones e historial privado desde la web, usando el mismo RPC transaccional que Android. SALES_URL selecciona la dirección pública para security/owner-sales-check.mjs; la prueba crea y elimina sus propios datos. Ver docs/entrega-5/ventas-web.md.
 
 El dashboard de emprendedora incorpora resumen privado y navegación con sesión. El encabezado muestra Mi tienda o Mi panel según el perfil; DASHBOARD_URL permite comprobar la publicación con security/dashboard-navigation-check.mjs. Ver docs/entrega-4/dashboard-web.md.

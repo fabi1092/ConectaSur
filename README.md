@@ -12,6 +12,8 @@ El acceso Android, cierre de sesión, huella opcional y edición de datos/logo d
 
 El panel web permite [guardar logos de asociaciones](docs/entrega-4/logos-asociaciones.md) y [crear, editar y buscar tipos de emprendimiento](docs/entrega-4/tipos-emprendimiento.md). Los tipos vigentes se sugieren en los editores web de tienda; renombrarlos no reclasifica las tiendas ya guardadas.
 
+También permite [gestionar otras cuentas administradoras](docs/entrega-4/cuentas-administradoras.md): crear, editar su nombre, desactivar y reactivar, sin cerrar la sesión de quien realiza el alta. La migración 006 protege estas operaciones en el servidor y bloquea la desactivación propia.
+
 ## Configuración local
 
 La emprendedora también puede administrar [productos y stock desde la web](docs/entrega-4/productos-web.md): fotos, campos por tipo, variantes y modalidades de disponibilidad. Se accede desde Ingresar → Mis productos. La web usa los mismos registros que Android.

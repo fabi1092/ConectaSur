@@ -8,7 +8,7 @@ El ID de usuario es el UUID de auth.users. Una nueva cuenta recibe únicamente e
 
 | Tabla | Clave y relación | Lectura | Escritura |
 |---|---|---|---|
-| profiles | id → auth.users.id; shop_id → shops.id | Perfil propio o admin | Admin; alta inicial mediante trigger |
+| profiles | id → auth.users.id; shop_id → shops.id | Perfil propio o admin | Solo RPC administrativos acotados; alta inicial mediante trigger |
 | shops | id; owner_uid único → auth.users.id | Dueña activa o admin | Admin crea; dueña edita campos permitidos |
 | products | id; shop_id → shops.id | Solo dueña activa | Solo dueña activa, con validaciones/triggers |
 | sales | UUID; shop_id → shops.id | Solo dueña activa, sin acceso del admin de aplicación | Exclusivamente RPC register_sale |
@@ -19,8 +19,11 @@ El ID de usuario es el UUID de auth.users. Una nueva cuenta recibe únicamente e
 | entrepreneur_types | id | Pública | Admin |
 | admin_actions | id secuencial; actor, acción, tabla, destino y fecha | Admin | Triggers; clientes sin permisos de escritura |
 | app_private.sale_requests | UUID + dueño + huella de solicitud | Sin acceso de clientes | RPC; garantiza reintentos idempotentes |
+| app_private.admin_creation_requests | UUID de solicitud; actor y destino → auth.users.id | Sin acceso de clientes | RPC de alta administrativa; reintentos sin duplicar ni sobrescribir |
 
 El panel permite crear, editar y buscar entrepreneur_types. Su ID se conserva al editar. shops.entrepreneur_type sigue siendo texto: renombrar una opción del catálogo no modifica automáticamente las tiendas. Los formularios web sugieren los nombres vigentes. Ver [tipos de emprendimiento](../entrega-4/tipos-emprendimiento.md).
+
+La migración 006 limita las escrituras de perfiles a funciones verificadas. list_platform_admins devuelve nombres, correos y estados solo a administradores activos. provision_platform_admin valida el alta nueva y su solicitud; update_platform_admin permite editar nombre o activar/desactivar otras cuentas, con exclusión mutua, guarda de último administrador y control de cambios concurrentes. No permite desactivación propia ni expone contraseñas. Ver [cuentas administradoras](../entrega-4/cuentas-administradoras.md).
 
 ## Proyecciones públicas
 

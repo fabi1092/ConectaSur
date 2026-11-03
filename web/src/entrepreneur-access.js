@@ -244,12 +244,18 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
 
   let rechecking=false;
   const recheck = async () => {
-    if(mode!=='home' || document.visibilityState!=='visible' || checking || rechecking)return;
+    if(!['home','admin','buyer'].includes(mode) || document.visibilityState!=='visible' || checking || rechecking)return;
     rechecking=true;
     try{
+      if(mode==='admin' || mode==='buyer'){
+        const previous=mode,current=await db.currentSession();
+        if(alive() && mode===previous && (!current || current.uid!==accountUid || current.role!==(previous==='admin'?'admin':'comprador')))await start();
+        return;
+      }
       const current=await db.entrepreneurHome();
       if(alive() && mode==='home' && (current.user.uid!==homeIdentity?.uid || current.shop.id!==homeIdentity?.shopId))await loadHome();
     }catch(error){
+      if(alive() && ['admin','buyer'].includes(mode) && (['account_inactive','session_expired','session_not_found','bad_jwt'].includes(error.code) || error.status===401))await start();
       if(alive() && mode==='home' && (['account_inactive','shop_not_assigned','entrepreneur_required','session_expired','session_not_found','bad_jwt'].includes(error.code) || error.status===401))await loadHome();
       // Recuperar el foco no reconstruye la pantalla ni elimina un enlace bajo el clic.
       // Un fallo transitorio conserva la vista; Actualizar información permite reintentar.

@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-11-03T23:00:52.432Z",
+  "url": "http://127.0.0.1:5174/",
+  "passed": 13,
+  "checks": [
+    "Visitante, comprador y emprendedora no gestionan administradores; ni el admin puede saltarse los RPC ni desactivarse a sí mismo",
+    "El alta real usa una sesión separada y conserva al administrador original",
+    "Desactivar bloquea el JWT y nuevos ingresos; reintentar el alta no reactiva la cuenta y otro admin puede activarla",
+    "Un correo existente no se convierte en administrador ni pierde su perfil",
+    "Lista accesible con búsqueda por nombre o correo y protección visible de la cuenta propia",
+    "Una respuesta perdida de Auth se recupera con la misma solicitud, sin apropiarse de otra cuenta",
+    "Alta por formulario tolera respuesta perdida sin duplicados; contraseña oculta, copia explícita simulada y sin almacenamiento persistente ni lectura en voz alta",
+    "Editar conserva correo, rol y estado; avisa al salir sin guardar y persiste tras recargar",
+    "Una edición antigua no sobrescribe el nombre actualizado en otra sesión",
+    "Confirmar o cancelar desactivación, filtrar inactivas y reactivar; al volver a una sesión desactivada se retira el panel",
+    "Un fallo de lectura muestra un reintento sin cerrar la sesión",
+    "Escritorio y celular sin desbordes, incluidos 320 px con letra grande y alto contraste",
+    "Sin errores JavaScript durante el flujo"
+  ],
+  "limits": [
+    "Chromium y celular emulado; sin prueba física con usuarias",
+    "Conexión, altas y permisos reales con cuentas temporales eliminadas al terminar; fallos de red simulados",
+    "La copia al portapapeles se simuló para no reemplazar el portapapeles del usuario",
+    "La edición cambia el nombre; no restablece contraseñas ni cambia el correo de otras cuentas",
+    "La desactivación bloquea RPC/RLS inmediatamente; el panel abierto se retira al recuperar foco o comprobar sesión",
+    "Las creaciones interrumpidas pueden dejar un perfil comprador; el reintento se conserva mientras el formulario siga abierto"
+  ]
+}
