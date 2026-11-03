@@ -4,7 +4,7 @@ Revisión del miércoles 4 de noviembre de 2026. Continúa la portada y ficha p�
 
 ## Qué se implementa
 
-Sin sesión, la cabecera pública ofrece Ingresar (#ingresar). Con una sesión activa cambia a Mi tienda (#mi-tienda) para la emprendedora o Mi panel (#administracion) para el administrador, también desde las páginas públicas. Después de validar correo y contraseña, se consulta el perfil activo en Supabase: admin abre el panel de plataforma y emprendedora abre su tienda. No se reconoce al administrador por una coincidencia de texto en el correo ni se le permite escoger su rol.
+Sin sesión, la cabecera pública ofrece Ingresar (#ingresar). Con una sesión activa, las páginas públicas y los editores muestran Mi tienda (#mi-tienda) para la emprendedora o Mi panel (#administracion) para el administrador. El propio dashboard de la emprendedora omite el enlace redundante a Mi tienda. Después de validar correo y contraseña, se consulta el perfil activo en Supabase: admin abre el panel de plataforma y emprendedora abre su tienda. No se reconoce al administrador por una coincidencia de texto en el correo ni se le permite escoger su rol.
 
 La emprendedora consulta y edita la tienda asignada, cambia su logo, abre su ficha pública, vuelve a consultar la información y cierra su sesión. Recargar la pestaña conserva una sesión válida de cualquiera de los dos perfiles; después de salir, recargar o usar Atrás no vuelve a abrir la vista privada. Los enlaces anteriores #mi-tienda y #administracion son alias del mismo acceso: escribirlos no cambia los permisos.
 

@@ -5,7 +5,7 @@ Hito del 3 de noviembre de 2026. Continúa el diseño navy, verde y crema, las a
 ## Navegación
 
 - Sin sesión, la cabecera y el pie permiten Ingresar.
-- La emprendedora con sesión ve Mi tienda; el administrador, Mi panel. Los nombres y destinos se conservan en la portada, el directorio, las fichas y los editores.
+- En la portada, el directorio y las fichas públicas, la emprendedora con sesión ve Mi tienda; el administrador, Mi panel. Los editores conservan el enlace para regresar. El propio dashboard de emprendedora omite el enlace a Mi tienda de cabecera y pie porque ya está en ese espacio; mantiene Cerrar sesión.
 - Volver a las tiendas abre el directorio #tiendas con un clic. Mi tienda vuelve al dashboard sin pedir de nuevo correo o contraseña mientras la sesión sea válida.
 - El enlace funciona incluso desde un editor o listado que comparte el mismo hash. Se mantienen las confirmaciones si existen cambios sin guardar o ventas pendientes.
 - Recuperar foco comprueba la cuenta y tienda sin reemplazar el DOM de una pantalla válida. Las respuestas tardías no actualizan pantallas que ya se abandonaron.

@@ -135,7 +135,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
         <div class="owner-actions"><a class="owner-secondary" href="#tienda/${escape(encodeURIComponent(shop.id))}">Ver mi ficha pública <span aria-hidden="true">↗</span></a><button class="owner-secondary" id="owner-refresh">Actualizar información</button></div>
       </div>
       <div class="owner-bottom"><section class="owner-update-help"><h2>Tu tienda, en ambos lugares</h2><p>Los datos y el logo que guardes aquí también se verán en Android y en tu ficha pública. Puedes editar tu tienda desde cualquiera de los dos.</p></section><section class="owner-account"><h2>Tu cuenta</h2><p>Ingresaste con</p><p class="owner-account-email">${escape(user.email)}</p><p>Si compartes este equipo, cierra tu sesión al terminar.</p></section></div>
-    </section>`);
+    </section>`, { showAccountLink: false });
     wireShopImages(app);
     app.querySelector('#owner-home-title').focus({ preventScroll: true });
     window.scrollTo(0, 0);

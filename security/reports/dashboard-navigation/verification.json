@@ -1,9 +1,9 @@
 {
-  "checkedAt": "2026-11-03T16:02:00.566Z",
+  "checkedAt": "2026-11-03T16:13:38.686Z",
   "url": "https://conectasur-dev.web.app/",
   "passed": 13,
   "checks": [
-    "Ingreso reconoce la sesión: cabecera Mi tienda y pie Ir a mi tienda; desaparece Ingresar",
+    "El dashboard no muestra Ingresar ni enlaces redundantes a Mi tienda en cabecera o pie",
     "Resumen usa catálogo privado y vitrina reales; ventas del día chileno separadas de ayer; total exacto CLP y avisos de stock contado",
     "Recuperar el foco conserva la pantalla; Volver a las tiendas funciona con un solo clic y abre el directorio",
     "Desde el directorio se vuelve directamente a Mi tienda sin formulario ni contraseña",

@@ -24,8 +24,8 @@ try{
  const ready=()=>page.locator('#owner-dashboard-status').filter({hasText:'Resumen actualizado'}).waitFor();
  const login=async(accountEmail=email,accountPassword=password)=>{await page.getByLabel('Correo electrónico',{exact:true}).fill(accountEmail);await page.getByLabel('Contraseña',{exact:true}).fill(accountPassword);await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();};
  await page.goto(base);await page.locator('.public-owner-link').filter({hasText:'Ingresar'}).click();await login();await home();await ready();
- assert.equal(await page.locator('.public-owner-link').innerText(),'Mi tienda');assert.equal(await page.getByRole('link',{name:'Ingresar',exact:true}).count(),0);assert.equal(await page.locator('[data-account-footer]').innerText(),'Ir a mi tienda');
- checks.push('Ingreso reconoce la sesión: cabecera Mi tienda y pie Ir a mi tienda; desaparece Ingresar');
+ assert.equal(await page.locator('.public-owner-link').count(),0);assert.equal(await page.getByRole('link',{name:'Ingresar',exact:true}).count(),0);assert.equal(await page.locator('[data-account-footer]').count(),0);
+ checks.push('El dashboard no muestra Ingresar ni enlaces redundantes a Mi tienda en cabecera o pie');
  assert.equal(await page.locator('#dashboard-products').innerText(),'4');assert.equal(await page.locator('#dashboard-public').innerText(),'1');assert.equal(await page.locator('#dashboard-sales').innerText(),'1');assert.equal(await page.locator('#dashboard-total').innerText(),'8.000 pesos chilenos');
  assert.match(await page.locator('#dashboard-stock').innerText(),/Bandeja agotada/);assert.match(await page.locator('#dashboard-stock').innerText(),/Pieza única/);assert.equal(await page.locator('.dashboard-recent-list li').count(),2);
  checks.push('Resumen usa catálogo privado y vitrina reales; ventas del día chileno separadas de ayer; total exacto CLP y avisos de stock contado');
