@@ -1,4 +1,3 @@
-
 import './style.css';
 import config from '../supabase-config.js';
 import { createDataLayer } from '../supabase-data.js';
@@ -63,6 +62,13 @@ function escapar(valor = '') {
     '"': '&quot;',
     "'": '&#39;'
   })[caracter]);
+}
+
+function normalizarTexto(valor = '') {
+  return String(valor)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-CL');
 }
 
 function mostrarMensaje(texto, error = false) {
@@ -184,25 +190,59 @@ async function cargarEmprendedoras() {
       </button>
     </div>
 
-    <div id="tabla-tiendas">Cargando tiendas...</div>`;
+    <div class="admin-account-filters">
+      <div>
+        <label for="tiendas-search">Buscar por tienda, tipo, sector o contacto</label>
+        <input id="tiendas-search" type="search" placeholder="Ejemplo: tejidos o Alerce" disabled>
+      </div>
+      <div>
+        <label for="tiendas-estado">Estado de la tienda</label>
+        <select id="tiendas-estado" disabled>
+          <option value="all">Todas las tiendas</option>
+          <option value="active">Activas</option>
+          <option value="inactive">Inactivas</option>
+        </select>
+      </div>
+    </div>
+    <p id="tiendas-count" role="status">Cargando tiendas...</p>
+    <div id="tabla-tiendas"></div>`;
 
   document.querySelector('#nueva-emprendedora')
     .addEventListener('click', mostrarFormularioEmprendedora);
 
-  try {
-    tiendas = await db.listShops();
+  const region = contenido.querySelector('#tabla-tiendas');
+  const buscador = contenido.querySelector('#tiendas-search');
+  const selectorEstado = contenido.querySelector('#tiendas-estado');
+  const contador = contenido.querySelector('#tiendas-count');
 
-    if (seccionActual !== 'emprendedoras') return;
-
-    const tabla = document.querySelector('#tabla-tiendas');
+  function renderizarTablaTiendas() {
+    if (!region.isConnected) return;
 
     if (!tiendas.length) {
-      tabla.innerHTML =
-        '<p>No hay tiendas registradas todavía.</p>';
+      contador.textContent = 'Mostrando 0 de 0 tiendas.';
+      region.innerHTML = '<p>No hay tiendas registradas todavía.</p>';
       return;
     }
 
-    tabla.innerHTML = `
+    const termino = normalizarTexto(buscador.value.trim());
+    const estado = selectorEstado.value;
+    const filtradas = tiendas.filter(tienda => {
+      const texto = normalizarTexto(
+        `${tienda.name || ''} ${tienda.entrepreneurType || ''} ${tienda.sector || ''} ${tienda.contact || ''}`
+      );
+      const coincideEstado =
+        estado === 'all' || tienda.active === (estado === 'active');
+      return texto.includes(termino) && coincideEstado;
+    });
+
+    contador.textContent = `Mostrando ${filtradas.length} de ${tiendas.length} tiendas.`;
+
+    if (!filtradas.length) {
+      region.innerHTML = '<p class="owner-empty">No encontramos tiendas con esos filtros.</p>';
+      return;
+    }
+
+    region.innerHTML = `
       <div class="table-wrap">
         <table>
           <thead>
@@ -216,7 +256,7 @@ async function cargarEmprendedoras() {
           </thead>
 
           <tbody>
-            ${tiendas.map(tienda => `
+            ${filtradas.map(tienda => `
               <tr>
                 <td>
                   <strong>${escapar(tienda.name)}</strong>
@@ -251,7 +291,7 @@ async function cargarEmprendedoras() {
         </table>
       </div>`;
 
-    tabla.querySelectorAll('[data-edit]').forEach(boton => {
+    region.querySelectorAll('[data-edit]').forEach(boton => {
       boton.addEventListener('click', () => {
         const tienda = tiendas.find(
           t => t.id === boton.dataset.edit
@@ -261,7 +301,7 @@ async function cargarEmprendedoras() {
       });
     });
 
-    tabla.querySelectorAll('[data-toggle]').forEach(boton => {
+    region.querySelectorAll('[data-toggle]').forEach(boton => {
       boton.addEventListener('click', async () => {
         const tienda = tiendas.find(
           t => t.id === boton.dataset.toggle
@@ -292,11 +332,22 @@ async function cargarEmprendedoras() {
         }
       });
     });
-  } catch (error) {
-    const tabla = document.querySelector('#tabla-tiendas');
+  }
 
-    if (tabla) {
-      tabla.innerHTML =
+  try {
+    tiendas = await db.listShops();
+
+    if (seccionActual !== 'emprendedoras' || !region.isConnected) return;
+
+    buscador.disabled = false;
+    selectorEstado.disabled = false;
+    buscador.addEventListener('input', renderizarTablaTiendas);
+    selectorEstado.addEventListener('change', renderizarTablaTiendas);
+    renderizarTablaTiendas();
+  } catch (error) {
+    if (region.isConnected) {
+      contador.textContent = '';
+      region.innerHTML =
         `<p class="error">No se pudieron cargar las tiendas: ${
           escapar(error.message)
         }</p>`;
@@ -330,6 +381,11 @@ function mostrarFormularioEmprendedora() {
         <input id="clave" type="password" required minlength="8"
           autocomplete="new-password">
 
+        <label class="check-label">
+          <input id="mostrar-clave-emprendedora" type="checkbox">
+          Mostrar contraseña
+        </label>
+
         <p class="hint">
           La contraseña se utilizará para crear la cuenta de acceso.
         </p>
@@ -342,6 +398,12 @@ function mostrarFormularioEmprendedora() {
   document.querySelector('#volver-tiendas')
     .addEventListener('click', cargarEmprendedoras);
 
+  const campoClave = document.querySelector('#clave');
+  document.querySelector('#mostrar-clave-emprendedora')
+    .addEventListener('change', e => {
+      campoClave.type = e.target.checked ? 'text' : 'password';
+    });
+
   document.querySelector('#crear-form')
     .addEventListener('submit', async e => {
       e.preventDefault();
@@ -350,24 +412,79 @@ function mostrarFormularioEmprendedora() {
       const boton = form.querySelector('button[type="submit"]');
       const mensaje = document.querySelector('#form-mensaje');
 
+      const datos = {
+        displayName: document.querySelector('#nombre').value.trim(),
+        shopName: document.querySelector('#tienda').value.trim(),
+        email: document.querySelector('#correo').value.trim(),
+        password: campoClave.value
+      };
+
       boton.disabled = true;
       mensaje.textContent = 'Creando cuenta y tienda...';
 
       try {
-        await db.createEmprendedora({
-          displayName: document.querySelector('#nombre').value.trim(),
-          shopName: document.querySelector('#tienda').value.trim(),
-          email: document.querySelector('#correo').value.trim(),
-          password: document.querySelector('#clave').value
-        });
+        await db.createEmprendedora(datos);
 
         mostrarMensaje('Cuenta y tienda creadas correctamente.');
-        await cargarEmprendedoras();
+        mostrarCredencialesEmprendedora(datos);
       } catch (error) {
         mensaje.textContent = error.message;
       } finally {
         if (boton.isConnected) boton.disabled = false;
       }
+    });
+}
+
+function mostrarCredencialesEmprendedora({ displayName, shopName, email, password }) {
+  const contenido = document.querySelector('#section-content');
+  let secreto = password;
+
+  contenido.innerHTML = `
+    <div class="form-card admin-credentials">
+      <span class="status active">Cuenta activa</span>
+      <h2>Cuenta de emprendedora creada</h2>
+      <p>Entrega estos datos a <strong>${escapar(displayName)}</strong> para que ingrese a su tienda <strong>${escapar(shopName)}</strong>.</p>
+      <p>Correo de acceso: <strong>${escapar(email)}</strong></p>
+      <label for="clave-creada-emprendedora">Contraseña inicial</label>
+      <input id="clave-creada-emprendedora" type="password" readonly autocomplete="off">
+      <label class="check-label">
+        <input id="mostrar-clave-creada" type="checkbox">
+        Mostrar contraseña
+      </label>
+      <p class="hint">Guárdala o cópiala ahora: por seguridad no se volverá a mostrar al salir de esta pantalla.</p>
+      <p id="credenciales-mensaje" role="status"></p>
+      <div class="owner-actions">
+        <button type="button" id="copiar-credenciales-emprendedora">Copiar credenciales</button>
+        <button type="button" id="volver-tiendas" class="secondary">Volver a emprendedoras</button>
+      </div>
+    </div>`;
+
+  const campo = contenido.querySelector('#clave-creada-emprendedora');
+  const estado = contenido.querySelector('#credenciales-mensaje');
+  campo.value = secreto;
+
+  contenido.querySelector('#mostrar-clave-creada')
+    .addEventListener('change', e => {
+      campo.type = e.target.checked ? 'text' : 'password';
+    });
+
+  contenido.querySelector('#copiar-credenciales-emprendedora')
+    .addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(
+          `ConectaSur\nTienda: ${shopName}\nCorreo: ${email}\nContraseña: ${secreto}`
+        );
+        estado.textContent = 'Credenciales copiadas al portapapeles.';
+      } catch {
+        estado.textContent = 'No se pudo copiar automáticamente. Puedes mostrar la contraseña y seleccionarla.';
+      }
+    });
+
+  contenido.querySelector('#volver-tiendas')
+    .addEventListener('click', () => {
+      secreto = '';
+      campo.value = '';
+      cargarEmprendedoras();
     });
 }
 
@@ -483,27 +600,62 @@ async function cargarAsociaciones() {
       </button>
     </div>
 
-    <div id="lista-asociaciones">Cargando asociaciones...</div>`;
+    <div class="admin-account-filters">
+      <div>
+        <label for="asociaciones-search">Buscar por nombre, sector o contacto</label>
+        <input id="asociaciones-search" type="search" placeholder="Ejemplo: Manos Unidas o Alerce" disabled>
+      </div>
+      <div>
+        <label for="asociaciones-estado">Estado de la asociación</label>
+        <select id="asociaciones-estado" disabled>
+          <option value="all">Todas las asociaciones</option>
+          <option value="active">Activas</option>
+          <option value="inactive">Inactivas</option>
+        </select>
+      </div>
+    </div>
+    <p id="asociaciones-count" role="status">Cargando asociaciones...</p>
+    <div id="lista-asociaciones"></div>`;
 
   document.querySelector('#nueva-asociacion')
     .addEventListener('click', () => {
       mostrarFormularioAsociacion();
     });
 
-  const region=contenido.querySelector('#lista-asociaciones');
-  try {
-    const asociaciones = await db.listAssociations();
+  const region = contenido.querySelector('#lista-asociaciones');
+  const buscador = contenido.querySelector('#asociaciones-search');
+  const selectorEstado = contenido.querySelector('#asociaciones-estado');
+  const contador = contenido.querySelector('#asociaciones-count');
+  let asociaciones = [];
 
-    if (seccionActual !== 'asociaciones' || !region.isConnected) return;
-
-    const lista = document.querySelector('#lista-asociaciones');
+  function renderizarAsociaciones() {
+    if (!region.isConnected) return;
 
     if (!asociaciones.length) {
-      lista.innerHTML = '<p>No hay asociaciones registradas.</p>';
+      contador.textContent = 'Mostrando 0 de 0 asociaciones.';
+      region.innerHTML = '<p>No hay asociaciones registradas.</p>';
       return;
     }
 
-    lista.innerHTML = `
+    const termino = normalizarTexto(buscador.value.trim());
+    const estado = selectorEstado.value;
+    const filtradas = asociaciones.filter(a => {
+      const texto = normalizarTexto(
+        `${a.name || ''} ${a.sector || ''} ${a.contact || ''} ${a.description || ''}`
+      );
+      const coincideEstado =
+        estado === 'all' || Boolean(a.active) === (estado === 'active');
+      return texto.includes(termino) && coincideEstado;
+    });
+
+    contador.textContent = `Mostrando ${filtradas.length} de ${asociaciones.length} asociaciones.`;
+
+    if (!filtradas.length) {
+      region.innerHTML = '<p class="owner-empty">No encontramos asociaciones con esos filtros.</p>';
+      return;
+    }
+
+    region.innerHTML = `
       <div class="table-wrap">
         <table>
           <thead>
@@ -516,7 +668,7 @@ async function cargarAsociaciones() {
           </thead>
 
           <tbody>
-            ${asociaciones.map(a => `
+            ${filtradas.map(a => `
               <tr>
                 <td><div class="association-name">${shopLogo({name:a.name,logoUrl:a.logo_url})}<span>${escapar(a.name)}</span></div></td>
                 <td>${escapar(a.sector || '—')}</td>
@@ -541,8 +693,8 @@ async function cargarAsociaciones() {
         </table>
       </div>`;
 
-    wireShopImages(lista);
-    lista.querySelectorAll('[data-members]').forEach(boton => {
+    wireShopImages(region);
+    region.querySelectorAll('[data-members]').forEach(boton => {
       boton.addEventListener('click', () => {
         const asociacion = asociaciones.find(
           item => item.id === boton.dataset.members
@@ -554,7 +706,7 @@ async function cargarAsociaciones() {
       });
     });
 
-    lista.querySelectorAll('[data-edit-assoc]').forEach(boton => {
+    region.querySelectorAll('[data-edit-assoc]').forEach(boton => {
       boton.addEventListener('click', () => {
         const asociacion = asociaciones.find(
           item => item.id === boton.dataset.editAssoc
@@ -566,7 +718,7 @@ async function cargarAsociaciones() {
       });
     });
 
-    lista.querySelectorAll('[data-toggle-assoc]').forEach(boton => {
+    region.querySelectorAll('[data-toggle-assoc]').forEach(boton => {
       boton.addEventListener('click', async () => {
         const asociacion = asociaciones.find(
           item => item.id === boton.dataset.toggleAssoc
@@ -590,11 +742,22 @@ async function cargarAsociaciones() {
         }
       });
     });
-  } catch (error) {
-    const lista = document.querySelector('#lista-asociaciones');
+  }
 
-    if (lista) {
-      lista.innerHTML =
+  try {
+    asociaciones = await db.listAssociations();
+
+    if (seccionActual !== 'asociaciones' || !region.isConnected) return;
+
+    buscador.disabled = false;
+    selectorEstado.disabled = false;
+    buscador.addEventListener('input', renderizarAsociaciones);
+    selectorEstado.addEventListener('change', renderizarAsociaciones);
+    renderizarAsociaciones();
+  } catch (error) {
+    if (region.isConnected) {
+      contador.textContent = '';
+      region.innerHTML =
         `<p class="error">No se pudieron cargar las asociaciones: ${
           escapar(error.message)
         }</p>`;
@@ -816,6 +979,7 @@ async function cargarLista(seccion) {
   const esCategoria = seccion === 'categorias';
   const coleccion = esCategoria ? 'categories' : 'productTypes';
   const titulo = esCategoria ? 'Categorías' : 'Tipos de productos';
+  const singular = esCategoria ? 'categoría' : 'tipo de producto';
 
   const contenido = document.querySelector('#section-content');
 
@@ -829,22 +993,42 @@ async function cargarLista(seccion) {
       <button id="nuevo-item">+ Agregar</button>
     </div>
 
-    <div id="lista-items">Cargando...</div>`;
+    <div class="admin-type-search">
+      <label for="lista-search">Buscar ${singular}</label>
+      <input id="lista-search" type="search" placeholder="Buscar por nombre o identificador" disabled>
+      <p id="lista-count" role="status">Cargando...</p>
+    </div>
+
+    <div id="lista-items"></div>`;
 
   document.querySelector('#nuevo-item')
     .addEventListener('click', () => {
       mostrarFormularioLista(seccion);
     });
 
-  try {
-    const items = await db.listItems(coleccion);
+  const lista = contenido.querySelector('#lista-items');
+  const buscador = contenido.querySelector('#lista-search');
+  const contador = contenido.querySelector('#lista-count');
+  let items = [];
 
-    if (seccionActual !== seccion) return;
-
-    const lista = document.querySelector('#lista-items');
+  function renderizarItems() {
+    if (!lista.isConnected) return;
 
     if (!items.length) {
+      contador.textContent = 'Mostrando 0 de 0 elementos.';
       lista.innerHTML = '<p>No hay elementos registrados.</p>';
+      return;
+    }
+
+    const termino = normalizarTexto(buscador.value.trim());
+    const filtrados = items.filter(item =>
+      normalizarTexto(`${item.name || ''} ${item.id || ''}`).includes(termino)
+    );
+
+    contador.textContent = `Mostrando ${filtrados.length} de ${items.length} elementos.`;
+
+    if (!filtrados.length) {
+      lista.innerHTML = '<p class="owner-empty">No encontramos elementos con esa búsqueda.</p>';
       return;
     }
 
@@ -855,23 +1039,45 @@ async function cargarLista(seccion) {
             <tr>
               <th>Nombre</th>
               <th>Identificador</th>
+              <th>Acciones</th>
             </tr>
           </thead>
 
           <tbody>
-            ${items.map(item => `
+            ${filtrados.map(item => `
               <tr>
                 <td>${escapar(item.name)}</td>
                 <td>${escapar(item.id)}</td>
+                <td class="actions">
+                  <button type="button" data-edit-item="${escapar(item.id)}">
+                    Editar
+                  </button>
+                </td>
               </tr>
             `).join('')}
           </tbody>
         </table>
       </div>`;
-  } catch (error) {
-    const lista = document.querySelector('#lista-items');
 
-    if (lista) {
+    lista.querySelectorAll('[data-edit-item]').forEach(boton => {
+      boton.addEventListener('click', () => {
+        const actual = items.find(i => i.id === boton.dataset.editItem);
+        if (actual) mostrarFormularioLista(seccion, actual);
+      });
+    });
+  }
+
+  try {
+    items = await db.listItems(coleccion);
+
+    if (seccionActual !== seccion || !lista.isConnected) return;
+
+    buscador.disabled = false;
+    buscador.addEventListener('input', renderizarItems);
+    renderizarItems();
+  } catch (error) {
+    if (lista.isConnected) {
+      contador.textContent = '';
       lista.innerHTML =
         `<p class="error">No se pudo cargar la lista: ${
           escapar(error.message)
@@ -880,10 +1086,11 @@ async function cargarLista(seccion) {
   }
 }
 
-function mostrarFormularioLista(seccion) {
+function mostrarFormularioLista(seccion, item = null) {
   const esCategoria = seccion === 'categorias';
   const coleccion = esCategoria ? 'categories' : 'productTypes';
   const titulo = esCategoria ? 'categoría' : 'tipo de producto';
+  const editando = Boolean(item);
 
   const contenido = document.querySelector('#section-content');
 
@@ -893,18 +1100,20 @@ function mostrarFormularioLista(seccion) {
         ← Volver
       </button>
 
-      <h2>Agregar ${titulo}</h2>
+      <h2>${editando ? 'Editar' : 'Agregar'} ${titulo}</h2>
 
       <form id="item-form">
         <label for="item-nombre">Nombre visible</label>
-        <input id="item-nombre" required maxlength="100">
+        <input id="item-nombre" required maxlength="100" value="${escapar(item ? item.name : '')}">
 
         <label for="item-id">Identificador único</label>
         <input id="item-id" required maxlength="80"
-          pattern="[a-zA-Z0-9_-]+">
+          pattern="[a-zA-Z0-9_-]+" value="${escapar(item ? item.id : '')}" ${editando ? 'readonly' : ''}>
 
         <p class="hint">
-          Usa letras sin espacios, números, guiones o guiones bajos.
+          ${editando
+            ? 'El identificador se mantiene fijo para conservar los productos asociados.'
+            : 'Usa letras sin espacios, números, guiones o guiones bajos.'}
         </p>
 
         <button type="submit">Guardar</button>
@@ -935,7 +1144,7 @@ function mostrarFormularioLista(seccion) {
         );
 
         mostrarMensaje(
-          `${titulo[0].toUpperCase() + titulo.slice(1)} guardado.`
+          `${titulo[0].toUpperCase() + titulo.slice(1)} ${editando ? 'actualizado' : 'guardado'}.`
         );
 
         await cargarLista(seccion);
