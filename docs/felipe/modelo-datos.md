@@ -25,6 +25,8 @@ El panel permite crear, editar y buscar entrepreneur_types. Su ID se conserva al
 
 La migración 006 limita las escrituras de perfiles a funciones verificadas. list_platform_admins devuelve nombres, correos y estados solo a administradores activos. provision_platform_admin valida el alta nueva y su solicitud; update_platform_admin permite editar nombre o activar/desactivar otras cuentas, con exclusión mutua, guarda de último administrador y control de cambios concurrentes. No permite desactivación propia ni expone contraseñas. Ver [cuentas administradoras](../entrega-4/cuentas-administradoras.md).
 
+La migración 007 añade update_entrepreneur_account para que un administrador activo cambie únicamente profiles.display_name de una emprendedora cuya tienda y propietaria todavía coinciden. Bloquea la fila, admite reintentos y detecta formularios desactualizados; no cambia correo, credenciales, rol, estado ni tienda. Comparte el bloqueo de administración de la 006 y conserva la auditoría. La escritura directa sobre profiles sigue revocada. Ver [edición de cuenta](../entrega-4/contrato-cuenta-emprendedora.md).
+
 ## Proyecciones públicas
 
 public_shops expone únicamente la ficha publicable de tiendas activas con dueña activa. public_products calcula el catálogo público desde products y shops:
@@ -70,6 +72,8 @@ La web guarda los tokens de sesión mediante localStorage para recuperar el acce
 La consulta del catálogo se actualiza mientras la pantalla está activa, cada 15 segundos. Es consulta periódica, no una suscripción a Supabase Realtime.
 
 ## Puesta en marcha
+
+La [demostración de Entrega 4](../entrega-4/backend-demostracion.md) explica los índices reales, su justificación, la carga de datos ficticios y los límites de la separación entre desarrollo y producción. La instancia de clase no se presenta como un entorno de producción independiente.
 
 La migración versionada está en supabase/migrations/001_conectasur.sql y su registro SHA-256 se guarda en app_private.schema_migrations. Las migraciones aplicadas no se editan: se añaden nuevas.
 

@@ -7,6 +7,7 @@ import { api,query,settings,literal } from '../tools/admin.mjs';
 
 const run='sec_'+randomUUID().replaceAll('-','').slice(0,12);
 let admin,ana,bea,buyer,off; const users=[];const shops=[];
+const administrativeFixtures={associations:[],entrepreneur_types:[],categories:[],product_types:[]};
 const ok=(r)=>{assert.ok(r.ok,JSON.stringify({status:r.status,error:r.data?.message??r.data?.error}));return r.data;};
 const denied=(r)=>assert.equal(r.ok,false,'La operacion indebida fue aceptada');
 async function signin(account){return ok(await api('/auth/v1/token?grant_type=password',{method:'POST',body:{email:account.email,password:account.password}})).access_token;}
@@ -18,7 +19,14 @@ async function account(name){
 const rpc=(name,body,token)=>api('/rest/v1/rpc/'+name,{method:'POST',body,token});
 const product=(id,shop,extra={})=>({id,shop_id:shop,name:'Prueba',description:'Producto ficticio',category:'Artesanías',price_clp:8000,show_price:true,stock_mode:'UNITS',quantity:3,visible:true,photo:'flores',variants:[],...extra});
 const save=(value,token)=>api('/rest/v1/products',{method:'POST',body:value,token,headers:{Prefer:'resolution=merge-duplicates,return=representation'}});
-const read=(table,filter,token)=>api('/rest/v1/'+table+'?select=*&'+filter,{token});
+const read=async(table,filter,token)=>{
+  // Solo lecturas ante fallos transitorios del gateway; nunca repetir escrituras.
+  for(let attempt=0;attempt<3;attempt++){
+    const result=await api('/rest/v1/'+table+'?select=*&'+filter,{token});
+    if(![502,503,504].includes(result.status)||attempt===2)return result;
+    await new Promise(resolve=>setTimeout(resolve,200*(attempt+1)));
+  }
+};
 const sale=(owner,id,quantity=1,variant=null,request=randomUUID())=>rpc('register_sale',{p_shop_id:owner.shop,p_product_id:id,p_variant_id:variant,p_quantity:quantity,p_place:'Prueba automatizada',p_request_id:request},owner.token);
 
 before(async()=>{
@@ -31,6 +39,9 @@ before(async()=>{
   ok(await rpc('set_entrepreneur_active',{p_uid:off.uid,p_shop_id:off.shop,p_active:false},admin));
 });
 after(async()=>{
+  // IDs únicos registrados antes de cada escritura: limpiar incluso una respuesta perdida.
+  for(const [table,ids] of Object.entries(administrativeFixtures))if(ids.length)
+    await query(`delete from public.${table} where id in (${ids.map(literal).join(',')})`);
   if(!users.length)return;
   const uidList=users.map(literal).join(',');const shopList=shops.length?shops.map(literal).join(','):"''";
   await query(`begin;
@@ -75,6 +86,34 @@ describe('Perfiles y permisos RLS',()=>{
   it('comprador NO consulta ni falsifica el registro del administrador',async()=>{
     assert.deepEqual(ok(await read('admin_actions','',buyer.token)),[]);
     denied(await api('/rest/v1/admin_actions',{method:'POST',body:{action:'FAKE',target_table:'shops'},token:buyer.token}));
+  });
+  it('solo admin crea y desactiva asociaciones; otras cuentas no las editan ni borran',async()=>{
+    const id=run+'_auth_assoc';administrativeFixtures.associations.push(id);
+    ok(await api('/rest/v1/associations',{method:'POST',body:{id,name:'Asociación de prueba'},token:admin}));
+    for(const [i,token] of [ana.token,buyer.token,off.token,undefined].entries()){
+      const other=id+'_'+i;administrativeFixtures.associations.push(other);
+      const create=await api('/rest/v1/associations',{method:'POST',body:{id:other,name:'No autorizado'},token});assert.ok([401,403].includes(create.status));
+      await api('/rest/v1/associations?id=eq.'+id,{method:'PATCH',body:{active:false,name:'Cambio indebido'},token});
+      await api('/rest/v1/associations?id=eq.'+id,{method:'DELETE',token});
+      const rows=ok(await read('associations','id=eq.'+id,admin));assert.equal(rows.length,1);assert.equal(rows[0].active,true);assert.equal(rows[0].name,'Asociación de prueba');
+    }
+    ok(await api('/rest/v1/associations?id=eq.'+id,{method:'PATCH',body:{active:false},token:admin}));
+    assert.equal(ok(await read('associations','id=eq.'+id,admin))[0].active,false);
+  });
+  it('solo admin mantiene tipos de emprendimiento, tipos de producto y categorías',async()=>{
+    for(const table of ['entrepreneur_types','product_types','categories']){
+      const id=run+'_catalog';administrativeFixtures[table].push(id);
+      ok(await api('/rest/v1/'+table,{method:'POST',body:{id,name:'Catálogo de prueba'},token:admin}));
+      for(const [i,token] of [ana.token,buyer.token,off.token,undefined].entries()){
+        const other=id+'_'+i;administrativeFixtures[table].push(other);
+        const create=await api('/rest/v1/'+table,{method:'POST',body:{id:other,name:'No autorizado'},token});assert.ok([401,403].includes(create.status));
+        await api('/rest/v1/'+table+'?id=eq.'+id,{method:'PATCH',body:{name:'Cambio indebido'},token});
+        await api('/rest/v1/'+table+'?id=eq.'+id,{method:'DELETE',token});
+        const rows=ok(await read(table,'id=eq.'+id,admin));assert.equal(rows.length,1);assert.equal(rows[0].name,'Catálogo de prueba');
+      }
+      ok(await api('/rest/v1/'+table+'?id=eq.'+id,{method:'PATCH',body:{name:'Catálogo corregido'},token:admin}));
+      assert.equal(ok(await read(table,'id=eq.'+id,admin))[0].name,'Catálogo corregido');
+    }
   });
 });
 

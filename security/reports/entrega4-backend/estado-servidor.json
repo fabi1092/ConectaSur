@@ -1,0 +1,358 @@
+{
+  "checkedAt": "2026-11-04T04:30:41.564Z",
+  "instance": "https://supabase-surcode.codepulse.cl",
+  "environment": "desarrollo de clase",
+  "productionSeparationVerified": false,
+  "accountRenameReady": true,
+  "googleEnabled": false,
+  "counts": [
+    {
+      "tabla": "shops",
+      "filas": 4
+    },
+    {
+      "tabla": "profiles",
+      "filas": 8
+    },
+    {
+      "tabla": "associations",
+      "filas": 2
+    },
+    {
+      "tabla": "entrepreneur_types",
+      "filas": 3
+    },
+    {
+      "tabla": "categories",
+      "filas": 5
+    },
+    {
+      "tabla": "product_types",
+      "filas": 5
+    }
+  ],
+  "indexes": [
+    {
+      "tablename": "admin_actions",
+      "indexname": "admin_actions_pkey",
+      "indexdef": "CREATE UNIQUE INDEX admin_actions_pkey ON public.admin_actions USING btree (id)"
+    },
+    {
+      "tablename": "associations",
+      "indexname": "associations_pkey",
+      "indexdef": "CREATE UNIQUE INDEX associations_pkey ON public.associations USING btree (id)"
+    },
+    {
+      "tablename": "categories",
+      "indexname": "categories_pkey",
+      "indexdef": "CREATE UNIQUE INDEX categories_pkey ON public.categories USING btree (id)"
+    },
+    {
+      "tablename": "entrepreneur_types",
+      "indexname": "entrepreneur_types_pkey",
+      "indexdef": "CREATE UNIQUE INDEX entrepreneur_types_pkey ON public.entrepreneur_types USING btree (id)"
+    },
+    {
+      "tablename": "product_types",
+      "indexname": "product_types_pkey",
+      "indexdef": "CREATE UNIQUE INDEX product_types_pkey ON public.product_types USING btree (id)"
+    },
+    {
+      "tablename": "products",
+      "indexname": "products_pkey",
+      "indexdef": "CREATE UNIQUE INDEX products_pkey ON public.products USING btree (id)"
+    },
+    {
+      "tablename": "products",
+      "indexname": "products_shop_idx",
+      "indexdef": "CREATE INDEX products_shop_idx ON public.products USING btree (shop_id)"
+    },
+    {
+      "tablename": "profiles",
+      "indexname": "profiles_pkey",
+      "indexdef": "CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)"
+    },
+    {
+      "tablename": "sales",
+      "indexname": "sales_pkey",
+      "indexdef": "CREATE UNIQUE INDEX sales_pkey ON public.sales USING btree (id)"
+    },
+    {
+      "tablename": "sales",
+      "indexname": "sales_shop_date_idx",
+      "indexdef": "CREATE INDEX sales_shop_date_idx ON public.sales USING btree (shop_id, date_millis DESC)"
+    },
+    {
+      "tablename": "shop_associations",
+      "indexname": "shop_associations_pkey",
+      "indexdef": "CREATE UNIQUE INDEX shop_associations_pkey ON public.shop_associations USING btree (shop_id, association_id)"
+    },
+    {
+      "tablename": "shops",
+      "indexname": "shops_owner_uid_key",
+      "indexdef": "CREATE UNIQUE INDEX shops_owner_uid_key ON public.shops USING btree (owner_uid)"
+    },
+    {
+      "tablename": "shops",
+      "indexname": "shops_pkey",
+      "indexdef": "CREATE UNIQUE INDEX shops_pkey ON public.shops USING btree (id)"
+    }
+  ],
+  "tables": [
+    {
+      "tablename": "admin_actions",
+      "rowsecurity": true
+    },
+    {
+      "tablename": "associations",
+      "rowsecurity": true
+    },
+    {
+      "tablename": "categories",
+      "rowsecurity": true
+    },
+    {
+      "tablename": "entrepreneur_types",
+      "rowsecurity": true
+    },
+    {
+      "tablename": "product_types",
+      "rowsecurity": true
+    },
+    {
+      "tablename": "products",
+      "rowsecurity": true
+    },
+    {
+      "tablename": "profiles",
+      "rowsecurity": true
+    },
+    {
+      "tablename": "sales",
+      "rowsecurity": true
+    },
+    {
+      "tablename": "shop_associations",
+      "rowsecurity": true
+    },
+    {
+      "tablename": "shops",
+      "rowsecurity": true
+    }
+  ],
+  "policies": [
+    {
+      "schemaname": "public",
+      "tablename": "admin_actions",
+      "policyname": "audit_admin_read",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "associations",
+      "policyname": "associations_admin",
+      "cmd": "ALL"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "associations",
+      "policyname": "associations_public",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "categories",
+      "policyname": "categories_admin",
+      "cmd": "ALL"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "categories",
+      "policyname": "categories_public",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "entrepreneur_types",
+      "policyname": "entrepreneur_types_admin",
+      "cmd": "ALL"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "entrepreneur_types",
+      "policyname": "entrepreneur_types_public",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "product_types",
+      "policyname": "product_types_admin",
+      "cmd": "ALL"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "product_types",
+      "policyname": "product_types_public",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "products",
+      "policyname": "products_owner",
+      "cmd": "ALL"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "profiles",
+      "policyname": "profiles_admin",
+      "cmd": "ALL"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "profiles",
+      "policyname": "profiles_read",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "sales",
+      "policyname": "sales_owner_read",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "shop_associations",
+      "policyname": "shop_associations_admin",
+      "cmd": "ALL"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "shop_associations",
+      "policyname": "shop_associations_public",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "shops",
+      "policyname": "shops_create",
+      "cmd": "INSERT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "shops",
+      "policyname": "shops_delete",
+      "cmd": "DELETE"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "shops",
+      "policyname": "shops_read",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "shops",
+      "policyname": "shops_update",
+      "cmd": "UPDATE"
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "association_images_admin_create",
+      "cmd": "INSERT"
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "association_images_admin_delete",
+      "cmd": "DELETE"
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "association_images_admin_read",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "association_images_admin_update",
+      "cmd": "UPDATE"
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "shop_images_create",
+      "cmd": "INSERT"
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "shop_images_delete",
+      "cmd": "DELETE"
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "shop_images_read",
+      "cmd": "SELECT"
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "shop_images_update",
+      "cmd": "UPDATE"
+    }
+  ],
+  "buckets": [
+    {
+      "id": "association-images",
+      "public": true,
+      "file_size_limit": 2097152,
+      "allowed_mime_types": [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+      ]
+    },
+    {
+      "id": "shop-images",
+      "public": true,
+      "file_size_limit": 2097152,
+      "allowed_mime_types": [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+      ]
+    }
+  ],
+  "migrations": [
+    {
+      "id": "001_conectasur"
+    },
+    {
+      "id": "002_catalogo_ventas"
+    },
+    {
+      "id": "003_cantidad_entera"
+    },
+    {
+      "id": "004_venta_a_pedido"
+    },
+    {
+      "id": "005_logos_asociaciones"
+    },
+    {
+      "id": "006_cuentas_administradoras"
+    },
+    {
+      "id": "007_editar_cuenta_emprendedora"
+    }
+  ],
+  "limits": [
+    "Lectura de metadatos desde Studio, no demuestra operaciones con permisos de cliente",
+    "La demostración de permisos se ejecuta separadamente con usuarios de aplicación",
+    "No hay una configuración de producción separada documentada/verificada",
+    "Supabase sustituye el diseño histórico Firestore; no se afirma publicación de reglas Firebase"
+  ]
+}
