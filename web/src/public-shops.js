@@ -37,7 +37,7 @@ function shell(content, { showAccountLink = true, accountLocation = 'Estás en t
     <div class="community-strip">${icon('pin')} Puerto Montt y Alerce <span>Un lugar para conectar con lo nuestro.</span></div>
     <header class="public-header">
       <a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">${brand()}</a>
-      <nav class="public-main-links" aria-label="Explorar ConectaSur"><a href="#productos" data-section-link>Productos</a><a href="#tiendas" data-section-link>Tiendas locales</a></nav>
+      <nav class="public-main-links" aria-label="Explorar ConectaSur"><a href="#inicio"${['','#inicio'].includes(location.hash) ? ' aria-current="page"' : ''}>Inicio</a><a href="#productos" data-section-link${location.hash === '#productos' ? ' aria-current="page"' : ''}>Productos</a><a href="#tiendas" data-section-link${location.hash === '#tiendas' ? ' aria-current="page"' : ''}>Tiendas locales</a></nav>
       ${showAccountLink ? `<nav class="public-navigation" aria-label="Acceso a tu cuenta">
         <a class="public-owner-link" data-account-link href="${account.href}">${icon('user')} <span data-account-label>${account.label}</span></a>
       </nav>` : ''}
@@ -85,7 +85,7 @@ export async function showPublicShops(app, db, isCurrent = () => true) {
     <div class="hero-visual"><figure class="hero-main-photo"><img src="/assets/artesanias-alerce.jpg" alt="Flores tejidas, tejidos y accesorios de las emprendedoras de Alerce" width="899" height="1599" fetchpriority="high"><figcaption>Creaciones que nacen en Alerce</figcaption></figure><figure class="hero-small-photo"><img src="/assets/creaciones-alerce.jpg" alt="Bandejas decoradas y bolsos tejidos fotografiados en la visita" width="1599" height="899"><figcaption>Detalles hechos con dedicación ${icon('heart')}</figcaption></figure><span class="hero-photo-label">Fotografías de nuestra visita a terreno</span></div>
   </section>
   <div class="community-values"><div>${icon('shop')}<span><strong>Emprendimientos locales</strong><small>Conoce lo que se crea cerca de ti.</small></span></div><div>${icon('chat')}<span><strong>Contacto directo</strong><small>Conversa con cada tienda.</small></span></div><div>${icon('heart')}<span><strong>Explora a tu ritmo</strong><small>Descubre productos sin crear una cuenta.</small></span></div></div>
-  <section id="productos" class="public-products-section" aria-labelledby="products-title"><div class="section-title-row"><div><p class="public-eyebrow">Pequeños hallazgos, grandes historias</p><h2 id="products-title" tabindex="-1">Encuentra algo especial</h2></div><p>Productos de nuestras tiendas</p></div><div id="catalog-filters" class="catalog-filters" aria-label="Categorías de productos"></div><div id="catalog-results" class="catalog-grid" aria-busy="true"><p role="status">Cargando productos…</p></div></section>
+  <section id="productos" class="public-products-section" aria-labelledby="products-title"><div class="section-title-row"><div><p class="public-eyebrow">Pequeños hallazgos, grandes historias</p><h2 id="products-title" tabindex="-1">Encuentra algo especial</h2></div><p>Productos de nuestras tiendas</p></div><div class="catalog-discovery"><div class="product-search" role="search" aria-label="Buscar productos"><label for="product-search">¿Qué estás buscando?</label><div>${icon('search')}<input id="product-search" type="search" placeholder="Por ejemplo: tejidos o bandejas" maxlength="160" autocomplete="off" disabled></div></div><p id="catalog-count" role="status"></p></div><div id="catalog-filters" class="catalog-filters" aria-label="Categorías de productos"></div><div id="catalog-results" class="catalog-grid" aria-busy="true"><p role="status">Cargando productos…</p></div></section>
   <section class="public-directory" id="tiendas" aria-labelledby="directory-title">
     <div class="public-directory-heading"><div><p class="public-eyebrow">Compra y conecta con lo local</p><h2 id="directory-title">Nuestras tiendas</h2></div>
       <p id="public-count" role="status">Cargando tiendas…</p></div>
@@ -124,14 +124,21 @@ export async function showPublicShops(app, db, isCurrent = () => true) {
       if (!isCurrent()) return;
       const categories = [...new Set(products.map(product => product.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
       filters.innerHTML = [{ label: 'Todos', value: '' }, ...categories.map(value => ({ label: value, value }))].map((category, index) => `<button type="button" data-category="${escape(category.value)}" aria-pressed="${index === 0}">${icon(category.value === 'Artesanías' ? 'yarn' : category.value === 'Alimentos' ? 'food' : category.value === 'Plantas' ? 'leaf' : 'grid')}${escape(category.label)}</button>`).join('');
-      function selectCategory(category = '') {
-        const selected = products.filter(product => !category || product.category === category);
+      const productSearch = app.querySelector('#product-search');
+      let selectedCategory = '';
+      function selectCategory(category = selectedCategory) {
+        selectedCategory = category;
+        const term = normalize(productSearch.value.trim());
+        const selected = products.filter(product => (!category || product.category === category) && normalize([product.name,product.description,product.category,shops.find(shop => shop.id === product.shopId)?.name].join(' ')).includes(term));
         catalog.setAttribute('aria-busy', 'false');
-        catalog.innerHTML = selected.length ? selected.map(product => productCard(product, shops.find(shop => shop.id === product.shopId))).join('') : '<div class="public-empty"><h3>Pronto habrá productos para descubrir</h3><p>Mientras tanto, conoce las tiendas y consulta directamente lo que ofrecen.</p></div>';
+        app.querySelector('#catalog-count').textContent = `${selected.length} ${selected.length === 1 ? 'producto para descubrir' : 'productos para descubrir'}`;
+        catalog.innerHTML = selected.length ? selected.map(product => productCard(product, shops.find(shop => shop.id === product.shopId))).join('') : products.length ? '<div class="public-empty"><h3>No encontramos productos con esa búsqueda</h3><p>Prueba con otra palabra o elige la categoría Todos.</p></div>' : '<div class="public-empty"><h3>Pronto habrá productos para descubrir</h3><p>Mientras tanto, conoce las tiendas y consulta directamente lo que ofrecen.</p></div>';
         filters.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.category === category)));
         wireProducts(catalog, selected, shops);
       }
       filters.querySelectorAll('button').forEach(button => button.addEventListener('click', () => selectCategory(button.dataset.category)));
+      productSearch.disabled = false;
+      productSearch.addEventListener('input', () => selectCategory());
       selectCategory();
       filter();
     } catch {

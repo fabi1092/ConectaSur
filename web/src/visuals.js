@@ -31,3 +31,7 @@ export function icon(name, extra = '') {
 export function brand() {
   return '<span class="brand-symbol" aria-hidden="true"><img src="/assets/conectasur-brand.jpg" alt="" width="1600" height="872"></span><span class="brand-word">Conecta<strong>Sur</strong></span>';
 }
+
+export function communityPhoto() {
+  return '<figure class="auth-community"><img src="/assets/creaciones-alerce.jpg" alt="Bandejas decoradas y bolsos tejidos de las emprendedoras de Alerce" width="1599" height="899"><figcaption>Creaciones y personas de nuestra comunidad.</figcaption></figure>';
+}

@@ -13,6 +13,7 @@ import { showEntrepreneurTypes } from './entrepreneur-types.js';
 import { showAdminAccounts } from './admin-accounts.js';
 import { createEntrepreneurAccountData } from '../entrepreneur-account-data.js';
 import { showEntrepreneurAccountEditor } from './entrepreneur-account-editor.js';
+import './design.css';
 
 let adminEditor=null;
 function releaseAdminEditor(){adminEditor?.dispose();adminEditor=null;}
@@ -48,6 +49,10 @@ app.addEventListener('click', event => {
   const section = link && document.querySelector(link.getAttribute('href'));
   if (section) {
     event.preventDefault();
+    app.querySelectorAll('.public-main-links a').forEach(item => {
+      if (item.hash === link.hash) item.setAttribute('aria-current', 'page');
+      else item.removeAttribute('aria-current');
+    });
     section.scrollIntoView({ behavior: 'auto' });
     section.querySelector('h2')?.focus({ preventScroll: true });
   }
@@ -247,9 +252,9 @@ async function cargarEmprendedoras() {
 
     region.innerHTML = `
       <div class="table-wrap">
-        <table>
+        <table role="table">
           <thead>
-            <tr>
+            <tr role="row">
               <th>Tienda</th>
               <th>Sector</th>
               <th>Contacto</th>
@@ -260,8 +265,8 @@ async function cargarEmprendedoras() {
 
           <tbody>
             ${filtradas.map(tienda => `
-              <tr>
-                <td>
+              <tr role="row">
+                <td role="cell" data-label="Tienda">
                   <strong>${escapar(tienda.name)}</strong>
                   <small>Emprendedora: ${escapar(tienda.account?.displayName || 'Cuenta no disponible')}</small>
                   <small>
@@ -269,10 +274,10 @@ async function cargarEmprendedoras() {
                   </small>
                 </td>
 
-                <td>${escapar(tienda.sector || '—')}</td>
-                <td>${escapar(tienda.contact || '—')}</td>
+                <td role="cell" data-label="Sector">${escapar(tienda.sector || '—')}</td>
+                <td role="cell" data-label="Contacto">${escapar(tienda.contact || '—')}</td>
 
-                <td>
+                <td role="cell" data-label="Estado">
                   <span class="status ${
                     tienda.active ? 'active' : 'inactive'
                   }">
@@ -280,7 +285,7 @@ async function cargarEmprendedoras() {
                   </span>
                 </td>
 
-                <td class="actions">
+                <td role="cell" class="actions" data-label="Acciones">
                   <button type="button" data-edit-account="${escapar(tienda.id)}" ${tienda.account?'':'disabled'}>
                     Editar cuenta
                   </button>
@@ -676,9 +681,9 @@ async function cargarAsociaciones() {
 
     region.innerHTML = `
       <div class="table-wrap">
-        <table>
+        <table role="table">
           <thead>
-            <tr>
+            <tr role="row">
               <th>Nombre</th>
               <th>Sector</th>
               <th>Estado</th>
@@ -688,12 +693,12 @@ async function cargarAsociaciones() {
 
           <tbody>
             ${filtradas.map(a => `
-              <tr>
-                <td><div class="association-name">${shopLogo({name:a.name,logoUrl:a.logo_url})}<span>${escapar(a.name)}</span></div></td>
-                <td>${escapar(a.sector || '—')}</td>
-                <td>${a.active ? 'Activa' : 'Inactiva'}</td>
+              <tr role="row">
+                <td role="cell" data-label="Asociación"><div class="association-name">${shopLogo({name:a.name,logoUrl:a.logo_url})}<span>${escapar(a.name)}</span></div></td>
+                <td role="cell" data-label="Sector">${escapar(a.sector || '—')}</td>
+                <td role="cell" data-label="Estado">${a.active ? 'Activa' : 'Inactiva'}</td>
 
-                <td class="actions">
+                <td role="cell" class="actions" data-label="Acciones">
                   <button data-members="${escapar(a.id)}">
                     Integrantes
                   </button>
@@ -866,9 +871,9 @@ async function mostrarIntegrantesAsociacion(asociacion) {
           integrantes.length
             ? `
               <div class="table-wrap">
-                <table>
+                <table role="table">
                   <thead>
-                    <tr>
+                    <tr role="row">
                       <th>Tienda</th>
                       <th>Sector</th>
                       <th>Estado</th>
@@ -878,12 +883,12 @@ async function mostrarIntegrantesAsociacion(asociacion) {
 
                   <tbody>
                     ${integrantes.map(tienda => `
-                      <tr>
-                        <td>${escapar(tienda.name)}</td>
-                        <td>${escapar(tienda.sector || '—')}</td>
-                        <td>${tienda.active ? 'Activa' : 'Inactiva'}</td>
+                      <tr role="row">
+                        <td role="cell" data-label="Tienda">${escapar(tienda.name)}</td>
+                        <td role="cell" data-label="Sector">${escapar(tienda.sector || '—')}</td>
+                        <td role="cell" data-label="Estado">${tienda.active ? 'Activa' : 'Inactiva'}</td>
 
-                        <td>
+                        <td role="cell" class="actions" data-label="Acciones">
                           <button
                             data-remove-member="${escapar(tienda.id)}">
                             Quitar
@@ -1053,9 +1058,9 @@ async function cargarLista(seccion) {
 
     lista.innerHTML = `
       <div class="table-wrap">
-        <table>
+        <table role="table">
           <thead>
-            <tr>
+            <tr role="row">
               <th>Nombre</th>
               <th>Identificador</th>
               <th>Acciones</th>
@@ -1064,10 +1069,10 @@ async function cargarLista(seccion) {
 
           <tbody>
             ${filtrados.map(item => `
-              <tr>
-                <td>${escapar(item.name)}</td>
-                <td>${escapar(item.id)}</td>
-                <td class="actions">
+              <tr role="row">
+                <td role="cell" data-label="Nombre">${escapar(item.name)}</td>
+                <td role="cell" data-label="Identificador">${escapar(item.id)}</td>
+                <td role="cell" class="actions" data-label="Acciones">
                   <button type="button" data-edit-item="${escapar(item.id)}">
                     Editar
                   </button>

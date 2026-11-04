@@ -11,6 +11,7 @@ Esta hoja separa los avances programados de su comprobación real. No declara ce
 | Backend B01–B13 | Modelo, migraciones y pruebas existentes; preparación de consola y demostración asignadas al compañero | Compañero Parte 2: datos ficticios, perfiles, modelo/índices y equivalencia con la pauta que nombra Firebase |
 | Recuperación W27 | Desafío y cambio reales probados con enlace obtenido para fixtures; buzón real sin verificar | Equipo: comprobar recepción de un correo real; conservar la alternativa de pegar enlace |
 | Publicación web | La última comprobación sirvió el JS anterior a los commits de Google y Editar cuenta | Publicar después de resolver las dependencias y verificar ambos trabajos |
+| Diseño de toda la web | Nueva capa visual común, buscador de productos y tablas móviles en fichas; compilación y revisión de escritorio/celular aprobadas | [Registro visual](redisenio-web.md); la publicación conserva las dependencias de acceso indicadas arriba |
 | Git y etiqueta | Historial real con aportes, etiqueta previa y nuevos issues; no acredita revisiones históricas | Verificar el commit final, etiqueta y trazabilidad. No inventar revisiones de otro integrante |
 
 ## Qué automatiza el nuevo hito

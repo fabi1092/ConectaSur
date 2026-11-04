@@ -4,7 +4,7 @@ import { showOwnerCatalog } from './owner-catalog.js';
 import { showOwnerSales } from './owner-sales.js';
 import { setAccountNavigation } from './account-navigation.js';
 import { dashboardMetrics, dashboardPanels, loadDashboard } from './owner-dashboard.js';
-import { icon } from './visuals.js';
+import { icon, communityPhoto } from './visuals.js';
 import { showBuyerRegistration, showBuyerHome } from './buyer-access.js';
 
 function messageFor(error) {
@@ -43,6 +43,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     app.innerHTML = publicShell(`<section class="owner-access" aria-labelledby="owner-title">
       <div class="owner-intro"><p class="public-eyebrow">Tu espacio en ConectaSur</p><h1 id="owner-title" tabindex="-1">Ingresa a tu cuenta.</h1>
         <p>Usa tu correo y contraseña o continúa con tu cuenta de Google si eres comprador.</p>
+        ${communityPhoto()}
       </div>
       <div class="owner-login-card"><h2>Iniciar sesión</h2><p>Escribe los datos de tu cuenta.</p>
         <form id="owner-login-form">
@@ -53,7 +54,8 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
           <p id="owner-access-status" class="owner-status${error ? ' owner-error' : ''}" role="${error ? 'alert' : 'status'}">${escape(message)}</p>
           <button class="public-primary" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
         </form>
-        <button id="google-login" class="owner-secondary" type="button" style="width:100%;margin-top:0.75rem;">Continuar con Google</button>
+        <p class="auth-divider">O usa tu cuenta de Google</p>
+        <button id="google-login" class="owner-secondary google-access" type="button"><span class="google-symbol" aria-hidden="true">G</span>Continuar con Google</button>
         <a class="owner-auth-link" href="#recuperar">Olvidé mi contraseña</a>
       </div>
       <aside class="owner-help"><h2>¿Es tu primera vez?</h2><p>Puedes ingresar como comprador con tu cuenta de Google o crear una cuenta con tu correo.</p><a class="owner-secondary" href="#registro">Crear cuenta de comprador</a><p>Si te entregaron una cuenta de emprendedora o administrador, usa sus datos para ingresar.</p><p>Puedes seguir conociendo las tiendas sin ingresar.</p><a class="public-text-link" href="#inicio">Ver las tiendas <span aria-hidden="true">→</span></a></aside>

@@ -1,5 +1,5 @@
 import { publicShell, escapeHtml as escape } from './public-shops.js';
-import { icon } from './visuals.js';
+import { icon, communityPhoto } from './visuals.js';
 
 function registrationMessage(error) {
   if (error.code === 'google_not_configured' || error.code === 'google_not_available') return 'El inicio de sesión con Google está listo en la web; falta habilitar Google OAuth en el servidor Supabase.';
@@ -16,9 +16,10 @@ export function showBuyerRegistration(app, db, { isCurrent, onSignedIn, onLogin 
   const alive = () => !stopped && isCurrent();
   document.title = 'Crear cuenta | ConectaSur';
   app.innerHTML = publicShell(`<section class="owner-access" aria-labelledby="buyer-register-title">
-    <div class="owner-intro"><p class="public-eyebrow">Descubre lo que nace cerca</p><h1 id="buyer-register-title" tabindex="-1">Crea tu cuenta.</h1><p>Un espacio para conocer los productos y emprendimientos de nuestra comunidad.</p></div>
+    <div class="owner-intro"><p class="public-eyebrow">Descubre lo que nace cerca</p><h1 id="buyer-register-title" tabindex="-1">Crea tu cuenta.</h1><p>Un espacio para conocer los productos y emprendimientos de nuestra comunidad.</p>${communityPhoto()}</div>
     <div class="owner-login-card"><h2>Cuenta de comprador</h2><p>Completa estos datos o continúa con tu cuenta de Google.</p>
-      <button id="buyer-google-login" type="button" class="owner-secondary" style="width:100%;margin-bottom:0.85rem;">Continuar con Google</button>
+      <button id="buyer-google-login" type="button" class="owner-secondary google-access"><span class="google-symbol" aria-hidden="true">G</span>Continuar con Google</button>
+      <p class="auth-divider">O regístrate con tu correo</p>
       <form id="buyer-register-form">
         <label for="buyer-name">Tu nombre</label><input id="buyer-name" autocomplete="name" maxlength="120" required>
         <label for="buyer-email">Correo electrónico</label><input id="buyer-email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required placeholder="tu.correo@ejemplo.cl">
