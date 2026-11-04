@@ -11,6 +11,8 @@ import { showPasswordRecovery } from './password-recovery.js';
 import { showAssociationEditor } from './association-editor.js';
 import { showEntrepreneurTypes } from './entrepreneur-types.js';
 import { showAdminAccounts } from './admin-accounts.js';
+import { createEntrepreneurAccountData } from '../entrepreneur-account-data.js';
+import { showEntrepreneurAccountEditor } from './entrepreneur-account-editor.js';
 
 let adminEditor=null;
 function releaseAdminEditor(){adminEditor?.dispose();adminEditor=null;}
@@ -20,6 +22,7 @@ let incomingRecovery = takeRecoveryLocation();
 const app = document.querySelector('#app');
 const accessibility = initAccessibility(app);
 const db = createDataLayer(config);
+const entrepreneurAccounts = createEntrepreneurAccountData(db);
 let sessionNavigationVersion=0;
 // El callback de Auth permanece síncrono: no consulta al SDK bajo el bloqueo de Auth.
 db.onSession(user=>{
@@ -192,7 +195,7 @@ async function cargarEmprendedoras() {
 
     <div class="admin-account-filters">
       <div>
-        <label for="tiendas-search">Buscar por tienda, tipo, sector o contacto</label>
+        <label for="tiendas-search">Buscar por emprendedora, tienda, tipo, sector o contacto</label>
         <input id="tiendas-search" type="search" placeholder="Ejemplo: tejidos o Alerce" disabled>
       </div>
       <div>
@@ -228,7 +231,7 @@ async function cargarEmprendedoras() {
     const estado = selectorEstado.value;
     const filtradas = tiendas.filter(tienda => {
       const texto = normalizarTexto(
-        `${tienda.name || ''} ${tienda.entrepreneurType || ''} ${tienda.sector || ''} ${tienda.contact || ''}`
+        `${tienda.account?.displayName || ''} ${tienda.name || ''} ${tienda.entrepreneurType || ''} ${tienda.sector || ''} ${tienda.contact || ''}`
       );
       const coincideEstado =
         estado === 'all' || tienda.active === (estado === 'active');
@@ -260,6 +263,7 @@ async function cargarEmprendedoras() {
               <tr>
                 <td>
                   <strong>${escapar(tienda.name)}</strong>
+                  <small>Emprendedora: ${escapar(tienda.account?.displayName || 'Cuenta no disponible')}</small>
                   <small>
                     ${escapar(tienda.entrepreneurType || 'Sin tipo')}
                   </small>
@@ -277,8 +281,11 @@ async function cargarEmprendedoras() {
                 </td>
 
                 <td class="actions">
+                  <button type="button" data-edit-account="${escapar(tienda.id)}" ${tienda.account?'':'disabled'}>
+                    Editar cuenta
+                  </button>
                   <button data-edit="${escapar(tienda.id)}">
-                    Editar
+                    Editar tienda
                   </button>
 
                   <button data-toggle="${escapar(tienda.id)}">
@@ -290,6 +297,17 @@ async function cargarEmprendedoras() {
           </tbody>
         </table>
       </div>`;
+
+    region.querySelectorAll('[data-edit-account]').forEach(boton=>{
+      boton.addEventListener('click',()=>{
+        const tienda=tiendas.find(item=>item.id===boton.dataset.editAccount);
+        if(!tienda || !leaveAdminEditor())return;
+        adminEditor=showEntrepreneurAccountEditor(contenido,entrepreneurAccounts,tienda,{
+          onCancel:()=>{releaseAdminEditor();cargarEmprendedoras();},
+          onSaved:()=>{releaseAdminEditor();cargarEmprendedoras();mostrarMensaje('Nombre de la cuenta guardado.');}
+        });
+      });
+    });
 
     region.querySelectorAll('[data-edit]').forEach(boton => {
       boton.addEventListener('click', () => {
@@ -335,7 +353,8 @@ async function cargarEmprendedoras() {
   }
 
   try {
-    tiendas = await db.listShops();
+    const [shops,accounts]=await Promise.all([db.listShops(),entrepreneurAccounts.list()]);
+    tiendas=shops.map(shop=>({...shop,account:accounts.find(item=>item.uid===shop.ownerUid && item.shopId===shop.id)}));
 
     if (seccionActual !== 'emprendedoras' || !region.isConnected) return;
 

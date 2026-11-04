@@ -97,7 +97,7 @@ try{
   await page.screenshot({path:fileURLToPath(new URL('editar-accesible.png',output)),fullPage:true,mask:[page.locator('.page-header p')]});
   await page.getByRole('button',{name:'Cancelar',exact:true}).click();await list();checks.push('Listado y edición sin desbordes en celular, incluidos 320 px con letra grande y alto contraste');
   await page.getByRole('button',{name:'Más contraste',exact:true}).click();await page.locator('#access-size').selectOption('normal');await page.setViewportSize({width:1440,height:1000});
-  await page.locator('[data-section="emprendedoras"]').click();const shopRow=page.locator('#tabla-tiendas tbody tr').filter({hasText:'Tienda de tipos (prueba)'});await shopRow.getByRole('button',{name:'Editar',exact:true}).click();
+  await page.locator('[data-section="emprendedoras"]').click();const shopRow=page.locator('#tabla-tiendas tbody tr').filter({hasText:'Tienda de tipos (prueba)'});await shopRow.getByRole('button',{name:'Editar tienda',exact:true}).click();
   await page.waitForFunction(label=>[...document.querySelectorAll('#admin-shop-type-options option')].some(o=>o.value===label),renamed);
   checks.push('La edición de tienda del administrador sugiere los tipos vigentes');
   await page.getByRole('button',{name:'Cerrar sesión',exact:true}).click();await page.getByRole('button',{name:'Iniciar sesión',exact:true}).waitFor();

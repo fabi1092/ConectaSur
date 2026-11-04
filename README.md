@@ -14,6 +14,8 @@ El panel web permite [guardar logos de asociaciones](docs/entrega-4/logos-asocia
 
 También permite [gestionar otras cuentas administradoras](docs/entrega-4/cuentas-administradoras.md): crear, editar su nombre, desactivar y reactivar, sin cerrar la sesión de quien realiza el alta. La migración 006 protege estas operaciones en el servidor y bloquea la desactivación propia.
 
+La pantalla **Editar cuenta** de emprendedora está preparada para cambiar el nombre de la persona, separado de **Editar tienda**. El guardado W06/W07 sigue pendiente de la función de backend de la Parte 2; su [contrato de integración](docs/entrega-4/contrato-cuenta-emprendedora.md) indica los parámetros y las validaciones. La pantalla informa cuando esa función todavía no está habilitada.
+
 ## Configuración local
 
 La emprendedora también puede administrar [productos y stock desde la web](docs/entrega-4/productos-web.md): fotos, campos por tipo, variantes y modalidades de disponibilidad. Se accede desde Ingresar → Mis productos. La web usa los mismos registros que Android.

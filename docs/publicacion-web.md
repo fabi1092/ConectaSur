@@ -44,6 +44,8 @@ El panel también permite [crear, editar y buscar tipos de emprendimiento](entre
 
 La sección [Administradores](entrega-4/cuentas-administradoras.md) corresponde a W23: altas, edición de nombre y activación/desactivación de otras cuentas. Requiere la migración 006_cuentas_administradoras.sql antes de publicar. ADMIN_ACCOUNTS_URL permite ejecutar security/admin-accounts-check.mjs sobre la URL publicada. El cliente usa únicamente anon y la sesión del usuario; las credenciales de Studio quedan fuera de la publicación.
 
+La nueva pantalla [Editar cuenta de emprendedora](entrega-4/contrato-cuenta-emprendedora.md) tiene una dependencia de integración: el compañero de la Parte 2 debe implementar y aplicar update_entrepreneur_account antes de verificar su guardado real. La prueba de interfaz distingue la API real sin función de la simulación del contrato. La publicación final de ambos trabajos queda pendiente de esa integración y de corregir el retorno OAuth observado en la revisión; compilar o subir un commit no demuestra que Hosting se haya actualizado.
+
 Mis ventas permite registrar operaciones e historial privado desde la web, usando el mismo RPC transaccional que Android. SALES_URL selecciona la dirección pública para security/owner-sales-check.mjs; la prueba crea y elimina sus propios datos. Ver docs/entrega-5/ventas-web.md.
 
 El dashboard de emprendedora incorpora resumen privado y navegación con sesión. El encabezado muestra Mi tienda o Mi panel según el perfil; DASHBOARD_URL permite comprobar la publicación con security/dashboard-navigation-check.mjs. Ver docs/entrega-4/dashboard-web.md.
