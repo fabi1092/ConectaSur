@@ -50,6 +50,30 @@ class StoreViewModelTest {
         assertNull(signedOut.state.value.session)
     }
 
+    @Test fun disablingBiometricAccessEndsTheSessionAndRequiresPasswordOnReopen() = runTest(dispatcher) {
+        auth.session = owner
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        vm.edit(initial.copy(name = "Borrador privado"))
+        vm.chooseLogo(byteArrayOf(1))
+        val message = "Huella desactivada. Ingresa nuevamente con tu correo y contraseña."
+        vm.logout(message)
+        assertNull(auth.session)
+        assertNull(vm.draft)
+        assertNull(vm.logoBytes)
+        assertNull(vm.state.value.shop)
+        assertEquals(message, vm.state.value.message)
+        val reopened = model()
+        reopened.start(false)
+        advanceUntilIdle()
+        assertNull(reopened.state.value.session)
+        assertNull(reopened.state.value.shop)
+        reopened.signIn("test@example.cl", "secret")
+        advanceUntilIdle()
+        assertEquals(initial, reopened.state.value.shop)
+    }
+
     @Test fun rejectsBuyerAndDoesNotLoadAnotherStore() = runTest(dispatcher) {
         auth.nextSession = owner.copy(role = Role.COMPRADOR, shopId = null)
         val vm = model()
@@ -207,6 +231,140 @@ class StoreViewModelTest {
         assertNull(vm.draft)
     }
 
+    @Test fun associationFailureIsDifferentFromNoAssignmentAndRetryKeepsTheDraft() = runTest(dispatcher) {
+        auth.session = owner
+        shops.associationFailure = IOException()
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertEquals(initial, vm.state.value.shop)
+        assertTrue(vm.state.value.associationsError)
+        assertFalse(vm.state.value.error)
+        assertTrue(vm.state.value.associations.isEmpty())
+        val draft = initial.copy(name = "Cambio pendiente")
+        vm.edit(draft)
+        shops.associationFailure = null
+        vm.retryAssociations()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.associationsError)
+        assertEquals(listOf("Agrupación Alerce Sur"), vm.state.value.associations)
+        assertEquals(draft, vm.draft)
+        assertEquals(listOf("shop", "shop"), shops.associationQueries)
+        assertEquals(0, shops.writes)
+    }
+
+    @Test fun anUnassignedStoreIsNotReportedAsAConnectionError() = runTest(dispatcher) {
+        auth.session = owner
+        shops.associations = emptyList()
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertTrue(vm.state.value.associations.isEmpty())
+        assertFalse(vm.state.value.associationsError)
+        assertEquals(listOf("shop"), shops.associationQueries)
+    }
+
+    @Test fun logoutWhileAssociationsLoadDoesNotRestoreTheOldSession() = runTest(dispatcher) {
+        auth.session = owner
+        shops.associationGate = CompletableDeferred()
+        val vm = model()
+        vm.start(false)
+        runCurrent()
+        vm.logout()
+        shops.associationGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertNull(vm.state.value.session)
+        assertNull(vm.state.value.shop)
+        assertNull(vm.draft)
+        assertTrue(vm.state.value.associations.isEmpty())
+        assertFalse(vm.state.value.associationsError)
+    }
+
+    @Test fun unauthorizedAssociationLookupRequiresSigningInAgain() = runTest(dispatcher) {
+        auth.session = owner
+        shops.associationFailure = BackendException(403, "Cuenta desactivada")
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertNull(auth.session)
+        assertNull(vm.state.value.session)
+        assertNull(vm.state.value.shop)
+        assertTrue(vm.state.value.error)
+    }
+
+    @Test fun aMismatchedShopNeverRequestsAnotherStoresAssociations() = runTest(dispatcher) {
+        auth.session = owner
+        shops.saved = initial.copy(id = "otra-tienda")
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertNull(vm.state.value.shop)
+        assertTrue(vm.state.value.associations.isEmpty())
+        assertTrue(shops.associationQueries.isEmpty())
+        assertTrue(vm.state.value.error)
+    }
+
+    @Test fun unavailableChoicesCanBeRetriedWithoutLosingTheDraftOrBlockingOtherEdits() = runTest(dispatcher) {
+        auth.session = owner
+        shops.choicesFailure = IOException()
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertEquals(initial, vm.state.value.shop)
+        assertTrue(vm.state.value.choicesError)
+        val edited = initial.copy(name = "Mi taller")
+        vm.edit(edited)
+        vm.save()
+        advanceUntilIdle()
+        assertEquals(edited, shops.saved)
+        vm.edit(edited.copy(description = "Borrador sin guardar"))
+        shops.choicesFailure = null
+        vm.retryChoices()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.choicesError)
+        assertEquals(shops.choices, vm.state.value.choices)
+        assertEquals("Borrador sin guardar", vm.draft?.description)
+        assertEquals(1, shops.writes)
+    }
+
+    @Test fun onlyAvailableNewTypesAndSectorsCanBePublished() = runTest(dispatcher) {
+        auth.session = owner
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        vm.edit(initial.copy(entrepreneurType = "Tipo inventado"))
+        vm.save()
+        advanceUntilIdle()
+        assertTrue(vm.state.value.error)
+        assertEquals(0, shops.writes)
+        vm.edit(initial.copy(sector = "Sector inventado"))
+        vm.save()
+        advanceUntilIdle()
+        assertTrue(vm.state.value.error)
+        assertEquals(0, shops.writes)
+        val chosen = initial.copy(entrepreneurType = "Tejidos", sector = "Puerto Montt")
+        vm.edit(chosen)
+        vm.save()
+        advanceUntilIdle()
+        assertEquals(chosen, shops.saved)
+        assertFalse(vm.hasChanges())
+    }
+
+    @Test fun legacyValuesArePreservedWhenTheAvailableOptionsChange() = runTest(dispatcher) {
+        auth.session = owner
+        shops.choices = ShopChoices(listOf("Tejidos"), listOf("Puerto Montt"))
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertEquals(initial, vm.draft)
+        vm.edit(initial.copy(description = "Nueva descripción"))
+        vm.save()
+        advanceUntilIdle()
+        assertEquals(initial.entrepreneurType, shops.saved.entrepreneurType)
+        assertEquals(initial.sector, shops.saved.sector)
+        assertFalse(vm.state.value.error)
+    }
+
     private inner class FakeAuth : AuthRepository {
         var session: Session? = null
         var nextSession = owner
@@ -217,8 +375,14 @@ class StoreViewModelTest {
         override fun signOut() { session = null }
     }
     private inner class FakeShops : ShopRepository {
+        var choices = ShopChoices(listOf("Artesanía", "Tejidos"), listOf("Alerce", "Puerto Montt"))
+        var choicesFailure: Exception? = null
+        override suspend fun getShopChoices(): ShopChoices { choicesFailure?.let { throw it }; return choices }
         var saved = initial
         var associations = listOf("Agrupación Alerce Sur")
+        val associationQueries = mutableListOf<String>()
+        var associationFailure: Exception? = null
+        var associationGate: CompletableDeferred<Unit>? = null
         var reads = 0
         var writes = 0
         var uploads = 0
@@ -226,7 +390,12 @@ class StoreViewModelTest {
         var readFailure: Exception? = null
         var gate: CompletableDeferred<Unit>? = null
         override suspend fun getShop(shopId: String): Shop { reads++; gate?.await(); readFailure?.let { throw it }; assertEquals("shop", shopId); return saved }
-        override suspend fun listShopAssociations(shopId: String): List<String> = associations
+        override suspend fun listShopAssociations(shopId: String): List<String> {
+            associationQueries.add(shopId)
+            associationGate?.await()
+            associationFailure?.let { throw it }
+            return associations
+        }
         override suspend fun updateShop(shop: Shop) { writes++; updateFailure?.let { throw it }; saved = shop }
         override suspend fun uploadLogo(shopId: String, jpegBytes: ByteArray): String {
             uploads++; val url = "https://example.cl/logo.jpg"; saved = saved.copy(logoUrl = url); return url

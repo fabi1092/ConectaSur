@@ -16,6 +16,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -46,7 +48,7 @@ class MainActivity : ComponentActivity() {
     private var query = ""
     private var shopFilter: String? = null
     private val selectedVariants = mutableMapOf<String,String>()
-    private var buyerNotice: String? = null
+    private lateinit var buyerModel: BuyerViewModel
     private lateinit var content: FrameLayout
     private lateinit var reader: SpeechReader
     private lateinit var page: View
@@ -54,6 +56,18 @@ class MainActivity : ComponentActivity() {
         setTheme(if (prefs.read().highContrast) R.style.Theme_ConectaSur_HighContrast else R.style.Theme_ConectaSur)
         super.onCreate(savedInstanceState)
         RepositoryProvider.initialize(applicationContext)
+        buyerModel = ViewModelProvider(this, object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val demo = getSharedPreferences("buyer_demo", MODE_PRIVATE)
+                return BuyerViewModel(if (RepositoryProvider.supabaseReady()) RepositoryProvider.auth() else null,
+                    object : DemoBuyerStore {
+                        override fun active() = demo.getBoolean("active", false)
+                        override fun setActive(active: Boolean) { demo.edit().putBoolean("active", active).commit() }
+                    }) as T
+            }
+        })[BuyerViewModel::class.java]
+        buyerModel.start()
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         content = findViewById(R.id.screen_content)
@@ -91,6 +105,16 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { while (isActive) { repository.refresh(); try { RepositoryProvider.syncPendingOwner() } catch(cancelled:CancellationException){throw cancelled} catch(_:Exception){}; delay(15000) } }
                 launch { repository.status.collect { if (current.screen == "catalog") bindCatalogStatus() } }
+                launch {
+                    buyerModel.state.collect { state ->
+                        if (current.screen == "home") renderHomeBuyerState(state)
+                        state.launchUrl?.let { url ->
+                            buyerModel.browserLaunched()
+                            try { reader.stop(); startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                            catch (_: android.content.ActivityNotFoundException) { buyerModel.browserUnavailable() }
+                        }
+                    }
+                }
                 repository.publicProducts.collect {
                     products = it
                     when (current.screen) {
@@ -107,29 +131,15 @@ class MainActivity : ComponentActivity() {
         handleOAuthIntent(intent)
     }
     private fun handleOAuthIntent(intent: Intent?) {
-        val data = intent?.data ?: return
-        if (data.scheme != "conectasur" || data.host != "auth") return
-        val fragment = data.fragment.orEmpty()
-        val params = Uri.parse("conectasur://callback?$fragment")
-        val accessToken = params.getQueryParameter("access_token") ?: data.getQueryParameter("access_token")
-        val refreshToken = params.getQueryParameter("refresh_token") ?: data.getQueryParameter("refresh_token")
-        val expiresIn = (params.getQueryParameter("expires_in") ?: data.getQueryParameter("expires_in"))?.toLongOrNull() ?: 3600L
-        // Solo se acepta un retorno que esta app pidió hace poco; otra app no puede inyectar una sesión ajena.
-        val oauth = getSharedPreferences("buyer_oauth", MODE_PRIVATE)
-        val requestedAt = oauth.getLong("requested_at", 0L)
-        oauth.edit().remove("requested_at").apply()
-        if (requestedAt == 0L || System.currentTimeMillis() - requestedAt > 10 * 60 * 1000L) return
-        if (!accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank() && RepositoryProvider.supabaseReady()) {
-            lifecycleScope.launch {
-                try {
-                    val session = RepositoryProvider.auth().completeOAuth(accessToken, refreshToken, expiresIn)
-                    buyerNotice = getString(R.string.buyer_session_active, session.email.orEmpty())
-                } catch (_: Exception) {
-                    buyerNotice = "No pudimos confirmar tu sesión de Google. Inténtalo nuevamente."
-                }
-                if (current.screen == "home") bindHomeBuyerAccess()
-            }
-        }
+        val callback = intent?.data ?: return
+        if (callback.scheme != "conectasur" || callback.host != "auth") return
+        // No conservar el código en el Intent que Android podría volver a entregar tras una rotación.
+        intent.data = null
+        buyerModel.completeGoogle(callback.toString())
+    }
+    override fun onResume() {
+        super.onResume()
+        if (::buyerModel.isInitialized) buyerModel.refresh()
     }
     private fun applyPresentation() {
         val settings = prefs.read()
@@ -217,65 +227,34 @@ class MainActivity : ComponentActivity() {
         }
     }
     private fun bindHomeBuyerAccess() {
-        val googleButton = page.findViewById<Button>(R.id.buyer_google_login) ?: return
-        val statusView = page.findViewById<TextView>(R.id.buyer_session_status) ?: return
-        val logoutButton = page.findViewById<Button>(R.id.buyer_logout) ?: return
-
-        fun renderBuyerState(session: Session?, message: String? = buyerNotice) {
-            val isBuyer = session != null && session.role == Role.COMPRADOR
-            // Con una sesión de emprendedora abierta no se ofrece Google para no reemplazarla.
-            googleButton.isVisible = session == null
-            logoutButton.isVisible = isBuyer
-            val text = when {
-                isBuyer -> getString(R.string.buyer_session_active, session?.email.orEmpty())
-                !message.isNullOrBlank() -> message
-                else -> ""
-            }
-            statusView.text = text
-            statusView.isVisible = text.isNotBlank()
+        page.findViewById<Button>(R.id.buyer_google_login).setOnClickListener { buyerModel.beginGoogle() }
+        page.findViewById<Button>(R.id.buyer_demo_login).setOnClickListener { buyerModel.enterDemo() }
+        page.findViewById<Button>(R.id.buyer_cancel_login).setOnClickListener { buyerModel.cancelGoogle() }
+        page.findViewById<Button>(R.id.buyer_logout).setOnClickListener { buyerModel.logout() }
+        ViewCompat.setAccessibilityHeading(page.findViewById(R.id.buyer_access_title), true)
+        renderHomeBuyerState(buyerModel.state.value)
+    }
+    private fun renderHomeBuyerState(state: BuyerState) {
+        val google = page.findViewById<Button>(R.id.buyer_google_login) ?: return
+        val buyer = state.session?.role == Role.COMPRADOR
+        google.isVisible = state.session == null
+        google.isEnabled = !state.busy && !state.awaitingGoogle
+        page.findViewById<View>(R.id.buyer_demo_login).apply {
+            isVisible = buyerModel.demoAvailable && state.session == null
+            isEnabled = !state.busy
         }
-
-        renderBuyerState(null)
-        if (RepositoryProvider.supabaseReady()) {
-            lifecycleScope.launch {
-                val session = runCatching { RepositoryProvider.auth().currentSession() }.getOrNull()
-                if (current.screen == "home") renderBuyerState(session)
+        page.findViewById<View>(R.id.buyer_cancel_login).isVisible = state.awaitingGoogle
+        page.findViewById<View>(R.id.buyer_logout).isVisible = buyer
+        page.findViewById<TextView>(R.id.buyer_session_status).apply {
+            text = when {
+                state.demo -> getString(R.string.buyer_demo_active)
+                buyer -> getString(R.string.buyer_session_active, state.session?.email.orEmpty())
+                state.session != null -> getString(R.string.buyer_other_account)
+                state.message.isNotBlank() -> state.message
+                state.busy -> getString(R.string.buyer_checking)
+                else -> getString(R.string.buyer_visitor)
             }
-        }
-
-        googleButton.setOnClickListener {
-            if (!RepositoryProvider.supabaseReady()) {
-                buyerNotice = "Modo demostración: el acceso con Google requiere una versión conectada a Supabase."
-                renderBuyerState(null)
-                return@setOnClickListener
-            }
-            googleButton.isEnabled = false
-            lifecycleScope.launch {
-                try {
-                    val enabled = RepositoryProvider.auth().isGoogleEnabled()
-                    if (!enabled) {
-                        buyerNotice = "El acceso con Google para comprador está integrado; falta habilitar el proveedor Google OAuth en Supabase Auth."
-                        renderBuyerState(null)
-                    } else {
-                        val url = RepositoryProvider.auth().googleSignInUrl()
-                        getSharedPreferences("buyer_oauth", MODE_PRIVATE).edit().putLong("requested_at", System.currentTimeMillis()).apply()
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                    }
-                } catch (_: Exception) {
-                    buyerNotice = "No pudimos abrir el inicio de sesión con Google. Revisa tu conexión."
-                    renderBuyerState(null)
-                } finally {
-                    googleButton.isEnabled = true
-                }
-            }
-        }
-
-        logoutButton.setOnClickListener {
-            if (RepositoryProvider.supabaseReady()) {
-                RepositoryProvider.auth().signOut()
-            }
-            buyerNotice = getString(R.string.buyer_session_closed)
-            renderBuyerState(null)
+            isVisible = true
         }
     }
     private fun bindCatalog() {

@@ -6,6 +6,7 @@ import { SALE_COLUMNS, saleCommand } from './sales-model.js';
 import { browserAuthStorage, invalidSession } from './auth-session.js';
 import { createPasswordRecovery } from './password-recovery.js';
 import { adminCreation } from './admin-creation.js';
+import { createGoogleAuth } from './google-auth.js';
 
 const unwrap = ({ data, error }) => {
   if (error) throw Object.assign(new Error(error.message), { code: error.code, status: error.status });
@@ -83,6 +84,7 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
       storage: authStorage,
       storageKey: authStorageKey,
       autoRefreshToken: true,
+      flowType: 'pkce',
       detectSessionInUrl: false
     },
     global: {
@@ -97,6 +99,10 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
       }
     }
   });
+
+  const google = createGoogleAuth({ sdk, config, storage: authStorage, fetcher: fetchWithReadRetry,
+    location: typeof window === 'undefined' ? null : window.location,
+    history: typeof window === 'undefined' ? null : window.history });
 
   async function profile() {
     const user = unwrap(await sdk.auth.getUser())?.user;
@@ -215,56 +221,10 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
       }
     },
 
-    // Sin fragmento propio: Supabase agrega #access_token=... al volver y main.js abre Mi cuenta.
-    async loginWithGoogle(redirectTo = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : undefined) {
-      if (unwrap(await sdk.auth.getSession())?.session) {
-        throw Object.assign(new Error('Cierra tu sesión actual antes de continuar con Google'), { code: 'session_exists' });
-      }
-      const res = unwrap(
-        await sdk.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo,
-            skipBrowserRedirect: true
-          }
-        })
-      );
-      if (!res?.url) {
-        throw Object.assign(new Error('El acceso con Google no está disponible'), { code: 'google_not_available' });
-      }
-      try {
-        const settingsRes = await fetchWithReadRetry(`${config.url.replace(/\/$/, '')}/auth/v1/settings`, {
-          headers: { apikey: config.anonKey }
-        });
-        if (settingsRes.ok) {
-          const settings = await settingsRes.json();
-          if (settings?.external && settings.external.google === false) {
-            throw Object.assign(new Error('El inicio de sesión con Google requiere habilitar el proveedor Google OAuth en Supabase Auth'), { code: 'google_not_configured' });
-          }
-        }
-      } catch (error) {
-        if (error?.code === 'google_not_configured') throw error;
-      }
-      if (typeof window !== 'undefined') {
-        window.location.assign(res.url);
-      }
-      return res.url;
-    },
+    loginWithGoogle(redirectTo) { return google.start(redirectTo); },
 
     async currentSession() {
-      if (typeof window !== 'undefined' && window.location.hash.includes('access_token=')) {
-        const fragment = new URLSearchParams(window.location.hash.slice(1));
-        if (fragment.get('type') !== 'recovery' && fragment.get('access_token') && fragment.get('refresh_token')) {
-          history.replaceState(null, '', window.location.pathname + window.location.search + '#mi-cuenta');
-          unwrap(
-            await sdk.auth.setSession({
-              access_token: fragment.get('access_token'),
-              refresh_token: fragment.get('refresh_token')
-            })
-          );
-        }
-      }
-
+      await google.complete();
       const session = unwrap(
         await sdk.auth.getSession()
       )?.session;

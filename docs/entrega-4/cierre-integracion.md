@@ -6,7 +6,7 @@ Esta hoja separa los avances programados de su comprobación real. No declara ce
 |---|---|---|
 | Pantalla Editar cuenta | Preparada en 75b51ea; nueve pruebas de datos y nueve de interfaz. Escritura simulada | Benjamín: comprobar el guardado real cuando exista la función |
 | Guardado W06/W07 | No se encontró update_entrepreneur_account en el catálogo SQL consultado | Compañero Parte 2: implementar/aplicar [contrato](contrato-cuenta-emprendedora.md); [seguimiento #4](https://github.com/fabi1092/ConectaSur/issues/4) |
-| Google web/Android | Código preparado; última consulta de Auth devolvió google=false | Compañero Parte 2: configuración, retorno vinculado al intento y prueba de ingreso/salida reales |
+| Google web/Android | Código actualizado por el compañero; web PKCE integrado con 14 pruebas de Google aprobadas y última consulta de Auth google=false. El ingreso Google real sigue sin demostrar | Compañero Parte 2: habilitar proveedor y comprobar ingreso/salida reales; la integración visual solo comprobó la web |
 | Asociaciones Android | Código preparado; prueba focalizada reprodujo restauración de estado tras cancelar consulta al salir | Compañero Parte 2: corregir cancelación y comprobar salida |
 | Backend B01–B13 | Modelo, migraciones y pruebas existentes; preparación de consola y demostración asignadas al compañero | Compañero Parte 2: datos ficticios, perfiles, modelo/índices y equivalencia con la pauta que nombra Firebase |
 | Recuperación W27 | Desafío y cambio reales probados con enlace obtenido para fixtures; buzón real sin verificar | Equipo: comprobar recepción de un correo real; conservar la alternativa de pegar enlace |

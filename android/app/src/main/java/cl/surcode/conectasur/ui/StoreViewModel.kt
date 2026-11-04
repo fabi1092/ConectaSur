@@ -15,6 +15,9 @@ data class StoreState(
     val session: Session? = null,
     val shop: Shop? = null,
     val associations: List<String> = emptyList(),
+    val associationsError: Boolean = false,
+    val choices: ShopChoices = ShopChoices(),
+    val choicesError: Boolean = false,
     val busy: Boolean = false,
     val locked: Boolean = false,
     val message: String = "",
@@ -66,10 +69,52 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         }
         mutable.value = mutable.value.copy(session = session)
         val shop = shops.getShop(session.shopId) ?: throw IllegalStateException("No encontramos tu tienda. Consulta al administrador.")
-        val associations = runCatching { shops.listShopAssociations(shop.id) }.getOrDefault(emptyList())
+        check(shop.id == session.shopId) { "La tienda consultada no coincide con tu cuenta. Vuelve a ingresar." }
         // Un borrador en memoria no reemplaza los datos confirmados por el servidor.
         if (draft?.id != shop.id) draft = shop
-        mutable.value = mutable.value.copy(session = session, shop = shop, associations = associations, message = "", error = false)
+        mutable.value = mutable.value.copy(session = session, shop = shop, associations = emptyList(), associationsError = false, message = "", error = false)
+        readAssociations(shop.id, session.uid)
+        readChoices()
+    }
+
+    fun retryChoices() {
+        if (mutable.value.locked || mutable.value.shop == null) return
+        runOperation("Consultando tipos de emprendimiento y sectores…") { readChoices() }
+    }
+
+    private suspend fun readChoices() {
+        try {
+            val choices = shops.getShopChoices()
+            mutable.value = mutable.value.copy(choices = choices, choicesError = false)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) {
+            if (error is BackendException && error.status in listOf(401, 403)) throw error
+            mutable.value = mutable.value.copy(choicesError = true)
+        }
+    }
+
+    fun retryAssociations() {
+        val current = mutable.value
+        val shopId = current.shop?.id ?: return
+        val uid = current.session?.uid ?: return
+        if (current.locked) return
+        runOperation("Consultando la asociación de tu tienda…") {
+            readAssociations(shopId, uid)
+            if (!mutable.value.associationsError) message("Asignación consultada.")
+        }
+    }
+
+    private suspend fun readAssociations(shopId: String, uid: String) {
+        fun sameAccount() = mutable.value.shop?.id == shopId && mutable.value.session?.uid == uid
+        try {
+            val associations = shops.listShopAssociations(shopId)
+            if (sameAccount()) mutable.value = mutable.value.copy(associations = associations, associationsError = false)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) {
+            if (error is BackendException && error.status in listOf(401, 403)) throw error
+            // Una consulta fallida no demuestra que la tienda no tenga asociación.
+            if (sameAccount()) mutable.value = mutable.value.copy(associations = emptyList(), associationsError = true)
+        }
     }
 
     fun edit(shop: Shop) { if (shop.id == mutable.value.shop?.id) draft = shop }
@@ -85,6 +130,12 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         if (clean.name.isBlank() || clean.name.length > 120 || clean.description.length > 1000 ||
             clean.entrepreneurType.length > 120 || clean.sector.length > 240 || clean.contact.length > 240) {
             message("Revisa el nombre y los límites de los campos de la tienda.", true)
+            return
+        }
+        val current = mutable.value
+        if ((clean.entrepreneurType != current.shop?.entrepreneurType && clean.entrepreneurType !in current.choices.entrepreneurTypes) ||
+            (clean.sector != current.shop?.sector && clean.sector !in current.choices.sectors)) {
+            message("Elige el tipo de emprendimiento y el sector entre las opciones disponibles.", true)
             return
         }
         val bytes = logoBytes
@@ -112,12 +163,12 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
     fun lock() { mutable.value = mutable.value.copy(locked = true) }
     fun unlock() { mutable.value = mutable.value.copy(locked = false); restore() }
     fun message(value: String, error: Boolean = false) { mutable.value = mutable.value.copy(message = value, error = error) }
-    fun logout() {
+    fun logout(message: String = "Sesión cerrada en este teléfono.") {
         operationId++
         operation?.cancel()
         auth.signOut() // El adaptador elimina los tokens locales antes de suspender la revocación remota.
         clearDraft()
-        mutable.value = StoreState(message = "Sesión cerrada en este teléfono.")
+        mutable.value = StoreState(message = message)
     }
     private fun clearDraft() { draft = null; logoBytes = null; logoChanged = false }
     private fun runOperation(status: String, block: suspend () -> Unit) {

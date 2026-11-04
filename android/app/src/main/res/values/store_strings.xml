@@ -10,10 +10,18 @@
     <string name="store_account">Cuenta: %1$s</string>
     <string name="shop_associations_label">Asociaciones asignadas: %1$s</string>
     <string name="shop_associations_none">Ninguna por ahora</string>
+    <string name="shop_associations_error">No pudimos consultar la asignación.</string>
+    <string name="shop_associations_retry">Volver a consultar la asociación</string>
     <string name="shop_name_label">Nombre del emprendimiento</string>
     <string name="shop_description_label">Descripción</string>
     <string name="shop_type_label">Tipo de emprendimiento</string>
-    <string name="shop_sector_label">Sector o localidad</string>
+    <string name="shop_sector_label">Sector de Puerto Montt</string>
+    <string name="shop_choose_type">Elegir tipo de emprendimiento</string>
+    <string name="shop_choose_sector">Elegir sector</string>
+    <string name="shop_choices_error">No pudimos cargar los tipos de emprendimiento. Puedes elegir el sector, editar los demás datos y volver a intentarlo.</string>
+    <string name="shop_choices_empty">Faltan tipos de emprendimiento disponibles. Se conserva el valor actual de tu tienda.</string>
+    <string name="shop_choices_note">Elige un tipo configurado por el administrador y un sector de Puerto Montt.</string>
+    <string name="shop_choices_retry">Volver a cargar las opciones</string>
     <string name="shop_contact_label">Contacto público</string>
     <string name="shop_prices_label">Mostrar precios en el catálogo</string>
     <string name="save_shop">Guardar cambios</string>
@@ -21,6 +29,7 @@
     <string name="logo_save_note">Elige una imagen y pulsa Guardar cambios para publicar el logo.</string>
     <string name="bio_enable">Activar huella en este teléfono</string>
     <string name="bio_disable">Desactivar huella</string>
+    <string name="bio_disabled_sign_in">Huella desactivada. Ingresa nuevamente con tu correo y contraseña.</string>
     <string name="bio_intro">La huella es opcional. Protege el acceso a tu sesión al volver a esta pantalla.</string>
     <string name="bio_unavailable">Para activar la huella, configura una biometría compatible y un bloqueo de pantalla en los ajustes del teléfono.</string>
     <string name="bio_locked">Tu tienda está bloqueada</string>

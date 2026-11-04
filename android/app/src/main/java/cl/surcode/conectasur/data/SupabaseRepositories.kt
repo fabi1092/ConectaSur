@@ -25,16 +25,24 @@ class SupabaseCatalogRepository(private val client: SupabaseClient) : CatalogRep
     }
 }
 class SupabaseAuthRepository(private val client: SupabaseClient) : AuthRepository {
+    override fun beginGoogleSignIn() = client.beginGoogleSignIn()
+    override fun hasPendingGoogleSignIn() = client.hasPendingGoogleSignIn()
+    override fun cancelGoogleSignIn() = client.cancelGoogleSignIn()
+    override suspend fun completeGoogleSignIn(callbackUrl: String) = client.completeGoogleSignIn(callbackUrl)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     override suspend fun signIn(email: String, password: String) = client.signIn(email, password)
     override suspend fun currentSession() = client.currentSession()
     override fun signOut() { scope.launch(start = CoroutineStart.UNDISPATCHED) { client.signOut() } }
-    override fun googleSignInUrl(redirectTo: String) = client.googleOAuthUrl(redirectTo)
     override suspend fun isGoogleEnabled() = client.isGoogleOAuthEnabled()
-    override suspend fun completeOAuth(accessToken: String, refreshToken: String, expiresIn: Long) =
-        client.completeOAuthSession(accessToken, refreshToken, expiresIn)
 }
 class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepository {
+    override suspend fun getShopChoices(): ShopChoices {
+        val types = client.request("/rest/v1/entrepreneur_types?select=name&order=name") as JSONArray
+        val names = (0 until types.length()).mapNotNull {
+            types.optJSONObject(it)?.optString("name")?.trim()?.takeIf(String::isNotBlank)
+        }.distinct()
+        return ShopChoices(entrepreneurTypes = names)
+    }
     override suspend fun getShop(shopId: String) = (client.request("/rest/v1/public_shops?select=*&id=eq.${SupabaseClient.encode(shopId)}") as JSONArray).optJSONObject(0)?.toShop()
     override suspend fun listShopAssociations(shopId: String): List<String> {
         val links = client.request("/rest/v1/shop_associations?select=association_id&shop_id=eq.${SupabaseClient.encode(shopId)}") as JSONArray

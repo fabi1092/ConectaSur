@@ -42,7 +42,7 @@ class StoreActivity : FragmentActivity() {
     private var biometricAction: String? = null
     private var binding = false
     private var choosingLogo = false
-    private val fields = listOf(R.id.shop_edit_name, R.id.shop_edit_description, R.id.shop_edit_type, R.id.shop_edit_sector, R.id.shop_edit_contact)
+    private val fields = listOf(R.id.shop_edit_name, R.id.shop_edit_description, R.id.shop_edit_contact)
     private val picker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null && ::model.isInitialized && model.state.value.session != null) {
             val owner = model.state.value.session?.uid
@@ -133,11 +133,17 @@ class StoreActivity : FragmentActivity() {
         findViewById<Button>(R.id.shop_choose_logo).setOnClickListener { captureDraft(); picker.launch("image/*") }
         findViewById<Button>(R.id.shop_remove_logo).setOnClickListener { captureDraft(); model.removeLogo() }
         findViewById<Button>(R.id.shop_reload).setOnClickListener { model.restore() }
+        findViewById<Button>(R.id.shop_associations_retry).setOnClickListener { model.retryAssociations() }
+        findViewById<Button>(R.id.shop_choices_retry).setOnClickListener { model.retryChoices() }
+        findViewById<Button>(R.id.shop_edit_type).setOnClickListener { chooseShopValue(true) }
+        findViewById<Button>(R.id.shop_edit_sector).setOnClickListener { chooseShopValue(false) }
         findViewById<Button>(R.id.account_logout).setOnClickListener { discardIfNeeded { logout() } }
         findViewById<Button>(R.id.account_use_password).setOnClickListener { discardIfNeeded { logout() } }
         findViewById<Button>(R.id.account_unlock).setOnClickListener { authenticate(false) }
         findViewById<Button>(R.id.shop_bio_toggle).setOnClickListener {
-            if (biometric.enabled) { biometric.clear(); model.message("Huella desactivada. Tu sesión sigue abierta.") }
+            if (biometric.enabled) discardIfNeeded {
+                logout(getString(R.string.bio_disabled_sign_in))
+            }
             else authenticate(true)
         }
         findViewById<Button>(R.id.shop_products).setOnClickListener { discardIfNeeded { startActivity(Intent(this, ProductManagerActivity::class.java)) } }
@@ -206,14 +212,22 @@ class StoreActivity : FragmentActivity() {
         if (privateVisible) {
             val draft = model.draft ?: state.shop!!
             binding = true
-            listOf(draft.name, draft.description, draft.entrepreneurType, draft.sector, draft.contact).forEachIndexed { index, value ->
+            listOf(draft.name, draft.description, draft.contact).forEachIndexed { index, value ->
                 findViewById<EditText>(fields[index]).let { if (it.text.toString() != value) it.setText(value) }
             }
             findViewById<CheckBox>(R.id.shop_show_prices).isChecked = draft.showPrices
             binding = false
+            bindChoice(R.id.shop_edit_type, draft.entrepreneurType, if (state.choicesError) emptyList() else state.choices.entrepreneurTypes, R.string.shop_choose_type, state)
+            bindChoice(R.id.shop_edit_sector, draft.sector, state.choices.sectors, R.string.shop_choose_sector, state)
+            findViewById<TextView>(R.id.shop_choices_status).setText(when {
+                state.choicesError -> R.string.shop_choices_error
+                state.choices.entrepreneurTypes.isEmpty() || state.choices.sectors.isEmpty() -> R.string.shop_choices_empty
+                else -> R.string.shop_choices_note
+            })
+            findViewById<View>(R.id.shop_choices_retry).isVisible = state.choicesError || state.choices.entrepreneurTypes.isEmpty() || state.choices.sectors.isEmpty()
             findViewById<TextView>(R.id.shop_account).text = getString(R.string.store_account, state.session?.email.orEmpty())
-            val assocText = if (state.associations.isEmpty()) getString(R.string.shop_associations_none) else state.associations.joinToString(", ")
-            findViewById<TextView>(R.id.shop_associations).text = getString(R.string.shop_associations_label, assocText)
+            findViewById<TextView>(R.id.shop_associations).text = getString(R.string.shop_associations_label, associationText(state))
+            findViewById<Button>(R.id.shop_associations_retry).isVisible = state.associationsError
             val logo = findViewById<ImageView>(R.id.shop_edit_logo)
             logo.tag = null
             logo.setImageResource(R.drawable.ic_shop_logo)
@@ -234,8 +248,39 @@ class StoreActivity : FragmentActivity() {
         if (!::model.isInitialized || model.state.value.locked) return
         val base = model.draft ?: return
         val values = fields.map { findViewById<EditText>(it).text.toString() }
-        model.edit(base.copy(name = values[0], description = values[1], entrepreneurType = values[2], sector = values[3], contact = values[4],
+        model.edit(base.copy(name = values[0], description = values[1], contact = values[2],
             showPrices = findViewById<CheckBox>(R.id.shop_show_prices).isChecked))
+    }
+    private fun bindChoice(id: Int, current: String, choices: List<String>, action: Int, state: StoreState) {
+        findViewById<Button>(id).apply {
+            text = current.ifBlank { getString(action) }
+            contentDescription = if (current.isBlank()) getString(action) else "${getString(action)}: $current"
+            isEnabled = !state.busy && !choosingLogo && choices.isNotEmpty()
+        }
+    }
+    private fun chooseShopValue(type: Boolean) {
+        val state = model.state.value
+        if (state.busy || state.locked || (type && state.choicesError) || choosingLogo) return
+        captureDraft()
+        val draft = model.draft ?: return
+        val current = if (type) draft.entrepreneurType else draft.sector
+        val available = if (type) state.choices.entrepreneurTypes else state.choices.sectors
+        if (available.isEmpty()) return
+        val choices = available.distinct()
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(if (type) R.string.shop_choose_type else R.string.shop_choose_sector)
+            .setSingleChoiceItems(choices.toTypedArray(), choices.indexOf(current)) { dialog, index ->
+                // La selección cambia el borrador; Guardar cambios publica la ficha.
+                model.draft?.takeIf { it.id == draft.id && !model.state.value.locked }?.let { latest ->
+                    model.edit(if (type) latest.copy(entrepreneurType = choices[index]) else latest.copy(sector = choices[index]))
+                    model.message("Pulsa Guardar cambios para publicar tu selección.")
+                    render(model.state.value)
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null).create()
+        dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, presentation) }
+        dialog.show()
     }
     private fun setEnabled(view: View, enabled: Boolean) {
         view.isEnabled = enabled
@@ -243,7 +288,10 @@ class StoreActivity : FragmentActivity() {
     }
     private fun hideKeyboard() { (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(findViewById<View>(R.id.account_root).windowToken, 0) }
     private fun showStatus() { findViewById<ScrollView>(R.id.account_scroll).smoothScrollTo(0, 0) }
-    private fun logout() { prompt.cancelAuthentication(); biometricAction = null; biometric.clear(); reader.stop(); model.logout(); showStatus() }
+    private fun logout(message: String = "Sesión cerrada en este teléfono.") {
+        prompt.cancelAuthentication(); biometricAction = null; biometric.clear(); reader.stop()
+        model.logout(message); showStatus()
+    }
     private fun leave() {
         if (::model.isInitialized && (model.state.value.busy || choosingLogo)) {
             model.message("Espera a que termine la operación antes de salir."); return
@@ -262,8 +310,13 @@ class StoreActivity : FragmentActivity() {
         if (state.locked) return getString(R.string.bio_locked) + ". " + state.message
         if (state.shop == null) return getString(R.string.login_intro) + ". " + state.message
         val shop = model.draft ?: state.shop
-        val assocText = if (state.associations.isEmpty()) getString(R.string.shop_associations_none) else state.associations.joinToString(", ")
+        val assocText = associationText(state)
         return "Mi tienda. ${shop.name}. Asociaciones asignadas: $assocText. ${shop.description}. ${shop.entrepreneurType}. ${shop.sector}. Contacto: ${shop.contact}. ${state.message}"
+    }
+    private fun associationText(state: StoreState): String = when {
+        state.associationsError -> getString(R.string.shop_associations_error)
+        state.associations.isEmpty() -> getString(R.string.shop_associations_none)
+        else -> state.associations.joinToString(", ")
     }
     override fun onSaveInstanceState(outState: Bundle) { outState.putString("biometric_action", biometricAction); super.onSaveInstanceState(outState) }
     override fun onStop() {
