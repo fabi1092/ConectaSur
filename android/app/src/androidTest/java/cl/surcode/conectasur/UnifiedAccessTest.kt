@@ -39,6 +39,7 @@ class UnifiedAccessTest {
                 val email = requireNotNull(args.getString(key + "Email"))
                 val password = requireNotNull(args.getString(key + "Password"))
                 scenario = ActivityScenario.launch(MainActivity::class.java)
+                onView(withId(R.id.nav_home)).perform(click())
                 waitFor { it.findViewById<View>(R.id.open_store)?.isEnabled == true }
                 onView(withId(R.id.open_store)).check(matches(withText(R.string.account_entry)))
                 onView(withId(R.id.open_store)).perform(scrollTo(), click())
@@ -69,6 +70,7 @@ class UnifiedAccessTest {
                 waitFor { it.findViewById<TextView>(R.id.open_store)?.text == context.getString(entry) && it.findViewById<View>(R.id.open_store).isEnabled }
                 scenario.close()
                 scenario = ActivityScenario.launch(MainActivity::class.java)
+                onView(withId(R.id.nav_home)).perform(click())
                 waitFor { it.findViewById<TextView>(R.id.open_store)?.text == context.getString(entry) && it.findViewById<View>(R.id.open_store).isEnabled }
                 onView(withId(R.id.open_store)).perform(scrollTo(), click())
                 waitFor { readyForRole(it, role) }

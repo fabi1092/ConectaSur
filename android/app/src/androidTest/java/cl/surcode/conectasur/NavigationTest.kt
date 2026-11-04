@@ -59,6 +59,7 @@ class NavigationTest {
         onView(withId(R.id.results_count)).check(matches(withText("3 productos")))
     }
     @Test fun accessibilitySettingsAreAppliedAndPersistAfterRecreation() {
+        onView(withId(R.id.nav_home)).perform(click())
         onView(withId(R.id.open_settings)).perform(scrollTo(), click())
         var defaultSize = 0f
         scenario.onActivity { defaultSize = it.findViewById<TextView>(R.id.text_very_large).textSize }
@@ -82,6 +83,7 @@ class NavigationTest {
         onView(withId(R.id.welcome_title)).check(matches(isDisplayed()))
     }
     @Test fun ownerAccessRequiresLoginAndPublicHelpRemainsReachable() {
+        onView(withId(R.id.nav_home)).perform(click())
         onView(withId(R.id.read_button)).check(matches(withText(R.string.listen)))
         onView(withId(R.id.open_store)).perform(scrollTo(), click())
         onView(withId(R.id.account_title)).check(matches(withText(R.string.login_title)))

@@ -1,6 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:id="@+id/page_scroll" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" tools:theme="@style/Theme.ConectaSur">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+        <cl.surcode.conectasur.ConectaSurLogoView android:id="@+id/catalog_brand_logo" android:layout_width="match_parent" android:layout_height="64dp" android:layout_marginBottom="16dp" android:contentDescription="@string/brand_description" />
+        <TextView android:id="@+id/catalog_mode" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/buyer_public_mode" android:accessibilityLiveRegion="polite" />
         <TextView android:id="@+id/page_title" style="@style/ConectaSur.Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/catalog_title" />
         <TextView android:id="@+id/catalog_intro" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/catalog_intro" />
         <TextView android:id="@+id/catalog_status" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:accessibilityLiveRegion="polite" android:visibility="gone" />
