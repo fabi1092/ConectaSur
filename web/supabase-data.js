@@ -215,7 +215,8 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
       }
     },
 
-    async loginWithGoogle(redirectTo = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}#mi-cuenta` : undefined) {
+    // Sin fragmento propio: Supabase agrega #access_token=... al volver y main.js abre Mi cuenta.
+    async loginWithGoogle(redirectTo = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : undefined) {
       if (unwrap(await sdk.auth.getSession())?.session) {
         throw Object.assign(new Error('Cierra tu sesión actual antes de continuar con Google'), { code: 'session_exists' });
       }

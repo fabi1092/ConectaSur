@@ -110,9 +110,7 @@ class SupabaseProductRepository(private val client: SupabaseClient) : ProductRep
     }
     override suspend fun uploadPhoto(shopId: String, productId: String, jpegBytes: ByteArray) = client.upload(shopId, "products/$productId", jpegBytes)
 }
-class SupabaseSalesRepository(private val client: SupabaseClient) : SupabaseSalesBase(client)
-
-open class SupabaseSalesBase(private val client: SupabaseClient) : SalesRepository {
+class SupabaseSalesRepository(private val client: SupabaseClient) : SalesRepository {
     override suspend fun registerSale(shopId: String, productId: String, variantId: String?, quantity: Int, place: String) {
         require(quantity > 0) { "La cantidad debe ser mayor que cero" }
         val uid = client.uid() ?: throw BackendException(401, "Inicia sesion para continuar")

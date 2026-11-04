@@ -114,6 +114,11 @@ class MainActivity : ComponentActivity() {
         val accessToken = params.getQueryParameter("access_token") ?: data.getQueryParameter("access_token")
         val refreshToken = params.getQueryParameter("refresh_token") ?: data.getQueryParameter("refresh_token")
         val expiresIn = (params.getQueryParameter("expires_in") ?: data.getQueryParameter("expires_in"))?.toLongOrNull() ?: 3600L
+        // Solo se acepta un retorno que esta app pidió hace poco; otra app no puede inyectar una sesión ajena.
+        val oauth = getSharedPreferences("buyer_oauth", MODE_PRIVATE)
+        val requestedAt = oauth.getLong("requested_at", 0L)
+        oauth.edit().remove("requested_at").apply()
+        if (requestedAt == 0L || System.currentTimeMillis() - requestedAt > 10 * 60 * 1000L) return
         if (!accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank() && RepositoryProvider.supabaseReady()) {
             lifecycleScope.launch {
                 try {
@@ -218,7 +223,8 @@ class MainActivity : ComponentActivity() {
 
         fun renderBuyerState(session: Session?, message: String? = buyerNotice) {
             val isBuyer = session != null && session.role == Role.COMPRADOR
-            googleButton.isVisible = !isBuyer
+            // Con una sesión de emprendedora abierta no se ofrece Google para no reemplazarla.
+            googleButton.isVisible = session == null
             logoutButton.isVisible = isBuyer
             val text = when {
                 isBuyer -> getString(R.string.buyer_session_active, session?.email.orEmpty())
@@ -252,6 +258,7 @@ class MainActivity : ComponentActivity() {
                         renderBuyerState(null)
                     } else {
                         val url = RepositoryProvider.auth().googleSignInUrl()
+                        getSharedPreferences("buyer_oauth", MODE_PRIVATE).edit().putLong("requested_at", System.currentTimeMillis()).apply()
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                     }
                 } catch (_: Exception) {
