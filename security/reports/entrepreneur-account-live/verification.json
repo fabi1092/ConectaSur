@@ -1,8 +1,22 @@
 {
-  "checkedAt": "2026-11-04T03:05:48.825Z",
-  "status": "blocked",
-  "passed": 0,
-  "backendReady": false,
-  "reason": "Falta update_entrepreneur_account(uuid,text,text,text). El compañero debe aplicar el contrato.",
-  "fixturesCreated": false
+  "checkedAt": "2026-11-04T04:23:02.958Z",
+  "status": "passed",
+  "passed": 7,
+  "backendReady": true,
+  "url": "https://conectasur-dev.web.app/",
+  "checks": [
+    "Visitante, comprador, emprendedora y administrador inactivo no cambian el nombre mediante RPC directo",
+    "Validación de nombre, cuenta/tienda coincidentes y prohibición de escritura directa verificadas en servidor",
+    "Guardado real e idéntico reintento conservan identidad, rol, estado y tienda",
+    "Una edición desactualizada no sobrescribe el nombre guardado por otra sesión",
+    "Editar una cuenta inactiva conserva su estado y el cambio genera auditoría",
+    "W06/W07: guardar desde la pantalla y recargar conserva el nombre en Supabase real, sin interceptar respuestas",
+    "Las credenciales de la emprendedora siguen funcionando y el nombre de su tienda se conserva"
+  ],
+  "limits": [
+    "Chromium; sin prueba física con usuarias",
+    "Fixtures propios eliminados al finalizar; sin cambiar cuentas reales del grupo",
+    "Esta prueba no valida Google ni publica Hosting"
+  ],
+  "fixturesCleaned": true
 }

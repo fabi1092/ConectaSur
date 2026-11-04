@@ -7,6 +7,11 @@ import {createDataLayer} from '../web/supabase-data.js';
 import {createEntrepreneurAccountData} from '../web/entrepreneur-account-data.js';
 import {settings,query,literal} from '../supabase/tools/admin.mjs';
 const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||'playwright');
+const backendState=await query("select to_regprocedure('public.update_entrepreneur_account(uuid,text,text,text)') is not null as ready");
+if(backendState[0]?.ready){
+  // Una instancia lista se verifica de verdad; nunca sustituir el guardado por un mock.
+  await import('./entrepreneur-account-live-check.mjs');
+}else{
 const c=settings(),db=createDataLayer({url:c.url,anonKey:c.anonKey}),data=createEntrepreneurAccountData(db);
 const base=process.env.ACCOUNT_EDITOR_URL||'http://127.0.0.1:5174/',suffix=randomUUID().slice(0,8),initial='Emprendedora de prueba '+suffix,renamed='Nombre actualizado '+suffix,shopName='Tienda de cuenta '+suffix,email='account_'+randomUUID()+'@example.com',password=randomBytes(24).toString('base64url');
 const output=new URL('./reports/entrepreneur-account-editor/',import.meta.url);mkdirSync(output,{recursive:true});
@@ -71,3 +76,4 @@ try{
   console.log(JSON.stringify({passed:checks.length,backendReady:false,checks}));
 }catch(error){let text=error.stack||error.message;if(page && !page.isClosed())text+='\nEstado: '+JSON.stringify(await page.locator('[data-account-status]').allTextContents());for(const secret of [password,c.studioPassword,...Object.values(c.accounts).map(a=>a.password)])if(secret)text=text.replaceAll(secret,'[oculto]');console.error(text);process.exitCode=1;}
 finally{await browser?.close();if(fixture)await query(`begin;delete from public.shop_associations where shop_id=${literal(fixture.shopId)};update public.profiles set role='comprador',shop_id=null where id=${literal(fixture.uid)};delete from public.shops where id=${literal(fixture.shopId)};delete from auth.users where id=${literal(fixture.uid)};commit;`);await db.logout().catch(()=>{});await db.dispose();}
+}

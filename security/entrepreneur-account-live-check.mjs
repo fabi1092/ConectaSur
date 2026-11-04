@@ -19,7 +19,7 @@ async function main(){
   const c=settings(),config={url:c.url,anonKey:c.anonKey};
   const admin=createDataLayer(config),owner=createDataLayer(config),buyer=createDataLayer(config),visitor=createDataLayer(config),otherAdmin=createDataLayer(config),data=createEntrepreneurAccountData(admin);
   const salt=randomUUID(),initial='Cuenta real de prueba '+salt.slice(0,8),renamed='Nombre guardado '+salt.slice(0,8),email='account_live_'+salt+'@example.com',adminEmail='account_admin_'+salt+'@example.com',password=randomBytes(24).toString('base64url'),adminPassword=randomBytes(24).toString('base64url');
-  const checks=[];let fixture,adminFixture,creator,browser,page;
+  const checks=[];let fixture,adminFixture,creator,browser,page,report,fixturesCleaned=false;
   try{
     const actor=await admin.login(c.accounts.admin.email,c.accounts.admin.password);
     fixture=await admin.createEmprendedora({email,password,displayName:initial,shopName:'Tienda real de prueba '+salt.slice(0,8)});
@@ -63,9 +63,10 @@ async function main(){
     checks.push('W06/W07: guardar desde la pantalla y recargar conserva el nombre en Supabase real, sin interceptar respuestas');
     const login=await owner.login(email,password);assert.equal(login.displayName,uiName);assert.equal(login.role,'emprendedora');assert.equal((await admin.listShops()).find(row=>row.id===fixture.shopId).name,'Tienda real de prueba '+salt.slice(0,8));
     checks.push('Las credenciales de la emprendedora siguen funcionando y el nombre de su tienda se conserva');
-    const report={checkedAt:new Date().toISOString(),status:'passed',passed:checks.length,backendReady:true,url:base,checks,limits:['Chromium; sin prueba física con usuarias','Fixtures propios eliminados al finalizar; sin cambiar cuentas reales del grupo','Esta prueba no valida Google ni publica Hosting']};writeFileSync(new URL('verification.json',output),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
-  }catch(error){let text=error.stack||error.message;for(const value of [password,adminPassword,c.studioPassword,...Object.values(c.accounts).map(a=>a.password)])if(value)text=text.replaceAll(value,'[oculto]');console.error(text);process.exitCode=1;}
+    report={checkedAt:new Date().toISOString(),status:'passed',passed:checks.length,backendReady:true,url:base,checks,limits:['Chromium; sin prueba física con usuarias','Fixtures propios eliminados al finalizar; sin cambiar cuentas reales del grupo','Esta prueba no valida Google ni publica Hosting']};
+  }catch(error){let text=error.stack||error.message;for(const value of [password,adminPassword,c.studioPassword,...Object.values(c.accounts).map(a=>a.password)])if(value)text=text.replaceAll(value,'[oculto]');console.error(text);process.exitCode=1;report={checkedAt:new Date().toISOString(),status:'failed',passed:checks.length,backendReady:true,url:base,checks};}
   finally{
+    try{
     await browser?.close();await creator?.dispose().catch(()=>{});
     // Recuperar por correos únicos propios también limpia un alta cuya respuesta se perdió.
     const leftovers=await query('select p.id,p.shop_id from public.profiles p join auth.users u on u.id=p.id where u.email in ('+[email,adminEmail].map(literal).join(',')+')');
@@ -73,7 +74,12 @@ async function main(){
       if(row.shop_id)await query(`begin;delete from public.shop_associations where shop_id=${literal(row.shop_id)};update public.profiles set role='comprador',shop_id=null where id=${literal(row.id)};delete from public.shops where id=${literal(row.shop_id)};delete from auth.users where id=${literal(row.id)};commit;`);
       else await query('delete from auth.users where id='+literal(row.id));
     }
-    for(const client of [admin,owner,buyer,visitor,otherAdmin]){await client.logout().catch(()=>{});await client.dispose();}
+    const remaining=await query('select count(*)::int as n from auth.users where email in ('+[email,adminEmail].map(literal).join(',')+')');
+    assert.equal(remaining[0].n,0);fixturesCleaned=true;
+    }catch{process.exitCode=1;report={...report,status:'failed',cleanupError:'No se confirmó la limpieza de fixtures'};}
+    for(const client of [admin,owner,buyer,visitor,otherAdmin]){await client.logout().catch(()=>{});await client.dispose().catch(()=>{});}
+    report.fixturesCleaned=fixturesCleaned;
+    writeFileSync(new URL('verification.json',output),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
   }
 }
 await main();

@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-11-04T04:31:05.345Z",
+  "status": "passed",
+  "url": "https://conectasur-dev.web.app/",
+  "assets": [
+    "assets/index-7QQ5ORt6.js",
+    "assets/index-CyDeA4Cj.css"
+  ],
+  "passed": 9,
+  "checks": [
+    "HTTP 200 y archivos JS/CSS públicos coinciden con la compilación local",
+    "La compilación no contiene contraseñas de cuentas ni credenciales privadas de Studio",
+    "Vitrina y buscador de productos públicos funcionan sin sesión",
+    "Portada pública sin desborde a 390 y 320 px, este último con texto 150 % y contraste alto",
+    "Google deshabilitado informa no disponibilidad sin inventar sesión ni abandonar la web",
+    "Emprendedora ingresa, vuelve a la vitrina con un clic, regresa a Mi tienda y conserva sesión al recargar",
+    "Cerrar sesión de emprendedora vuelve al ingreso y oculta la tienda privada",
+    "Administrador accede a su panel/listado y cierra sesión desde la URL publicada",
+    "Comprador ingresa por correo y cierra sesión desde la URL publicada"
+  ],
+  "errors": [],
+  "limits": [
+    "Chromium y móvil emulado; no recepción real de correo ni interacción Android",
+    "Google deliberadamente sigue pendiente del servidor del docente",
+    "No modifica datos de negocio; solo ingreso, lectura y cierre de cuentas de prueba"
+  ]
+}
