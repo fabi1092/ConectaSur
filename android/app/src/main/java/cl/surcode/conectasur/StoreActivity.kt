@@ -133,6 +133,7 @@ class StoreActivity : FragmentActivity() {
         findViewById<Button>(R.id.shop_choose_logo).setOnClickListener { captureDraft(); picker.launch("image/*") }
         findViewById<Button>(R.id.shop_remove_logo).setOnClickListener { captureDraft(); model.removeLogo() }
         findViewById<Button>(R.id.shop_reload).setOnClickListener { model.restore() }
+        findViewById<Button>(R.id.shop_associations_retry).setOnClickListener { model.retryAssociations() }
         findViewById<Button>(R.id.account_logout).setOnClickListener { discardIfNeeded { logout() } }
         findViewById<Button>(R.id.account_use_password).setOnClickListener { discardIfNeeded { logout() } }
         findViewById<Button>(R.id.account_unlock).setOnClickListener { authenticate(false) }
@@ -212,8 +213,8 @@ class StoreActivity : FragmentActivity() {
             findViewById<CheckBox>(R.id.shop_show_prices).isChecked = draft.showPrices
             binding = false
             findViewById<TextView>(R.id.shop_account).text = getString(R.string.store_account, state.session?.email.orEmpty())
-            val assocText = if (state.associations.isEmpty()) getString(R.string.shop_associations_none) else state.associations.joinToString(", ")
-            findViewById<TextView>(R.id.shop_associations).text = getString(R.string.shop_associations_label, assocText)
+            findViewById<TextView>(R.id.shop_associations).text = getString(R.string.shop_associations_label, associationText(state))
+            findViewById<Button>(R.id.shop_associations_retry).isVisible = state.associationsError
             val logo = findViewById<ImageView>(R.id.shop_edit_logo)
             logo.tag = null
             logo.setImageResource(R.drawable.ic_shop_logo)
@@ -262,8 +263,13 @@ class StoreActivity : FragmentActivity() {
         if (state.locked) return getString(R.string.bio_locked) + ". " + state.message
         if (state.shop == null) return getString(R.string.login_intro) + ". " + state.message
         val shop = model.draft ?: state.shop
-        val assocText = if (state.associations.isEmpty()) getString(R.string.shop_associations_none) else state.associations.joinToString(", ")
+        val assocText = associationText(state)
         return "Mi tienda. ${shop.name}. Asociaciones asignadas: $assocText. ${shop.description}. ${shop.entrepreneurType}. ${shop.sector}. Contacto: ${shop.contact}. ${state.message}"
+    }
+    private fun associationText(state: StoreState): String = when {
+        state.associationsError -> getString(R.string.shop_associations_error)
+        state.associations.isEmpty() -> getString(R.string.shop_associations_none)
+        else -> state.associations.joinToString(", ")
     }
     override fun onSaveInstanceState(outState: Bundle) { outState.putString("biometric_action", biometricAction); super.onSaveInstanceState(outState) }
     override fun onStop() {

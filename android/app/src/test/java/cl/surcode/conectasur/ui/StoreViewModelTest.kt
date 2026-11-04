@@ -207,6 +207,79 @@ class StoreViewModelTest {
         assertNull(vm.draft)
     }
 
+    @Test fun associationFailureIsDifferentFromNoAssignmentAndRetryKeepsTheDraft() = runTest(dispatcher) {
+        auth.session = owner
+        shops.associationFailure = IOException()
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertEquals(initial, vm.state.value.shop)
+        assertTrue(vm.state.value.associationsError)
+        assertFalse(vm.state.value.error)
+        assertTrue(vm.state.value.associations.isEmpty())
+        val draft = initial.copy(name = "Cambio pendiente")
+        vm.edit(draft)
+        shops.associationFailure = null
+        vm.retryAssociations()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.associationsError)
+        assertEquals(listOf("Agrupación Alerce Sur"), vm.state.value.associations)
+        assertEquals(draft, vm.draft)
+        assertEquals(listOf("shop", "shop"), shops.associationQueries)
+        assertEquals(0, shops.writes)
+    }
+
+    @Test fun anUnassignedStoreIsNotReportedAsAConnectionError() = runTest(dispatcher) {
+        auth.session = owner
+        shops.associations = emptyList()
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertTrue(vm.state.value.associations.isEmpty())
+        assertFalse(vm.state.value.associationsError)
+        assertEquals(listOf("shop"), shops.associationQueries)
+    }
+
+    @Test fun logoutWhileAssociationsLoadDoesNotRestoreTheOldSession() = runTest(dispatcher) {
+        auth.session = owner
+        shops.associationGate = CompletableDeferred()
+        val vm = model()
+        vm.start(false)
+        runCurrent()
+        vm.logout()
+        shops.associationGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertNull(vm.state.value.session)
+        assertNull(vm.state.value.shop)
+        assertNull(vm.draft)
+        assertTrue(vm.state.value.associations.isEmpty())
+        assertFalse(vm.state.value.associationsError)
+    }
+
+    @Test fun unauthorizedAssociationLookupRequiresSigningInAgain() = runTest(dispatcher) {
+        auth.session = owner
+        shops.associationFailure = BackendException(403, "Cuenta desactivada")
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertNull(auth.session)
+        assertNull(vm.state.value.session)
+        assertNull(vm.state.value.shop)
+        assertTrue(vm.state.value.error)
+    }
+
+    @Test fun aMismatchedShopNeverRequestsAnotherStoresAssociations() = runTest(dispatcher) {
+        auth.session = owner
+        shops.saved = initial.copy(id = "otra-tienda")
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertNull(vm.state.value.shop)
+        assertTrue(vm.state.value.associations.isEmpty())
+        assertTrue(shops.associationQueries.isEmpty())
+        assertTrue(vm.state.value.error)
+    }
+
     private inner class FakeAuth : AuthRepository {
         var session: Session? = null
         var nextSession = owner
@@ -219,6 +292,9 @@ class StoreViewModelTest {
     private inner class FakeShops : ShopRepository {
         var saved = initial
         var associations = listOf("Agrupación Alerce Sur")
+        val associationQueries = mutableListOf<String>()
+        var associationFailure: Exception? = null
+        var associationGate: CompletableDeferred<Unit>? = null
         var reads = 0
         var writes = 0
         var uploads = 0
@@ -226,7 +302,12 @@ class StoreViewModelTest {
         var readFailure: Exception? = null
         var gate: CompletableDeferred<Unit>? = null
         override suspend fun getShop(shopId: String): Shop { reads++; gate?.await(); readFailure?.let { throw it }; assertEquals("shop", shopId); return saved }
-        override suspend fun listShopAssociations(shopId: String): List<String> = associations
+        override suspend fun listShopAssociations(shopId: String): List<String> {
+            associationQueries.add(shopId)
+            associationGate?.await()
+            associationFailure?.let { throw it }
+            return associations
+        }
         override suspend fun updateShop(shop: Shop) { writes++; updateFailure?.let { throw it }; saved = shop }
         override suspend fun uploadLogo(shopId: String, jpegBytes: ByteArray): String {
             uploads++; val url = "https://example.cl/logo.jpg"; saved = saved.copy(logoUrl = url); return url

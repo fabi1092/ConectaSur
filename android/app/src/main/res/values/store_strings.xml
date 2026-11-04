@@ -10,6 +10,8 @@
     <string name="store_account">Cuenta: %1$s</string>
     <string name="shop_associations_label">Asociaciones asignadas: %1$s</string>
     <string name="shop_associations_none">Ninguna por ahora</string>
+    <string name="shop_associations_error">No pudimos consultar la asignación.</string>
+    <string name="shop_associations_retry">Volver a consultar la asociación</string>
     <string name="shop_name_label">Nombre del emprendimiento</string>
     <string name="shop_description_label">Descripción</string>
     <string name="shop_type_label">Tipo de emprendimiento</string>

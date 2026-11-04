@@ -15,6 +15,7 @@ data class StoreState(
     val session: Session? = null,
     val shop: Shop? = null,
     val associations: List<String> = emptyList(),
+    val associationsError: Boolean = false,
     val busy: Boolean = false,
     val locked: Boolean = false,
     val message: String = "",
@@ -66,10 +67,35 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         }
         mutable.value = mutable.value.copy(session = session)
         val shop = shops.getShop(session.shopId) ?: throw IllegalStateException("No encontramos tu tienda. Consulta al administrador.")
-        val associations = runCatching { shops.listShopAssociations(shop.id) }.getOrDefault(emptyList())
+        check(shop.id == session.shopId) { "La tienda consultada no coincide con tu cuenta. Vuelve a ingresar." }
         // Un borrador en memoria no reemplaza los datos confirmados por el servidor.
         if (draft?.id != shop.id) draft = shop
-        mutable.value = mutable.value.copy(session = session, shop = shop, associations = associations, message = "", error = false)
+        mutable.value = mutable.value.copy(session = session, shop = shop, associations = emptyList(), associationsError = false, message = "", error = false)
+        readAssociations(shop.id, session.uid)
+    }
+
+    fun retryAssociations() {
+        val current = mutable.value
+        val shopId = current.shop?.id ?: return
+        val uid = current.session?.uid ?: return
+        if (current.locked) return
+        runOperation("Consultando la asociación de tu tienda…") {
+            readAssociations(shopId, uid)
+            if (!mutable.value.associationsError) message("Asignación consultada.")
+        }
+    }
+
+    private suspend fun readAssociations(shopId: String, uid: String) {
+        fun sameAccount() = mutable.value.shop?.id == shopId && mutable.value.session?.uid == uid
+        try {
+            val associations = shops.listShopAssociations(shopId)
+            if (sameAccount()) mutable.value = mutable.value.copy(associations = associations, associationsError = false)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) {
+            if (error is BackendException && error.status in listOf(401, 403)) throw error
+            // Una consulta fallida no demuestra que la tienda no tenga asociación.
+            if (sameAccount()) mutable.value = mutable.value.copy(associations = emptyList(), associationsError = true)
+        }
     }
 
     fun edit(shop: Shop) { if (shop.id == mutable.value.shop?.id) draft = shop }
