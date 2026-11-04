@@ -22,6 +22,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import cl.surcode.conectasur.data.*
 import cl.surcode.conectasur.domain.*
 import cl.surcode.conectasur.ui.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -45,6 +46,7 @@ class MainActivity : ComponentActivity() {
     private var query = ""
     private var shopFilter: String? = null
     private val selectedVariants = mutableMapOf<String,String>()
+    private var buyerNotice: String? = null
     private lateinit var content: FrameLayout
     private lateinit var reader: SpeechReader
     private lateinit var page: View
@@ -83,10 +85,11 @@ class MainActivity : ComponentActivity() {
         }
         ViewCompat.requestApplyInsets(root)
         products = repository.publicProducts.value
+        handleOAuthIntent(intent)
         showScreen()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch { while (isActive) { repository.refresh(); try { RepositoryProvider.syncPendingOwner() } catch(cancelled:kotlinx.coroutines.CancellationException){throw cancelled} catch(_:Exception){}; delay(15000) } }
+                launch { while (isActive) { repository.refresh(); try { RepositoryProvider.syncPendingOwner() } catch(cancelled:CancellationException){throw cancelled} catch(_:Exception){}; delay(15000) } }
                 launch { repository.status.collect { if (current.screen == "catalog") bindCatalogStatus() } }
                 repository.publicProducts.collect {
                     products = it
@@ -95,6 +98,31 @@ class MainActivity : ComponentActivity() {
                         "detail" -> bindDetail()
                     }
                 }
+            }
+        }
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleOAuthIntent(intent)
+    }
+    private fun handleOAuthIntent(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (data.scheme != "conectasur" || data.host != "auth") return
+        val fragment = data.fragment.orEmpty()
+        val params = Uri.parse("conectasur://callback?$fragment")
+        val accessToken = params.getQueryParameter("access_token") ?: data.getQueryParameter("access_token")
+        val refreshToken = params.getQueryParameter("refresh_token") ?: data.getQueryParameter("refresh_token")
+        val expiresIn = (params.getQueryParameter("expires_in") ?: data.getQueryParameter("expires_in"))?.toLongOrNull() ?: 3600L
+        if (!accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank() && RepositoryProvider.supabaseReady()) {
+            lifecycleScope.launch {
+                try {
+                    val session = RepositoryProvider.auth().completeOAuth(accessToken, refreshToken, expiresIn)
+                    buyerNotice = getString(R.string.buyer_session_active, session.email.orEmpty())
+                } catch (_: Exception) {
+                    buyerNotice = "No pudimos confirmar tu sesión de Google. Inténtalo nuevamente."
+                }
+                if (current.screen == "home") bindHomeBuyerAccess()
             }
         }
     }
@@ -166,6 +194,7 @@ class MainActivity : ComponentActivity() {
                     startActivity(Intent(this, StoreActivity::class.java))
                 }
                 page.findViewById<Button>(R.id.open_settings).setOnClickListener { navigate(Destination("settings")) }
+                bindHomeBuyerAccess()
             }
             "catalog" -> bindCatalog()
             "detail" -> bindDetail()
@@ -180,6 +209,66 @@ class MainActivity : ComponentActivity() {
         page.post {
             page.findViewById<ScrollView>(R.id.page_scroll)?.scrollTo(0, scrollPositions[current.encode()] ?: 0)
             heading?.let { ViewCompat.setAccessibilityPaneTitle(content, it.text) }
+        }
+    }
+    private fun bindHomeBuyerAccess() {
+        val googleButton = page.findViewById<Button>(R.id.buyer_google_login) ?: return
+        val statusView = page.findViewById<TextView>(R.id.buyer_session_status) ?: return
+        val logoutButton = page.findViewById<Button>(R.id.buyer_logout) ?: return
+
+        fun renderBuyerState(session: Session?, message: String? = buyerNotice) {
+            val isBuyer = session != null && session.role == Role.COMPRADOR
+            googleButton.isVisible = !isBuyer
+            logoutButton.isVisible = isBuyer
+            val text = when {
+                isBuyer -> getString(R.string.buyer_session_active, session?.email.orEmpty())
+                !message.isNullOrBlank() -> message
+                else -> ""
+            }
+            statusView.text = text
+            statusView.isVisible = text.isNotBlank()
+        }
+
+        renderBuyerState(null)
+        if (RepositoryProvider.supabaseReady()) {
+            lifecycleScope.launch {
+                val session = runCatching { RepositoryProvider.auth().currentSession() }.getOrNull()
+                if (current.screen == "home") renderBuyerState(session)
+            }
+        }
+
+        googleButton.setOnClickListener {
+            if (!RepositoryProvider.supabaseReady()) {
+                buyerNotice = "Modo demostración: el acceso con Google requiere una versión conectada a Supabase."
+                renderBuyerState(null)
+                return@setOnClickListener
+            }
+            googleButton.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    val enabled = RepositoryProvider.auth().isGoogleEnabled()
+                    if (!enabled) {
+                        buyerNotice = "El acceso con Google para comprador está integrado; falta habilitar el proveedor Google OAuth en Supabase Auth."
+                        renderBuyerState(null)
+                    } else {
+                        val url = RepositoryProvider.auth().googleSignInUrl()
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }
+                } catch (_: Exception) {
+                    buyerNotice = "No pudimos abrir el inicio de sesión con Google. Revisa tu conexión."
+                    renderBuyerState(null)
+                } finally {
+                    googleButton.isEnabled = true
+                }
+            }
+        }
+
+        logoutButton.setOnClickListener {
+            if (RepositoryProvider.supabaseReady()) {
+                RepositoryProvider.auth().signOut()
+            }
+            buyerNotice = getString(R.string.buyer_session_closed)
+            renderBuyerState(null)
         }
     }
     private fun bindCatalog() {
@@ -316,7 +405,7 @@ class MainActivity : ComponentActivity() {
         page.findViewById<Button>(R.id.reset_settings).setOnClickListener { prefs.save(AccessibilitySettings()); recreate() }
     }
     private fun screenSpeech(): String = when(current.screen) {
-        "home" -> "ConectaSur. Tu tienda, más cerca. Demostración con datos de ejemplo. Puedes ver productos, entrar a Mi tienda o ajustar letras y botones."
+        "home" -> "ConectaSur. Tu tienda, más cerca. Demostración con datos de ejemplo. Puedes ver productos, entrar a Mi tienda, continuar con Google como comprador o ajustar letras y botones."
         "catalog" -> "Productos de ejemplo. " + searchProducts(products, query).joinToString(". ") { "${it.name}. ${spokenPrice(it.priceClp)}" }.ifBlank { getString(R.string.empty_search) }
         "detail" -> products.find { it.id == current.productId }?.let { "${it.name}. ${spokenPrice(it.priceClp)}. ${it.description}. Nombre y precio de ejemplo." } ?: getString(R.string.product_missing)
         "public_store" -> "Emprendimiento de ejemplo. Aquí puedes ver el catálogo público."

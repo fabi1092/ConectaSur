@@ -53,6 +53,25 @@ class SupabaseClient(val url: String, private val anonKey: String, val store: Se
         store.write("auth", result.toString())
         return try { loadProfile() } catch (e: Exception) { clearSession(); throw e }
     }
+    fun googleOAuthUrl(redirectTo: String = "conectasur://auth/callback"): String =
+        "${url.trimEnd('/')}/auth/v1/authorize?provider=google&redirect_to=${encode(redirectTo)}"
+    suspend fun isGoogleOAuthEnabled(): Boolean = runCatching {
+        val settings = request("/auth/v1/settings") as JSONObject
+        settings.optJSONObject("external")?.optBoolean("google", false) == true
+    }.getOrDefault(false)
+    suspend fun completeOAuthSession(accessToken: String, refreshToken: String, expiresIn: Long = 3600L): Session {
+        require(accessToken.isNotBlank() && refreshToken.isNotBlank()) { "Credenciales de Google incompletas" }
+        val user = send("/auth/v1/user", "GET", null, "application/json", accessToken) as JSONObject
+        clearSession()
+        val sessionJson = JSONObject()
+            .put("access_token", accessToken)
+            .put("refresh_token", refreshToken)
+            .put("expires_in", expiresIn)
+            .put("expires_at", System.currentTimeMillis() / 1000 + expiresIn)
+            .put("user", user)
+        store.write("auth", sessionJson.toString())
+        return try { loadProfile() } catch (e: Exception) { clearSession(); throw e }
+    }
     suspend fun loadProfile(): Session {
         val userId = uid() ?: throw BackendException(401, "Inicia sesion para continuar")
         val rows = request("/rest/v1/profiles?select=*&id=eq.${encode(userId)}", authenticated = true) as JSONArray

@@ -2,6 +2,7 @@ import { publicShell, escapeHtml as escape } from './public-shops.js';
 import { icon } from './visuals.js';
 
 function registrationMessage(error) {
+  if (error.code === 'google_not_configured' || error.code === 'google_not_available') return 'El inicio de sesión con Google está listo en la web; falta habilitar Google OAuth en el servidor Supabase.';
   if (error.code === 'session_exists') return 'Ya hay una sesión abierta. Vuelve a Mi cuenta para continuar.';
   if (error.code === 'weak_password') return 'Elige una contraseña más segura, con al menos 8 caracteres. Puedes combinar varias palabras.';
   if (error.status === 429 || ['over_request_rate_limit', 'over_email_send_rate_limit'].includes(error.code)) return 'Se hicieron varios intentos seguidos. Espera unos minutos antes de volver a intentarlo.';
@@ -16,7 +17,8 @@ export function showBuyerRegistration(app, db, { isCurrent, onSignedIn, onLogin 
   document.title = 'Crear cuenta | ConectaSur';
   app.innerHTML = publicShell(`<section class="owner-access" aria-labelledby="buyer-register-title">
     <div class="owner-intro"><p class="public-eyebrow">Descubre lo que nace cerca</p><h1 id="buyer-register-title" tabindex="-1">Crea tu cuenta.</h1><p>Un espacio para conocer los productos y emprendimientos de nuestra comunidad.</p></div>
-    <div class="owner-login-card"><h2>Cuenta de comprador</h2><p>Completa estos datos. Todos son necesarios.</p>
+    <div class="owner-login-card"><h2>Cuenta de comprador</h2><p>Completa estos datos o continúa con tu cuenta de Google.</p>
+      <button id="buyer-google-login" type="button" class="owner-secondary" style="width:100%;margin-bottom:0.85rem;">Continuar con Google</button>
       <form id="buyer-register-form">
         <label for="buyer-name">Tu nombre</label><input id="buyer-name" autocomplete="name" maxlength="120" required>
         <label for="buyer-email">Correo electrónico</label><input id="buyer-email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required placeholder="tu.correo@ejemplo.cl">
@@ -36,10 +38,33 @@ export function showBuyerRegistration(app, db, { isCurrent, onSignedIn, onLogin 
   const reveal = form.querySelector('#buyer-reveal');
   const status = form.querySelector('#buyer-register-status');
   const button = form.querySelector('button[type="submit"]');
+  const googleButton = app.querySelector('#buyer-google-login');
   function match() { repeat.setCustomValidity(repeat.value && repeat.value !== password.value ? 'Las contraseñas deben ser iguales.' : ''); }
   password.addEventListener('input', match);
   repeat.addEventListener('input', match);
   reveal.addEventListener('change', () => { password.type = repeat.type = reveal.checked ? 'text' : 'password'; });
+  googleButton?.addEventListener('click', async () => {
+    if (busy) return;
+    busy = true;
+    googleButton.disabled = true;
+    googleButton.setAttribute('aria-busy', 'true');
+    status.className = 'owner-status';
+    status.setAttribute('role', 'status');
+    status.textContent = 'Conectando con Google…';
+    try {
+      await db.loginWithGoogle();
+    } catch (error) {
+      if (!alive() || !googleButton.isConnected) return;
+      status.className = 'owner-status owner-error';
+      status.setAttribute('role', 'alert');
+      status.textContent = registrationMessage(error);
+      status.tabIndex = -1;
+      status.focus();
+    } finally {
+      busy = false;
+      if (googleButton.isConnected) { googleButton.disabled = false; googleButton.removeAttribute('aria-busy'); }
+    }
+  });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     match();

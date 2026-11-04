@@ -14,6 +14,10 @@
     <string name="home_question">¿Qué quieres hacer hoy?</string>
     <string name="see_products">Ver productos</string>
     <string name="my_store">Mi tienda</string>
+    <string name="buyer_google_login">Continuar con Google (Comprador)</string>
+    <string name="buyer_logout">Cerrar sesión de comprador</string>
+    <string name="buyer_session_active">Sesión de comprador: %1$s</string>
+    <string name="buyer_session_closed">Cerraste tu sesión de comprador.</string>
     <string name="accessibility">Letras y botones</string>
     <string name="catalog_title">Hecho en nuestra comunidad</string>
     <string name="catalog_intro">Descubre creaciones y productos de emprendedoras locales.</string>

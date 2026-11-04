@@ -215,7 +215,55 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
       }
     },
 
+    async loginWithGoogle(redirectTo = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}#mi-cuenta` : undefined) {
+      if (unwrap(await sdk.auth.getSession())?.session) {
+        throw Object.assign(new Error('Cierra tu sesión actual antes de continuar con Google'), { code: 'session_exists' });
+      }
+      const res = unwrap(
+        await sdk.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo,
+            skipBrowserRedirect: true
+          }
+        })
+      );
+      if (!res?.url) {
+        throw Object.assign(new Error('El acceso con Google no está disponible'), { code: 'google_not_available' });
+      }
+      try {
+        const settingsRes = await fetchWithReadRetry(`${config.url.replace(/\/$/, '')}/auth/v1/settings`, {
+          headers: { apikey: config.anonKey }
+        });
+        if (settingsRes.ok) {
+          const settings = await settingsRes.json();
+          if (settings?.external && settings.external.google === false) {
+            throw Object.assign(new Error('El inicio de sesión con Google requiere habilitar el proveedor Google OAuth en Supabase Auth'), { code: 'google_not_configured' });
+          }
+        }
+      } catch (error) {
+        if (error?.code === 'google_not_configured') throw error;
+      }
+      if (typeof window !== 'undefined') {
+        window.location.assign(res.url);
+      }
+      return res.url;
+    },
+
     async currentSession() {
+      if (typeof window !== 'undefined' && window.location.hash.includes('access_token=')) {
+        const fragment = new URLSearchParams(window.location.hash.slice(1));
+        if (fragment.get('type') !== 'recovery' && fragment.get('access_token') && fragment.get('refresh_token')) {
+          history.replaceState(null, '', window.location.pathname + window.location.search + '#mi-cuenta');
+          unwrap(
+            await sdk.auth.setSession({
+              access_token: fragment.get('access_token'),
+              refresh_token: fragment.get('refresh_token')
+            })
+          );
+        }
+      }
+
       const session = unwrap(
         await sdk.auth.getSession()
       )?.session;
@@ -791,6 +839,7 @@ const current = () => {
 };
 
 export const login = (...a) => current().login(...a);
+export const loginWithGoogle = (...a) => current().loginWithGoogle(...a);
 export const logout = (...a) => current().logout(...a);
 export const onSession = (...a) => current().onSession(...a);
 

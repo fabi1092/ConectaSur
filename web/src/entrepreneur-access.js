@@ -8,6 +8,8 @@ import { icon } from './visuals.js';
 import { showBuyerRegistration, showBuyerHome } from './buyer-access.js';
 
 function messageFor(error) {
+  if (error.code === 'google_not_configured' || error.code === 'google_not_available') return 'El inicio de sesión con Google está listo en la web; falta habilitar Google OAuth en el servidor Supabase.';
+  if (error.code === 'session_exists') return 'Ya hay una sesión iniciada en este navegador.';
   if (error.code === 'account_inactive') return 'Tu cuenta está desactivada o no tiene acceso. Consulta al administrador de ConectaSur.';
   if (error.code === 'shop_not_assigned') return 'Tu cuenta aún no tiene una tienda disponible. Pide al administrador que revise la asignación.';
   if (error.code === 'entrepreneur_required') return 'Esta cuenta no tiene acceso a una tienda ni a la administración. Puedes seguir conociendo las tiendas sin ingresar.';
@@ -40,7 +42,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     document.title = 'Ingresar | ConectaSur';
     app.innerHTML = publicShell(`<section class="owner-access" aria-labelledby="owner-title">
       <div class="owner-intro"><p class="public-eyebrow">Tu espacio en ConectaSur</p><h1 id="owner-title" tabindex="-1">Ingresa a tu cuenta.</h1>
-        <p>Usa tu correo y contraseña. Te llevaremos directamente a tu espacio.</p>
+        <p>Usa tu correo y contraseña o continúa con tu cuenta de Google si eres comprador.</p>
       </div>
       <div class="owner-login-card"><h2>Iniciar sesión</h2><p>Escribe los datos de tu cuenta.</p>
         <form id="owner-login-form">
@@ -51,15 +53,38 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
           <p id="owner-access-status" class="owner-status${error ? ' owner-error' : ''}" role="${error ? 'alert' : 'status'}">${escape(message)}</p>
           <button class="public-primary" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
         </form>
+        <button id="google-login" class="owner-secondary" type="button" style="width:100%;margin-top:0.75rem;">Continuar con Google</button>
         <a class="owner-auth-link" href="#recuperar">Olvidé mi contraseña</a>
       </div>
-      <aside class="owner-help"><h2>¿Es tu primera vez?</h2><p>Puedes crear una cuenta de comprador con tu correo.</p><a class="owner-secondary" href="#registro">Crear cuenta de comprador</a><p>Si te entregaron una cuenta de emprendedora o administrador, usa sus datos para ingresar.</p><p>Puedes seguir conociendo las tiendas sin ingresar.</p><a class="public-text-link" href="#inicio">Ver las tiendas <span aria-hidden="true">→</span></a></aside>
+      <aside class="owner-help"><h2>¿Es tu primera vez?</h2><p>Puedes ingresar como comprador con tu cuenta de Google o crear una cuenta con tu correo.</p><a class="owner-secondary" href="#registro">Crear cuenta de comprador</a><p>Si te entregaron una cuenta de emprendedora o administrador, usa sus datos para ingresar.</p><p>Puedes seguir conociendo las tiendas sin ingresar.</p><a class="public-text-link" href="#inicio">Ver las tiendas <span aria-hidden="true">→</span></a></aside>
     </section>`);
     app.querySelector('#owner-title').focus({ preventScroll: true });
     const form = app.querySelector('#owner-login-form');
     const password = form.querySelector('#owner-password');
     const reveal = form.querySelector('#owner-show-password');
+    const googleButton = app.querySelector('#google-login');
     reveal.addEventListener('change', () => { password.type = reveal.checked ? 'text' : 'password'; });
+    googleButton?.addEventListener('click', async () => {
+      if (busy) return;
+      busy = true;
+      const status = form.querySelector('#owner-access-status');
+      googleButton.disabled = true;
+      googleButton.setAttribute('aria-busy', 'true');
+      status.setAttribute('role', 'status');
+      status.className = 'owner-status';
+      status.textContent = 'Conectando con Google…';
+      try {
+        await db.loginWithGoogle();
+      } catch (error) {
+        if (!alive() || !googleButton.isConnected) return;
+        status.textContent = messageFor(error);
+        status.className = 'owner-status owner-error';
+        status.setAttribute('role', 'alert');
+      } finally {
+        busy = false;
+        if (googleButton.isConnected) { googleButton.disabled = false; googleButton.removeAttribute('aria-busy'); }
+      }
+    });
     form.addEventListener('submit', async event => {
       event.preventDefault();
       if (busy) return;

@@ -1186,7 +1186,7 @@ async function iniciar() {
   }
 
   // Los enlaces anteriores siguen abriendo el mismo acceso; el rol viene del backend.
-  if (['#ingresar', '#registro', '#mi-cuenta', '#mi-tienda', '#administracion'].includes(route)) {
+  if (['#ingresar', '#registro', '#mi-cuenta', '#mi-tienda', '#administracion'].includes(route) || route.startsWith('#access_token=')) {
     usuarioActual = null;
     seccionActual = 'cuenta';
     const stopAccount = showAccountAccess(app, db, isCurrent, async (user, logout) => {
