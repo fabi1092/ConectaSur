@@ -36,6 +36,49 @@ async function actor(role,user,fn){const c=await pool.connect();try{
 }finally{await c.query('rollback');c.release()}}
 const as=(user,fn)=>actor('authenticated',ids[user],fn);
 describe('PostgreSQL: RLS y RPC',()=>{
+ it('solo el administrador activo edita cuentas de emprendedoras; ni la propia dueña tiene permiso',async()=>{
+   for(const name of ['ana','bea','buyer'])await assert.rejects(as(name,c=>c.query("select public.update_entrepreneur_account($1,'ana','Cambio','Comprador')",[ids.ana])),{code:'42501'});
+   await assert.rejects(actor('anon',null,c=>c.query("select public.update_entrepreneur_account($1,'ana','Cambio','Comprador')",[ids.ana])),{code:'42501'});
+   const uid=randomUUID();await pool.query('insert into auth.users(id) values($1)',[uid]);await pool.query("update public.profiles set role='admin',active=false where id=$1",[uid]);
+   try{await assert.rejects(actor('authenticated',uid,c=>c.query("select public.update_entrepreneur_account($1,'ana','Cambio','Comprador')",[ids.ana])),{code:'42501'});}
+   finally{await pool.query('delete from auth.users where id=$1',[uid]);}
+ });
+ it('editar nombre conserva todos los otros campos y permite un reintento idéntico',()=>as('admin',async c=>{
+   const old=(await c.query('select * from public.profiles where id=$1',[ids.ana])).rows[0];
+   await c.query("select public.update_entrepreneur_account($1,'ana','  Nombre nuevo  ',$2)",[ids.ana,old.display_name]);
+   await c.query("select public.update_entrepreneur_account($1,'ana','Nombre nuevo',$2)",[ids.ana,old.display_name]);
+   const current=(await c.query('select * from public.profiles where id=$1',[ids.ana])).rows[0];
+   assert.deepEqual(current,{...old,display_name:'Nombre nuevo'});
+   const actions=(await c.query("select * from public.admin_actions where target_id=$1 and action='UPDATE'",[ids.ana])).rows;
+   assert.equal(actions.length,1);assert.equal(actions[0].actor_uid,ids.admin);
+ }));
+ it('un formulario antiguo no sobrescribe una edición más reciente',()=>as('admin',async c=>{
+   const old=(await c.query('select display_name from public.profiles where id=$1',[ids.ana])).rows[0].display_name;
+   await c.query("select public.update_entrepreneur_account($1,'ana','Primero',$2)",[ids.ana,old]);
+   await assert.rejects(c.query("select public.update_entrepreneur_account($1,'ana','Segundo',$2)",[ids.ana,old]),{code:'CS004'});
+ }));
+ it('rechaza nombre inválido y parámetros nulos antes de editar',async()=>{
+   for(const args of [[ids.ana,'ana','  ','Comprador'],[ids.ana,'ana','x'.repeat(121),'Comprador'],[ids.ana,'ana',null,'Comprador'],[ids.ana,'ana','Nuevo',null],[null,'ana','Nuevo','Comprador'],[ids.ana,null,'Nuevo','Comprador']])
+     await assert.rejects(as('admin',c=>c.query('select public.update_entrepreneur_account($1,$2,$3,$4)',args)),{code:'23514'});
+ });
+ it('rechaza cuenta inexistente, perfil ajeno y tienda que ya no coincide',async()=>{
+   for(const [uid,shop] of [[randomUUID(),'ana'],[ids.buyer,'ana'],[ids.admin,'ana'],[ids.ana,'bea']])
+     await assert.rejects(as('admin',c=>c.query("select public.update_entrepreneur_account($1,$2,'Cambio','Comprador')",[uid,shop])),{code:'CS005'});
+ });
+ it('editar una cuenta inactiva no la reactiva ni cambia la tienda',async()=>{
+   await pool.query('update public.profiles set active=false where id=$1',[ids.ana]);
+   try{await as('admin',async c=>{
+     const old=(await c.query('select display_name from public.profiles where id=$1',[ids.ana])).rows[0].display_name;
+     await c.query("select public.update_entrepreneur_account($1,'ana','Inactiva editada',$2)",[ids.ana,old]);
+     const value=(await c.query('select active,role,shop_id from public.profiles where id=$1',[ids.ana])).rows[0];
+     assert.deepEqual(value,{active:false,role:'emprendedora',shop_id:'ana'});
+   });}finally{await pool.query('update public.profiles set active=true where id=$1',[ids.ana]);}
+ });
+ it('un vínculo inconsistente no permite editar la cuenta de otra dueña',async()=>{
+   await pool.query("update public.profiles set shop_id='bea' where id=$1",[ids.ana]);
+   try{await assert.rejects(as('admin',c=>c.query("select public.update_entrepreneur_account($1,'bea','Cambio','Comprador')",[ids.ana])),{code:'CS005'});}
+   finally{await pool.query("update public.profiles set shop_id='ana' where id=$1",[ids.ana]);}
+ });
  it('solo el administrador activo lista cuentas administrativas',async()=>{
    await as('admin',async c=>assert.equal((await c.query('select * from public.list_platform_admins()')).rows[0].uid,ids.admin));
    for(const name of ['ana','buyer'])await assert.rejects(as(name,c=>c.query('select * from public.list_platform_admins()')),/administradora/);
