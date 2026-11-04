@@ -25,11 +25,19 @@ La consola necesita el usuario y contraseña de Studio suministrados por el prof
 
 ## Activar Google cuando esté disponible el acceso
 
+El 4 de noviembre de 2026 se creó el cliente OAuth **ConectaSur Supabase** en el proyecto Google Cloud `conectasur`, con origen `https://conectasur-dev.web.app` y callback `https://supabase-surcode.codepulse.cl/auth/v1/callback`. La cuenta de Fabián está agregada como usuario de prueba. El Client Secret quedó cifrado fuera de Git. Se comprobó de nuevo que el servidor devuelve `external.google=false`: la configuración de Google Cloud no habilita por sí sola Google en Supabase. El equipo solo tiene las credenciales de Studio; no se ha identificado acceso a la administración del servidor y la activación queda pendiente.
+
 El administrador debe configurar el proveedor Google de Supabase con el Client ID y Client Secret del proyecto del equipo. En Google Cloud, registrar la URL de callback de Supabase, normalmente `https://<instancia>/auth/v1/callback`. En Supabase, permitir las URL de retorno de la web y el enlace Android `conectasur://auth/callback` con su parámetro `client_state` generado por cada intento. Usar una regla de redirección acotada a ese callback, no una regla que permita cualquier destino.
 
 El retorno se completa con PKCE; un enlace cancelado, vencido o que no corresponda al intento no crea una sesión. Google OAuth real se prueba después de configurar el proveedor y sus destinos permitidos. No se guardan Client Secret, contraseñas ni claves administrativas en el cliente ni en Git.
 
 Referencias de configuración: [Google en Supabase](https://supabase.com/docs/guides/auth/social-sign-in/auth-google), [flujo PKCE](https://supabase.com/docs/guides/auth/sessions/pkce-flow).
+
+## Cierre de los pendientes Android sin Google
+
+Se corrigió A08 para que desactivar huella cierre la sesión y vuelva a pedir correo y contraseña. A16/A17 ahora ofrecen selección de tipos configurados en Supabase y sectores de Puerto Montt, con reintento de carga y conservación de valores históricos. Detalles y límites: [ajustes Android](pendientes-android.md).
+
+Verificación local del 4 de noviembre: 62 pruebas unitarias Android aprobadas, APK conectado compilado, pruebas instrumentadas compiladas y Android Lint aprobado. Las pruebas instrumentadas no se ejecutaron: no había teléfono conectado ni emulador configurado. No se da por demostrada la huella real, la persistencia real del logo ni el ingreso Google de extremo a extremo. Los cambios recientes de `main` se integraron sin conflictos.
 
 ## Respaldo Firebase para el profesor
 
