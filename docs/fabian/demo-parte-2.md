@@ -21,7 +21,7 @@ Comprobación con la API pública de esta entrega:
 
 El acceso por correo está habilitado y **Google está deshabilitado en el servidor**. Estas lecturas no comprueban los perfiles privados ni equivalen a verificar todos los puntos de la pauta B01-B13. Para completar esa revisión hacen falta las credenciales de administración y la pauta detallada. El equipo ya tiene herramientas de datos ficticios en `supabase/tools/admin.mjs`; no volver a sembrar ni aplicar migraciones para una demostración si los datos ya están preparados.
 
-La consola necesita el usuario y contraseña de Studio suministrados por el profesor. La clave anon de Android/web no abre ese panel. En este equipo no se encontró la configuración administrativa cifrada que utiliza el lanzador `supabase/tools/local-access.ps1`.
+La consola necesita el usuario y contraseña de Studio suministrados por el profesor. La clave anon de Android/web no abre ese panel. El acceso administrativo se verificó posteriormente con consultas de lectura: `shops` tiene 6 filas; `profiles`, 10; `associations`, 2; `entrepreneur_types`, 4; `categories`, 5; y `product_types`, 5. Las tiendas ficticias `shop_demo_ana` y `shop_demo_bea` están activas, tienen dueñas activas con rol emprendedora y una asociación asignada cada una. Google continúa deshabilitado y el acceso por correo está habilitado. No se modificaron datos ni la configuración del servidor durante esta comprobación. Las credenciales no se guardan en este documento ni en Git.
 
 ## Activar Google cuando esté disponible el acceso
 
