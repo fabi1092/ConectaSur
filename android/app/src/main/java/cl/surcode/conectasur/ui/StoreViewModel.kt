@@ -138,12 +138,12 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
     fun lock() { mutable.value = mutable.value.copy(locked = true) }
     fun unlock() { mutable.value = mutable.value.copy(locked = false); restore() }
     fun message(value: String, error: Boolean = false) { mutable.value = mutable.value.copy(message = value, error = error) }
-    fun logout() {
+    fun logout(message: String = "Sesión cerrada en este teléfono.") {
         operationId++
         operation?.cancel()
         auth.signOut() // El adaptador elimina los tokens locales antes de suspender la revocación remota.
         clearDraft()
-        mutable.value = StoreState(message = "Sesión cerrada en este teléfono.")
+        mutable.value = StoreState(message = message)
     }
     private fun clearDraft() { draft = null; logoBytes = null; logoChanged = false }
     private fun runOperation(status: String, block: suspend () -> Unit) {

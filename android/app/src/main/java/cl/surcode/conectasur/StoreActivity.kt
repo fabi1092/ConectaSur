@@ -138,7 +138,9 @@ class StoreActivity : FragmentActivity() {
         findViewById<Button>(R.id.account_use_password).setOnClickListener { discardIfNeeded { logout() } }
         findViewById<Button>(R.id.account_unlock).setOnClickListener { authenticate(false) }
         findViewById<Button>(R.id.shop_bio_toggle).setOnClickListener {
-            if (biometric.enabled) { biometric.clear(); model.message("Huella desactivada. Tu sesión sigue abierta.") }
+            if (biometric.enabled) discardIfNeeded {
+                logout(getString(R.string.bio_disabled_sign_in))
+            }
             else authenticate(true)
         }
         findViewById<Button>(R.id.shop_products).setOnClickListener { discardIfNeeded { startActivity(Intent(this, ProductManagerActivity::class.java)) } }
@@ -244,7 +246,10 @@ class StoreActivity : FragmentActivity() {
     }
     private fun hideKeyboard() { (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(findViewById<View>(R.id.account_root).windowToken, 0) }
     private fun showStatus() { findViewById<ScrollView>(R.id.account_scroll).smoothScrollTo(0, 0) }
-    private fun logout() { prompt.cancelAuthentication(); biometricAction = null; biometric.clear(); reader.stop(); model.logout(); showStatus() }
+    private fun logout(message: String = "Sesión cerrada en este teléfono.") {
+        prompt.cancelAuthentication(); biometricAction = null; biometric.clear(); reader.stop()
+        model.logout(message); showStatus()
+    }
     private fun leave() {
         if (::model.isInitialized && (model.state.value.busy || choosingLogo)) {
             model.message("Espera a que termine la operación antes de salir."); return

@@ -50,6 +50,30 @@ class StoreViewModelTest {
         assertNull(signedOut.state.value.session)
     }
 
+    @Test fun disablingBiometricAccessEndsTheSessionAndRequiresPasswordOnReopen() = runTest(dispatcher) {
+        auth.session = owner
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        vm.edit(initial.copy(name = "Borrador privado"))
+        vm.chooseLogo(byteArrayOf(1))
+        val message = "Huella desactivada. Ingresa nuevamente con tu correo y contraseña."
+        vm.logout(message)
+        assertNull(auth.session)
+        assertNull(vm.draft)
+        assertNull(vm.logoBytes)
+        assertNull(vm.state.value.shop)
+        assertEquals(message, vm.state.value.message)
+        val reopened = model()
+        reopened.start(false)
+        advanceUntilIdle()
+        assertNull(reopened.state.value.session)
+        assertNull(reopened.state.value.shop)
+        reopened.signIn("test@example.cl", "secret")
+        advanceUntilIdle()
+        assertEquals(initial, reopened.state.value.shop)
+    }
+
     @Test fun rejectsBuyerAndDoesNotLoadAnotherStore() = runTest(dispatcher) {
         auth.nextSession = owner.copy(role = Role.COMPRADOR, shopId = null)
         val vm = model()

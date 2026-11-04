@@ -23,6 +23,7 @@
     <string name="logo_save_note">Elige una imagen y pulsa Guardar cambios para publicar el logo.</string>
     <string name="bio_enable">Activar huella en este teléfono</string>
     <string name="bio_disable">Desactivar huella</string>
+    <string name="bio_disabled_sign_in">Huella desactivada. Ingresa nuevamente con tu correo y contraseña.</string>
     <string name="bio_intro">La huella es opcional. Protege el acceso a tu sesión al volver a esta pantalla.</string>
     <string name="bio_unavailable">Para activar la huella, configura una biometría compatible y un bloqueo de pantalla en los ajustes del teléfono.</string>
     <string name="bio_locked">Tu tienda está bloqueada</string>
