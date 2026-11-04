@@ -14,6 +14,7 @@ import java.io.IOException
 data class StoreState(
     val session: Session? = null,
     val shop: Shop? = null,
+    val associations: List<String> = emptyList(),
     val busy: Boolean = false,
     val locked: Boolean = false,
     val message: String = "",
@@ -65,9 +66,10 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         }
         mutable.value = mutable.value.copy(session = session)
         val shop = shops.getShop(session.shopId) ?: throw IllegalStateException("No encontramos tu tienda. Consulta al administrador.")
+        val associations = runCatching { shops.listShopAssociations(shop.id) }.getOrDefault(emptyList())
         // Un borrador en memoria no reemplaza los datos confirmados por el servidor.
         if (draft?.id != shop.id) draft = shop
-        mutable.value = mutable.value.copy(session = session, shop = shop, message = "", error = false)
+        mutable.value = mutable.value.copy(session = session, shop = shop, associations = associations, message = "", error = false)
     }
 
     fun edit(shop: Shop) { if (shop.id == mutable.value.shop?.id) draft = shop }

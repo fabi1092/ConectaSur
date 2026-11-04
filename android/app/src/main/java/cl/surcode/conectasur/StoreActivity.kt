@@ -212,6 +212,8 @@ class StoreActivity : FragmentActivity() {
             findViewById<CheckBox>(R.id.shop_show_prices).isChecked = draft.showPrices
             binding = false
             findViewById<TextView>(R.id.shop_account).text = getString(R.string.store_account, state.session?.email.orEmpty())
+            val assocText = if (state.associations.isEmpty()) getString(R.string.shop_associations_none) else state.associations.joinToString(", ")
+            findViewById<TextView>(R.id.shop_associations).text = getString(R.string.shop_associations_label, assocText)
             val logo = findViewById<ImageView>(R.id.shop_edit_logo)
             logo.tag = null
             logo.setImageResource(R.drawable.ic_shop_logo)
@@ -260,7 +262,8 @@ class StoreActivity : FragmentActivity() {
         if (state.locked) return getString(R.string.bio_locked) + ". " + state.message
         if (state.shop == null) return getString(R.string.login_intro) + ". " + state.message
         val shop = model.draft ?: state.shop
-        return "Mi tienda. ${shop.name}. ${shop.description}. ${shop.entrepreneurType}. ${shop.sector}. Contacto: ${shop.contact}. ${state.message}"
+        val assocText = if (state.associations.isEmpty()) getString(R.string.shop_associations_none) else state.associations.joinToString(", ")
+        return "Mi tienda. ${shop.name}. Asociaciones asignadas: $assocText. ${shop.description}. ${shop.entrepreneurType}. ${shop.sector}. Contacto: ${shop.contact}. ${state.message}"
     }
     override fun onSaveInstanceState(outState: Bundle) { outState.putString("biometric_action", biometricAction); super.onSaveInstanceState(outState) }
     override fun onStop() {

@@ -29,9 +29,23 @@ class SupabaseAuthRepository(private val client: SupabaseClient) : AuthRepositor
     override suspend fun signIn(email: String, password: String) = client.signIn(email, password)
     override suspend fun currentSession() = client.currentSession()
     override fun signOut() { scope.launch(start = CoroutineStart.UNDISPATCHED) { client.signOut() } }
+    override fun googleSignInUrl(redirectTo: String) = client.googleOAuthUrl(redirectTo)
+    override suspend fun isGoogleEnabled() = client.isGoogleOAuthEnabled()
+    override suspend fun completeOAuth(accessToken: String, refreshToken: String, expiresIn: Long) =
+        client.completeOAuthSession(accessToken, refreshToken, expiresIn)
 }
 class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepository {
     override suspend fun getShop(shopId: String) = (client.request("/rest/v1/public_shops?select=*&id=eq.${SupabaseClient.encode(shopId)}") as JSONArray).optJSONObject(0)?.toShop()
+    override suspend fun listShopAssociations(shopId: String): List<String> {
+        val links = client.request("/rest/v1/shop_associations?select=association_id&shop_id=eq.${SupabaseClient.encode(shopId)}") as JSONArray
+        val ids = (0 until links.length()).mapNotNull { links.optJSONObject(it)?.optString("association_id")?.takeIf(String::isNotBlank) }.toSet()
+        if (ids.isEmpty()) return emptyList()
+        val rows = client.request("/rest/v1/associations?select=id,name,active&active=eq.true&order=name") as JSONArray
+        return (0 until rows.length()).mapNotNull { index ->
+            val row = rows.optJSONObject(index) ?: return@mapNotNull null
+            row.optString("name").takeIf { it.isNotBlank() && row.optString("id") in ids }
+        }
+    }
     override suspend fun updateShop(shop: Shop) {
         val body = JSONObject().put("name", shop.name).put("description", shop.description).put("logo_url", shop.logoUrl ?: JSONObject.NULL)
             .put("entrepreneur_type", shop.entrepreneurType).put("sector", shop.sector).put("contact", shop.contact).put("show_prices", shop.showPrices)
@@ -96,7 +110,9 @@ class SupabaseProductRepository(private val client: SupabaseClient) : ProductRep
     }
     override suspend fun uploadPhoto(shopId: String, productId: String, jpegBytes: ByteArray) = client.upload(shopId, "products/$productId", jpegBytes)
 }
-class SupabaseSalesRepository(private val client: SupabaseClient) : SalesRepository {
+class SupabaseSalesRepository(private val client: SupabaseClient) : SupabaseSalesBase(client)
+
+open class SupabaseSalesBase(private val client: SupabaseClient) : SalesRepository {
     override suspend fun registerSale(shopId: String, productId: String, variantId: String?, quantity: Int, place: String) {
         require(quantity > 0) { "La cantidad debe ser mayor que cero" }
         val uid = client.uid() ?: throw BackendException(401, "Inicia sesion para continuar")

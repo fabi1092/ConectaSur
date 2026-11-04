@@ -30,10 +30,15 @@ interface AuthRepository {
     suspend fun signIn(email: String, password: String): Session
     suspend fun currentSession(): Session?
     fun signOut()
+    fun googleSignInUrl(redirectTo: String = "conectasur://auth/callback"): String = ""
+    suspend fun isGoogleEnabled(): Boolean = false
+    suspend fun completeOAuth(accessToken: String, refreshToken: String, expiresIn: Long = 3600L): Session =
+        throw UnsupportedOperationException("Acceso con Google no disponible")
 }
 
 interface ShopRepository {
     suspend fun getShop(shopId: String): Shop?
+    suspend fun listShopAssociations(shopId: String): List<String> = emptyList()
     suspend fun updateShop(shop: Shop)
     /** Sube el logo (JPEG ya comprimido), guarda su URL en la tienda y la devuelve. */
     suspend fun uploadLogo(shopId: String, jpegBytes: ByteArray): String

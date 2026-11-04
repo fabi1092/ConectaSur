@@ -28,6 +28,7 @@ class StoreViewModelTest {
         first.signIn(" test@example.cl ", "secret")
         advanceUntilIdle()
         assertEquals("test@example.cl", auth.lastEmail)
+        assertEquals(listOf("Agrupación Alerce Sur"), first.state.value.associations)
         val edited = initial.copy(name = "Taller del sur", description = "Hecho a mano", entrepreneurType = "Tejidos", sector = "Puerto Montt", contact = "+56 9 1234 5678", showPrices = false)
         first.edit(edited)
         first.save()
@@ -38,6 +39,7 @@ class StoreViewModelTest {
         reopened.start(false)
         advanceUntilIdle()
         assertEquals(edited, reopened.state.value.shop)
+        assertEquals(listOf("Agrupación Alerce Sur"), reopened.state.value.associations)
         reopened.logout()
         assertNull(auth.session)
         assertNull(reopened.draft)
@@ -216,6 +218,7 @@ class StoreViewModelTest {
     }
     private inner class FakeShops : ShopRepository {
         var saved = initial
+        var associations = listOf("Agrupación Alerce Sur")
         var reads = 0
         var writes = 0
         var uploads = 0
@@ -223,6 +226,7 @@ class StoreViewModelTest {
         var readFailure: Exception? = null
         var gate: CompletableDeferred<Unit>? = null
         override suspend fun getShop(shopId: String): Shop { reads++; gate?.await(); readFailure?.let { throw it }; assertEquals("shop", shopId); return saved }
+        override suspend fun listShopAssociations(shopId: String): List<String> = associations
         override suspend fun updateShop(shop: Shop) { writes++; updateFailure?.let { throw it }; saved = shop }
         override suspend fun uploadLogo(shopId: String, jpegBytes: ByteArray): String {
             uploads++; val url = "https://example.cl/logo.jpg"; saved = saved.copy(logoUrl = url); return url
