@@ -58,6 +58,8 @@ npm --prefix web ci
 
 npm test en supabase ejecuta pruebas de RLS/RPC en un PostgreSQL desechable local llamado conectasur_test, con TEST_DATABASE_URL. GitHub Actions crea ese entorno sin utilizar las credenciales del profesor.
 
+El mismo pipeline ejecuta 19 pruebas web de la capa Editar cuenta, modelos y reintentos sin credenciales. El [cierre de integración](docs/entrega-4/cierre-integracion.md) distingue esas pruebas del guardado real pendiente y registra los pasos para reunir ambas partes.
+
 npm run test:live en supabase verifica Auth, API, RLS, Storage y la capa web contra la instancia del grupo. Requiere configuración privada y credenciales ficticias. Cada ejecución crea fixtures propios y los limpia al terminar.
 
 Los informes antiguos de Firebase se conservan en docs/historico como evidencia de los hitos anteriores; sus resultados no se presentan como pruebas de Supabase. El proyecto Firebase remoto no se ha eliminado.
