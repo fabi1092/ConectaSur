@@ -30,10 +30,7 @@ interface AuthRepository {
     suspend fun signIn(email: String, password: String): Session
     suspend fun currentSession(): Session?
     fun signOut()
-    fun googleSignInUrl(redirectTo: String = "conectasur://auth/callback"): String = ""
     suspend fun isGoogleEnabled(): Boolean = false
-    suspend fun completeOAuth(accessToken: String, refreshToken: String, expiresIn: Long = 3600L): Session =
-        throw UnsupportedOperationException("Acceso con Google no disponible")
     fun beginGoogleSignIn(): String = throw UnsupportedOperationException("Acceso con Google no disponible")
     fun hasPendingGoogleSignIn(): Boolean = false
     fun cancelGoogleSignIn() { }

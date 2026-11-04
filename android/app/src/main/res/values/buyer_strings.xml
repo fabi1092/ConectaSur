@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="buyer_access_title">Ingresar como comprador</string>
+    <string name="buyer_demo_login">Probar comprador de demostración</string>
+    <string name="buyer_demo_active">Comprador de demostración. No se inició sesión en Google.</string>
+    <string name="buyer_cancel_login">Cancelar acceso con Google</string>
+    <string name="buyer_checking">Comprobando tu sesión…</string>
+    <string name="buyer_other_account">Tu cuenta de emprendedora está abierta. Puedes continuar desde Mi tienda.</string>
+    <string name="buyer_visitor">Estás explorando como visitante.</string>
+</resources>

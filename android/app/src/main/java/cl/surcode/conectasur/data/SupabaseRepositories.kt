@@ -33,10 +33,7 @@ class SupabaseAuthRepository(private val client: SupabaseClient) : AuthRepositor
     override suspend fun signIn(email: String, password: String) = client.signIn(email, password)
     override suspend fun currentSession() = client.currentSession()
     override fun signOut() { scope.launch(start = CoroutineStart.UNDISPATCHED) { client.signOut() } }
-    override fun googleSignInUrl(redirectTo: String) = client.googleOAuthUrl(redirectTo)
     override suspend fun isGoogleEnabled() = client.isGoogleOAuthEnabled()
-    override suspend fun completeOAuth(accessToken: String, refreshToken: String, expiresIn: Long) =
-        client.completeOAuthSession(accessToken, refreshToken, expiresIn)
 }
 class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepository {
     override suspend fun getShop(shopId: String) = (client.request("/rest/v1/public_shops?select=*&id=eq.${SupabaseClient.encode(shopId)}") as JSONArray).optJSONObject(0)?.toShop()
