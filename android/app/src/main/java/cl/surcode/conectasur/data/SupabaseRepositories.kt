@@ -25,6 +25,10 @@ class SupabaseCatalogRepository(private val client: SupabaseClient) : CatalogRep
     }
 }
 class SupabaseAuthRepository(private val client: SupabaseClient) : AuthRepository {
+    override fun beginGoogleSignIn() = client.beginGoogleSignIn()
+    override fun hasPendingGoogleSignIn() = client.hasPendingGoogleSignIn()
+    override fun cancelGoogleSignIn() = client.cancelGoogleSignIn()
+    override suspend fun completeGoogleSignIn(callbackUrl: String) = client.completeGoogleSignIn(callbackUrl)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     override suspend fun signIn(email: String, password: String) = client.signIn(email, password)
     override suspend fun currentSession() = client.currentSession()

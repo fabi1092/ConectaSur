@@ -34,6 +34,11 @@ interface AuthRepository {
     suspend fun isGoogleEnabled(): Boolean = false
     suspend fun completeOAuth(accessToken: String, refreshToken: String, expiresIn: Long = 3600L): Session =
         throw UnsupportedOperationException("Acceso con Google no disponible")
+    fun beginGoogleSignIn(): String = throw UnsupportedOperationException("Acceso con Google no disponible")
+    fun hasPendingGoogleSignIn(): Boolean = false
+    fun cancelGoogleSignIn() { }
+    suspend fun completeGoogleSignIn(callbackUrl: String): Session =
+        throw UnsupportedOperationException("Acceso con Google no disponible")
 }
 
 interface ShopRepository {

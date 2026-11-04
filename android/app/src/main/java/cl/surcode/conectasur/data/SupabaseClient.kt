@@ -13,6 +13,7 @@ import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URLEncoder
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 class BackendException(val status: Int, message: String) : Exception(message)
 class PendingProductException : IOException("Sin conexion: guardamos un borrador y se enviara al recuperar la conexion con esta cuenta.")
@@ -20,6 +21,8 @@ class PendingProductException : IOException("Sin conexion: guardamos un borrador
 /** Cliente REST de Supabase: Auth, PostgREST/RPC y Storage. Solo utiliza anon y JWT de usuario. */
 class SupabaseClient(val url: String, private val anonKey: String, val store: SecureBackendStore) {
     private val refreshLock = Mutex()
+    private val authGeneration = AtomicLong()
+    private val googleGeneration = AtomicLong()
     internal val productWriteLock = Mutex()
     init { require(URI(url).scheme == "https") { "Supabase requiere HTTPS" }; require(anonKey.isNotBlank()) }
     fun storedSession(): JSONObject? = store.read("auth")?.let { runCatching { JSONObject(it) }.getOrNull() }
@@ -72,6 +75,60 @@ class SupabaseClient(val url: String, private val anonKey: String, val store: Se
         store.write("auth", sessionJson.toString())
         return try { loadProfile() } catch (e: Exception) { clearSession(); throw e }
     }
+    @Synchronized fun beginGoogleSignIn(): String {
+        check(uid() == null) { "Cierra la sesión actual antes de ingresar con Google." }
+        googleGeneration.incrementAndGet()
+        val pending = GooglePkceRequest.create()
+        store.write(GOOGLE_REQUEST, JSONObject().put("verifier", pending.verifier).put("state", pending.state)
+            .put("created_at", pending.createdAt).toString())
+        return pending.authorizationUrl(url)
+    }
+    private fun pendingGoogleRequest(): GooglePkceRequest? = store.read(GOOGLE_REQUEST)?.let { raw ->
+        runCatching { JSONObject(raw).let { GooglePkceRequest(it.getString("verifier"), it.getString("state"), it.getLong("created_at")) } }.getOrNull()
+    }
+    @Synchronized fun hasPendingGoogleSignIn(): Boolean {
+        val pending = pendingGoogleRequest() ?: return false
+        val valid = pending.isFresh(System.currentTimeMillis())
+        if (!valid) cancelGoogleSignIn()
+        return valid
+    }
+    @Synchronized fun cancelGoogleSignIn() { googleGeneration.incrementAndGet(); store.remove(GOOGLE_REQUEST) }
+    suspend fun completeGoogleSignIn(callbackUrl: String): Session {
+        val generation = authGeneration.get()
+        val exchange = synchronized(this) {
+            check(uid() == null) { "Ya hay una sesión abierta en este teléfono." }
+            val pending = checkNotNull(pendingGoogleRequest()) { "Inicia el acceso con Google desde la aplicación." }
+            if (!pending.isFresh(System.currentTimeMillis())) {
+                cancelGoogleSignIn()
+                throw IllegalStateException("El acceso con Google venció. Vuelve a intentarlo.")
+            }
+            val code = pending.callbackCode(callbackUrl, System.currentTimeMillis())
+            // Consumo antes de la red: una repetición, un giro o un enlace anterior no abren otra sesión.
+            store.remove(GOOGLE_REQUEST)
+            checkNotNull(code) { "Se canceló el acceso con Google." }
+            JSONObject().put("auth_code", code).put("code_verifier", pending.verifier) to googleGeneration.get()
+        }
+        val result = request("/auth/v1/token?grant_type=pkce", "POST", exchange.first) as JSONObject
+        val token = result.getString("access_token")
+        require(token.isNotBlank() && result.getString("refresh_token").isNotBlank())
+        val user = send("/auth/v1/user", "GET", null, "application/json", token) as JSONObject
+        result.put("user", user)
+        result.put("expires_at", System.currentTimeMillis() / 1000 + result.optLong("expires_in", 3600).coerceIn(1, 604800))
+        val savedGeneration = synchronized(this) {
+            check(authGeneration.get() == generation && googleGeneration.get() == exchange.second && uid() == null) { "La sesión cambió. Vuelve a ingresar." }
+            clearSession()
+            store.write("auth", result.toString())
+            authGeneration.get()
+        }
+        return try {
+            loadProfile().also { session ->
+                check(session.role == Role.COMPRADOR) { "Esta cuenta no es de comprador. Ingresa a través de Mi tienda." }
+            }
+        } catch (error: Exception) {
+            synchronized(this) { if (authGeneration.get() == savedGeneration) clearSession() }
+            throw error
+        }
+    }
     suspend fun loadProfile(): Session {
         val userId = uid() ?: throw BackendException(401, "Inicia sesion para continuar")
         val rows = request("/rest/v1/profiles?select=*&id=eq.${encode(userId)}", authenticated = true) as JSONArray
@@ -89,7 +146,9 @@ class SupabaseClient(val url: String, private val anonKey: String, val store: Se
         if (uid() == null) return null
         return try { loadProfile() } catch (_: IOException) { cachedProfile() }
     }
-    fun clearSession() {
+    @Synchronized fun clearSession() {
+        authGeneration.incrementAndGet()
+        cancelGoogleSignIn()
         uid()?.let { store.removePrefix("owner:$it:cache:") }
         store.remove("auth")
     }
@@ -131,6 +190,7 @@ class SupabaseClient(val url: String, private val anonKey: String, val store: Se
         } finally { connection.disconnect() }
     }
     companion object {
+        private const val GOOGLE_REQUEST = "buyer_google_pkce"
         fun encode(value: String): String = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
         private fun JSONObject.toSession() = Session(getString("id"), optString("email").takeIf { it.isNotBlank() },
             when (getString("role")) { "admin" -> Role.ADMIN; "emprendedora" -> Role.EMPRENDEDORA; else -> Role.COMPRADOR },
