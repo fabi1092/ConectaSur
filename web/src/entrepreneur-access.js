@@ -8,7 +8,11 @@ import { icon } from './visuals.js';
 import { showBuyerRegistration, showBuyerHome } from './buyer-access.js';
 
 function messageFor(error) {
-  if (error.code === 'google_not_configured' || error.code === 'google_not_available') return 'El inicio de sesión con Google está listo en la web; falta habilitar Google OAuth en el servidor Supabase.';
+  if (error.code === 'google_not_configured') return 'El acceso con Google todavía no está disponible. Puedes ingresar con correo o intentarlo más tarde.';
+  if (error.code === 'google_not_available') return 'No pudimos conectar con Google. Revisa tu conexión y vuelve a intentarlo.';
+  if (error.code === 'google_cancelled') return 'Cancelaste el acceso con Google. Puedes intentarlo nuevamente o ingresar con tu correo.';
+  if (error.code === 'google_storage_unavailable') return 'Permite el almacenamiento del sitio en tu navegador para continuar con Google.';
+  if (error.code === 'google_callback_failed' || error.code === 'google_invalid_redirect') return 'No pudimos comprobar el regreso de Google. Vuelve a pulsar Continuar con Google.';
   if (error.code === 'session_exists') return 'Ya hay una sesión iniciada en este navegador.';
   if (error.code === 'account_inactive') return 'Tu cuenta está desactivada o no tiene acceso. Consulta al administrador de ConectaSur.';
   if (error.code === 'shop_not_assigned') return 'Tu cuenta aún no tiene una tienda disponible. Pide al administrador que revise la asignación.';
@@ -53,7 +57,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
           <p id="owner-access-status" class="owner-status${error ? ' owner-error' : ''}" role="${error ? 'alert' : 'status'}">${escape(message)}</p>
           <button class="public-primary" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
         </form>
-        <button id="google-login" class="owner-secondary" type="button" style="width:100%;margin-top:0.75rem;">Continuar con Google</button>
+        <button id="google-login" class="google-button owner-secondary" type="button" style="width:100%;margin-top:0.75rem;">Continuar con Google</button>
         <a class="owner-auth-link" href="#recuperar">Olvidé mi contraseña</a>
       </div>
       <aside class="owner-help"><h2>¿Es tu primera vez?</h2><p>Puedes ingresar como comprador con tu cuenta de Google o crear una cuenta con tu correo.</p><a class="owner-secondary" href="#registro">Crear cuenta de comprador</a><p>Si te entregaron una cuenta de emprendedora o administrador, usa sus datos para ingresar.</p><p>Puedes seguir conociendo las tiendas sin ingresar.</p><a class="public-text-link" href="#inicio">Ver las tiendas <span aria-hidden="true">→</span></a></aside>
@@ -69,6 +73,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
       busy = true;
       const status = form.querySelector('#owner-access-status');
       googleButton.disabled = true;
+      form.querySelector('button[type="submit"]').disabled = true;
       googleButton.setAttribute('aria-busy', 'true');
       status.setAttribute('role', 'status');
       status.className = 'owner-status';
@@ -83,12 +88,14 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
       } finally {
         busy = false;
         if (googleButton.isConnected) { googleButton.disabled = false; googleButton.removeAttribute('aria-busy'); }
+        if (form.isConnected) form.querySelector('button[type="submit"]').disabled = false;
       }
     });
     form.addEventListener('submit', async event => {
       event.preventDefault();
       if (busy) return;
       busy = true;
+      googleButton.disabled = true;
       const button = form.querySelector('button');
       const status = form.querySelector('#owner-access-status');
       const email = form.querySelector('#owner-email');
@@ -116,6 +123,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
       } finally {
         busy = false;
         if (button.isConnected) { button.disabled = false; button.removeAttribute('aria-busy'); }
+        if (googleButton.isConnected) googleButton.disabled = false;
       }
     });
   }
@@ -262,7 +270,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
       else await openAccount(user);
     } catch (error) {
       if (!alive()) return;
-      if (error.code === 'account_inactive') login(messageFor(error), true);
+      if (error.code === 'account_inactive' || error.code?.startsWith('google_') || error.code === 'session_exists') login(messageFor(error), true);
       else state(messageFor(error), start);
     }
   }
@@ -303,6 +311,6 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
   });
   start();
   const dispose = () => { stopped = true; events.abort(); unsubscribe(); if (typeof editor === 'function') editor(); else editor?.dispose(); };
-  dispose.canLeave = () => editor?.requestLeave() ?? true;
+  dispose.canLeave = () => !busy && (editor?.requestLeave() ?? true);
   return dispose;
 }

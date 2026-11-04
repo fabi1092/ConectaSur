@@ -2,7 +2,11 @@ import { publicShell, escapeHtml as escape } from './public-shops.js';
 import { icon } from './visuals.js';
 
 function registrationMessage(error) {
-  if (error.code === 'google_not_configured' || error.code === 'google_not_available') return 'El inicio de sesión con Google está listo en la web; falta habilitar Google OAuth en el servidor Supabase.';
+  if (error.code === 'google_not_configured') return 'El acceso con Google todavía no está disponible. Puedes crear tu cuenta con correo o intentarlo más tarde.';
+  if (error.code === 'google_not_available') return 'No pudimos conectar con Google. Revisa tu conexión y vuelve a intentarlo.';
+  if (error.code === 'google_cancelled') return 'Cancelaste el acceso con Google. Puedes intentarlo nuevamente o ingresar con tu correo.';
+  if (error.code === 'google_storage_unavailable') return 'Permite el almacenamiento del sitio en tu navegador para continuar con Google.';
+  if (error.code === 'google_callback_failed' || error.code === 'google_invalid_redirect') return 'No pudimos comprobar el regreso de Google. Vuelve a pulsar Continuar con Google.';
   if (error.code === 'session_exists') return 'Ya hay una sesión abierta. Vuelve a Mi cuenta para continuar.';
   if (error.code === 'weak_password') return 'Elige una contraseña más segura, con al menos 8 caracteres. Puedes combinar varias palabras.';
   if (error.status === 429 || ['over_request_rate_limit', 'over_email_send_rate_limit'].includes(error.code)) return 'Se hicieron varios intentos seguidos. Espera unos minutos antes de volver a intentarlo.';
@@ -18,7 +22,7 @@ export function showBuyerRegistration(app, db, { isCurrent, onSignedIn, onLogin 
   app.innerHTML = publicShell(`<section class="owner-access" aria-labelledby="buyer-register-title">
     <div class="owner-intro"><p class="public-eyebrow">Descubre lo que nace cerca</p><h1 id="buyer-register-title" tabindex="-1">Crea tu cuenta.</h1><p>Un espacio para conocer los productos y emprendimientos de nuestra comunidad.</p></div>
     <div class="owner-login-card"><h2>Cuenta de comprador</h2><p>Completa estos datos o continúa con tu cuenta de Google.</p>
-      <button id="buyer-google-login" type="button" class="owner-secondary" style="width:100%;margin-bottom:0.85rem;">Continuar con Google</button>
+      <button id="buyer-google-login" type="button" class="google-button owner-secondary" style="width:100%;margin-bottom:0.85rem;">Continuar con Google</button>
       <form id="buyer-register-form">
         <label for="buyer-name">Tu nombre</label><input id="buyer-name" autocomplete="name" maxlength="120" required>
         <label for="buyer-email">Correo electrónico</label><input id="buyer-email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required placeholder="tu.correo@ejemplo.cl">
@@ -46,6 +50,7 @@ export function showBuyerRegistration(app, db, { isCurrent, onSignedIn, onLogin 
   googleButton?.addEventListener('click', async () => {
     if (busy) return;
     busy = true;
+    button.disabled = true;
     googleButton.disabled = true;
     googleButton.setAttribute('aria-busy', 'true');
     status.className = 'owner-status';
@@ -63,6 +68,7 @@ export function showBuyerRegistration(app, db, { isCurrent, onSignedIn, onLogin 
     } finally {
       busy = false;
       if (googleButton.isConnected) { googleButton.disabled = false; googleButton.removeAttribute('aria-busy'); }
+      if (button.isConnected) button.disabled = false;
     }
   });
   form.addEventListener('submit', async event => {
@@ -72,6 +78,7 @@ export function showBuyerRegistration(app, db, { isCurrent, onSignedIn, onLogin 
     const name = form.querySelector('#buyer-name');
     if (!name.value.trim()) { name.setCustomValidity('Escribe tu nombre.'); name.reportValidity(); name.addEventListener('input', () => name.setCustomValidity(''), { once: true }); return; }
     busy = true;
+    googleButton.disabled = true;
     button.disabled = true;
     button.setAttribute('aria-busy', 'true');
     status.className = 'owner-status'; status.setAttribute('role', 'status'); status.textContent = 'Creando tu cuenta…';
@@ -88,6 +95,7 @@ export function showBuyerRegistration(app, db, { isCurrent, onSignedIn, onLogin 
     } finally {
       busy = false;
       if (button.isConnected) { button.disabled = false; button.removeAttribute('aria-busy'); }
+      if (googleButton.isConnected) googleButton.disabled = false;
     }
   });
   const dispose = () => { stopped = true; password.value = repeat.value = ''; };
