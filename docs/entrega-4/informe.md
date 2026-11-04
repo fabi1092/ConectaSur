@@ -50,6 +50,8 @@
 
 ## 4. Documentación detallada de la Entrega 4
 
+- [Estado y orden del cierre de integración](cierre-integracion.md)
+- [Contrato pendiente de edición de cuenta](contrato-cuenta-emprendedora.md)
 - [Ficha pública de tienda](ficha-publica.md)
 - [Acceso de emprendedoras y administración](acceso-emprendedoras.md)
 - [Acceso de compradores](acceso-compradores.md)

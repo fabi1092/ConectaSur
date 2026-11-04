@@ -1,0 +1,8 @@
+{
+  "checkedAt": "2026-11-04T03:05:48.825Z",
+  "status": "blocked",
+  "passed": 0,
+  "backendReady": false,
+  "reason": "Falta update_entrepreneur_account(uuid,text,text,text). El compañero debe aplicar el contrato.",
+  "fixturesCreated": false
+}
