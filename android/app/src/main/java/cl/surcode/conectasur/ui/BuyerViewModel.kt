@@ -100,13 +100,20 @@ class BuyerViewModel(private val auth: AuthRepository?, private val demoStore: D
         mutable.value = demoState()
     }
     fun logout() {
-        if (mutable.value.session?.role != Role.COMPRADOR) return
+        if (mutable.value.session == null) return
         generation++
         job?.cancel()
         auth?.cancelGoogleSignIn()
         auth?.signOut()
         demoStore.setActive(false)
         mutable.value = BuyerState(message = "Sesión cerrada. Continúas como visitante.")
+    }
+    /** La pantalla común asume el acceso; una consulta anterior no puede reemplazar su resultado. */
+    fun pauseForAccountAccess() {
+        generation++
+        job?.cancel()
+        auth?.cancelGoogleSignIn()
+        mutable.value = mutable.value.copy(busy = false, awaitingGoogle = false, launchUrl = null, message = "")
     }
     private fun demoState() = BuyerState(session = Session("demo-buyer", null, Role.COMPRADOR, null), demo = true,
         message = "Demostración local de comprador. No se inició sesión en Google.")

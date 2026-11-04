@@ -12,6 +12,7 @@ import android.widget.*
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -30,6 +31,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    companion object { const val OPEN_CATALOG = "cl.surcode.conectasur.OPEN_CATALOG" }
     private data class Destination(val screen: String, val productId: String = "") {
         fun encode() = "$screen|${Uri.encode(productId)}"
         companion object {
@@ -52,6 +54,12 @@ class MainActivity : ComponentActivity() {
     private lateinit var content: FrameLayout
     private lateinit var reader: SpeechReader
     private lateinit var page: View
+    private val accountAccess = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && result.data?.getBooleanExtra(OPEN_CATALOG, false) == true) {
+            shopFilter = null
+            navigate(Destination("catalog"))
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(if (prefs.read().highContrast) R.style.Theme_ConectaSur_HighContrast else R.style.Theme_ConectaSur)
         super.onCreate(savedInstanceState)
@@ -206,7 +214,8 @@ class MainActivity : ComponentActivity() {
                 page.findViewById<Button>(R.id.open_catalog).setOnClickListener { shopFilter = null; navigate(Destination("catalog")) }
                 page.findViewById<Button>(R.id.open_store).setOnClickListener {
                     reader.stop()
-                    startActivity(Intent(this, StoreActivity::class.java))
+                    buyerModel.pauseForAccountAccess()
+                    accountAccess.launch(Intent(this, StoreActivity::class.java))
                 }
                 page.findViewById<Button>(R.id.open_settings).setOnClickListener { navigate(Destination("settings")) }
                 bindHomeBuyerAccess()
@@ -227,29 +236,35 @@ class MainActivity : ComponentActivity() {
         }
     }
     private fun bindHomeBuyerAccess() {
-        page.findViewById<Button>(R.id.buyer_google_login).setOnClickListener { buyerModel.beginGoogle() }
         page.findViewById<Button>(R.id.buyer_demo_login).setOnClickListener { buyerModel.enterDemo() }
         page.findViewById<Button>(R.id.buyer_cancel_login).setOnClickListener { buyerModel.cancelGoogle() }
-        page.findViewById<Button>(R.id.buyer_logout).setOnClickListener { buyerModel.logout() }
-        ViewCompat.setAccessibilityHeading(page.findViewById(R.id.buyer_access_title), true)
+        page.findViewById<Button>(R.id.buyer_logout).setOnClickListener {
+            BiometricStoreLock(applicationContext).clear()
+            buyerModel.logout()
+        }
         renderHomeBuyerState(buyerModel.state.value)
     }
     private fun renderHomeBuyerState(state: BuyerState) {
-        val google = page.findViewById<Button>(R.id.buyer_google_login) ?: return
+        val account = page.findViewById<Button>(R.id.open_store) ?: return
         val buyer = state.session?.role == Role.COMPRADOR
-        google.isVisible = state.session == null
-        google.isEnabled = !state.busy && !state.awaitingGoogle
+        account.setText(when {
+            state.session == null -> R.string.account_entry
+            state.session.role == Role.EMPRENDEDORA -> R.string.my_store
+            else -> R.string.account_home
+        })
+        account.isEnabled = !state.busy && !state.awaitingGoogle && !state.demo
         page.findViewById<View>(R.id.buyer_demo_login).apply {
             isVisible = buyerModel.demoAvailable && state.session == null
             isEnabled = !state.busy
         }
         page.findViewById<View>(R.id.buyer_cancel_login).isVisible = state.awaitingGoogle
-        page.findViewById<View>(R.id.buyer_logout).isVisible = buyer
+        page.findViewById<View>(R.id.buyer_logout).isVisible = state.session != null
         page.findViewById<TextView>(R.id.buyer_session_status).apply {
             text = when {
                 state.demo -> getString(R.string.buyer_demo_active)
                 buyer -> getString(R.string.buyer_session_active, state.session?.email.orEmpty())
-                state.session != null -> getString(R.string.buyer_other_account)
+                state.session?.role == Role.ADMIN -> getString(R.string.account_role_admin, state.session.email.orEmpty())
+                state.session != null -> getString(R.string.account_role_owner, state.session.email.orEmpty())
                 state.message.isNotBlank() -> state.message
                 state.busy -> getString(R.string.buyer_checking)
                 else -> getString(R.string.buyer_visitor)
@@ -391,7 +406,7 @@ class MainActivity : ComponentActivity() {
         page.findViewById<Button>(R.id.reset_settings).setOnClickListener { prefs.save(AccessibilitySettings()); recreate() }
     }
     private fun screenSpeech(): String = when(current.screen) {
-        "home" -> "ConectaSur. Tu tienda, más cerca. Demostración con datos de ejemplo. Puedes ver productos, entrar a Mi tienda, continuar con Google como comprador o ajustar letras y botones."
+            "home" -> "ConectaSur. Tu tienda, más cerca. Puedes ver productos sin una cuenta. En Ingresar, usa tu correo y contraseña para abrir tu cuenta de comprador o tu tienda, según tu perfil. También puedes ajustar letras y botones."
         "catalog" -> "Productos de ejemplo. " + searchProducts(products, query).joinToString(". ") { "${it.name}. ${spokenPrice(it.priceClp)}" }.ifBlank { getString(R.string.empty_search) }
         "detail" -> products.find { it.id == current.productId }?.let { "${it.name}. ${spokenPrice(it.priceClp)}. ${it.description}. Nombre y precio de ejemplo." } ?: getString(R.string.product_missing)
         "public_store" -> "Emprendimiento de ejemplo. Aquí puedes ver el catálogo público."

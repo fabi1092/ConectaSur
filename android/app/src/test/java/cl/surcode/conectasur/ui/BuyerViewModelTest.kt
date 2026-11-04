@@ -108,7 +108,7 @@ class BuyerViewModelTest {
         auth.session = buyer.copy(uid = "owner", role = Role.EMPRENDEDORA, shopId = "shop")
         val vm = model()
         vm.start(); advanceUntilIdle()
-        vm.beginGoogle(); vm.logout(); advanceUntilIdle()
+        vm.beginGoogle(); advanceUntilIdle()
         assertEquals(Role.EMPRENDEDORA, vm.state.value.session?.role)
         assertEquals(0, auth.starts)
         assertEquals(0, auth.logouts)
@@ -164,6 +164,37 @@ class BuyerViewModelTest {
             assertFalse(vm.state.value.awaitingGoogle)
             assertTrue(vm.state.value.message.contains("sesión terminó"))
         }
+    }
+
+    @Test fun logoutWorksForEveryServerRole() = runTest(dispatcher) {
+        for (role in Role.entries) {
+            auth.session = buyer.copy(role = role)
+            val vm = model()
+            vm.start(); advanceUntilIdle()
+            vm.logout()
+            assertNull(auth.session)
+            assertNull(vm.state.value.session)
+            val reopened = model()
+            reopened.start(); advanceUntilIdle()
+            assertNull(reopened.state.value.session)
+        }
+    }
+    @Test fun accountScreenCancelsOldRefreshAndGoogleAttempt() = runTest(dispatcher) {
+        val vm = model()
+        vm.start()
+        vm.pauseForAccountAccess()
+        auth.session = buyer
+        advanceUntilIdle()
+        assertFalse(vm.state.value.busy)
+        vm.refresh(); advanceUntilIdle()
+        assertEquals(buyer, vm.state.value.session)
+        vm.logout()
+        vm.beginGoogle(); advanceUntilIdle()
+        assertTrue(auth.pending)
+        vm.pauseForAccountAccess()
+        assertFalse(auth.pending)
+        assertFalse(vm.state.value.awaitingGoogle)
+        assertNull(vm.state.value.launchUrl)
     }
 
     private class FakeDemo : DemoBuyerStore {
