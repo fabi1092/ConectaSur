@@ -304,6 +304,67 @@ class StoreViewModelTest {
         assertTrue(vm.state.value.error)
     }
 
+    @Test fun unavailableChoicesCanBeRetriedWithoutLosingTheDraftOrBlockingOtherEdits() = runTest(dispatcher) {
+        auth.session = owner
+        shops.choicesFailure = IOException()
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertEquals(initial, vm.state.value.shop)
+        assertTrue(vm.state.value.choicesError)
+        val edited = initial.copy(name = "Mi taller")
+        vm.edit(edited)
+        vm.save()
+        advanceUntilIdle()
+        assertEquals(edited, shops.saved)
+        vm.edit(edited.copy(description = "Borrador sin guardar"))
+        shops.choicesFailure = null
+        vm.retryChoices()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.choicesError)
+        assertEquals(shops.choices, vm.state.value.choices)
+        assertEquals("Borrador sin guardar", vm.draft?.description)
+        assertEquals(1, shops.writes)
+    }
+
+    @Test fun onlyAvailableNewTypesAndSectorsCanBePublished() = runTest(dispatcher) {
+        auth.session = owner
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        vm.edit(initial.copy(entrepreneurType = "Tipo inventado"))
+        vm.save()
+        advanceUntilIdle()
+        assertTrue(vm.state.value.error)
+        assertEquals(0, shops.writes)
+        vm.edit(initial.copy(sector = "Sector inventado"))
+        vm.save()
+        advanceUntilIdle()
+        assertTrue(vm.state.value.error)
+        assertEquals(0, shops.writes)
+        val chosen = initial.copy(entrepreneurType = "Tejidos", sector = "Puerto Montt")
+        vm.edit(chosen)
+        vm.save()
+        advanceUntilIdle()
+        assertEquals(chosen, shops.saved)
+        assertFalse(vm.hasChanges())
+    }
+
+    @Test fun legacyValuesArePreservedWhenTheAvailableOptionsChange() = runTest(dispatcher) {
+        auth.session = owner
+        shops.choices = ShopChoices(listOf("Tejidos"), listOf("Puerto Montt"))
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertEquals(initial, vm.draft)
+        vm.edit(initial.copy(description = "Nueva descripción"))
+        vm.save()
+        advanceUntilIdle()
+        assertEquals(initial.entrepreneurType, shops.saved.entrepreneurType)
+        assertEquals(initial.sector, shops.saved.sector)
+        assertFalse(vm.state.value.error)
+    }
+
     private inner class FakeAuth : AuthRepository {
         var session: Session? = null
         var nextSession = owner
@@ -314,6 +375,9 @@ class StoreViewModelTest {
         override fun signOut() { session = null }
     }
     private inner class FakeShops : ShopRepository {
+        var choices = ShopChoices(listOf("Artesanía", "Tejidos"), listOf("Alerce", "Puerto Montt"))
+        var choicesFailure: Exception? = null
+        override suspend fun getShopChoices(): ShopChoices { choicesFailure?.let { throw it }; return choices }
         var saved = initial
         var associations = listOf("Agrupación Alerce Sur")
         val associationQueries = mutableListOf<String>()

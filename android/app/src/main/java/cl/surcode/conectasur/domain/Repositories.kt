@@ -38,8 +38,13 @@ interface AuthRepository {
         throw UnsupportedOperationException("Acceso con Google no disponible")
 }
 
+// Sectores de Puerto Montt; fuentes municipales y mantenimiento en docs/fabian/pendientes-android.md.
+val PUERTO_MONTT_SECTORS = listOf("Puerto Montt Centro", "Alerce", "Mirasol", "Pichi Pelluco", "Isla Tenglo", "Chinquihue", "El Tepual")
+data class ShopChoices(val entrepreneurTypes: List<String> = emptyList(), val sectors: List<String> = PUERTO_MONTT_SECTORS)
+
 interface ShopRepository {
     suspend fun getShop(shopId: String): Shop?
+    suspend fun getShopChoices(): ShopChoices
     suspend fun listShopAssociations(shopId: String): List<String> = emptyList()
     suspend fun updateShop(shop: Shop)
     /** Sube el logo (JPEG ya comprimido), guarda su URL en la tienda y la devuelve. */

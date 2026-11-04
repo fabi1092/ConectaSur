@@ -16,6 +16,8 @@ data class StoreState(
     val shop: Shop? = null,
     val associations: List<String> = emptyList(),
     val associationsError: Boolean = false,
+    val choices: ShopChoices = ShopChoices(),
+    val choicesError: Boolean = false,
     val busy: Boolean = false,
     val locked: Boolean = false,
     val message: String = "",
@@ -72,6 +74,23 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         if (draft?.id != shop.id) draft = shop
         mutable.value = mutable.value.copy(session = session, shop = shop, associations = emptyList(), associationsError = false, message = "", error = false)
         readAssociations(shop.id, session.uid)
+        readChoices()
+    }
+
+    fun retryChoices() {
+        if (mutable.value.locked || mutable.value.shop == null) return
+        runOperation("Consultando tipos de emprendimiento y sectores…") { readChoices() }
+    }
+
+    private suspend fun readChoices() {
+        try {
+            val choices = shops.getShopChoices()
+            mutable.value = mutable.value.copy(choices = choices, choicesError = false)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) {
+            if (error is BackendException && error.status in listOf(401, 403)) throw error
+            mutable.value = mutable.value.copy(choicesError = true)
+        }
     }
 
     fun retryAssociations() {
@@ -111,6 +130,12 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         if (clean.name.isBlank() || clean.name.length > 120 || clean.description.length > 1000 ||
             clean.entrepreneurType.length > 120 || clean.sector.length > 240 || clean.contact.length > 240) {
             message("Revisa el nombre y los límites de los campos de la tienda.", true)
+            return
+        }
+        val current = mutable.value
+        if ((clean.entrepreneurType != current.shop?.entrepreneurType && clean.entrepreneurType !in current.choices.entrepreneurTypes) ||
+            (clean.sector != current.shop?.sector && clean.sector !in current.choices.sectors)) {
+            message("Elige el tipo de emprendimiento y el sector entre las opciones disponibles.", true)
             return
         }
         val bytes = logoBytes

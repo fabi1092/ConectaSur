@@ -36,6 +36,13 @@ class SupabaseAuthRepository(private val client: SupabaseClient) : AuthRepositor
     override suspend fun isGoogleEnabled() = client.isGoogleOAuthEnabled()
 }
 class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepository {
+    override suspend fun getShopChoices(): ShopChoices {
+        val types = client.request("/rest/v1/entrepreneur_types?select=name&order=name") as JSONArray
+        val names = (0 until types.length()).mapNotNull {
+            types.optJSONObject(it)?.optString("name")?.trim()?.takeIf(String::isNotBlank)
+        }.distinct()
+        return ShopChoices(entrepreneurTypes = names)
+    }
     override suspend fun getShop(shopId: String) = (client.request("/rest/v1/public_shops?select=*&id=eq.${SupabaseClient.encode(shopId)}") as JSONArray).optJSONObject(0)?.toShop()
     override suspend fun listShopAssociations(shopId: String): List<String> {
         val links = client.request("/rest/v1/shop_associations?select=association_id&shop_id=eq.${SupabaseClient.encode(shopId)}") as JSONArray
