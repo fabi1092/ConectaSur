@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-11-03T22:38:30.369Z",
-  "url": "https://conectasur-dev.web.app/",
+  "checkedAt": "2026-11-04T02:49:34.058Z",
+  "url": "http://127.0.0.1:5174/",
   "passed": 14,
   "checks": [
     "Lectura pública del catálogo y escritura exclusiva del administrador, también con RLS directo",

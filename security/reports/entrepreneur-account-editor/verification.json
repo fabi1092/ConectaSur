@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-11-04T02:47:03.737Z",
+  "url": "http://127.0.0.1:5174/",
+  "passed": 9,
+  "checks": [
+    "Lectura real del nombre de cuenta de una emprendedora temporal desde profiles",
+    "El listado distingue nombre de cuenta y tienda, con acciones Editar cuenta y Editar tienda",
+    "Validación de nombre y confirmación de cambios pendientes al cancelar o cambiar de sección",
+    "La API real sin función muestra pendiente de habilitación y conserva el nombre sin afirmar un guardado",
+    "Contrato simulado: fallo de red y pérdida de respuesta permiten reintentar, releer y recargar la pantalla",
+    "Contrato simulado: búsqueda por nombre de persona y rechazo de una edición desactualizada",
+    "Contrato simulado: no se anuncia éxito hasta que la lectura posterior confirma el nombre",
+    "Editor usable a 390 y 320 px con letra grande y contraste, sin desbordes de documento",
+    "La simulación no cambia el perfil real y el recorrido no genera errores JavaScript"
+  ],
+  "rpcCalls": 6,
+  "backendReady": false,
+  "mode": "Lecturas/Auth reales y escritura simulada del contrato",
+  "limits": [
+    "La función update_entrepreneur_account no existe en la instancia consultada",
+    "W06/W07 pendientes de integración y guardado real; el reingreso tras recarga simulado no demuestra persistencia en Supabase",
+    "Pruebas de interfaz en Chromium y celular emulado, sin usuarias ni teléfono físico",
+    "No se alteró el backend compartido, Google o Android"
+  ]
+}
