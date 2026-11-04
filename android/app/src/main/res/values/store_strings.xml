@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="login_title">Entra a tu tienda</string>
-    <string name="login_intro">Usa la cuenta que te entregó el equipo de ConectaSur.</string>
+    <string name="login_title">Ingresa a tu cuenta</string>
+    <string name="login_intro">Escribe tu correo y contraseña. Abriremos tu cuenta de comprador, tu tienda o el acceso al panel web según tu perfil.</string>
+    <string name="account_entry">Ingresar</string>
+    <string name="account_home">Mi cuenta</string>
+    <string name="account_buyer_title">Modo comprador</string>
+    <string name="account_admin_title">Cuenta administradora</string>
+    <string name="account_buyer_intro">Tu sesión está iniciada. Explora productos y conoce los emprendimientos de nuestra comunidad.</string>
+    <string name="account_admin_intro">Tu sesión está iniciada. La administración de la plataforma se realiza en el panel web.</string>
+    <string name="account_admin_web">Abrir panel web</string>
+    <string name="account_google">Continuar con Google</string>
+    <string name="account_role_owner">Sesión de emprendedora: %1$s</string>
+    <string name="account_role_admin">Sesión de administrador: %1$s</string>
     <string name="login_email">Correo electrónico</string>
     <string name="login_password">Contraseña</string>
     <string name="show_password">Mostrar contraseña</string>

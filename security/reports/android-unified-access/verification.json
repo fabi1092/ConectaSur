@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-04",
+  "applicationVersion": "0.5.1-acceso-unificado",
+  "versionCode": 5,
+  "implementationCommit": "3b5418170ba6a43cfc2d77acd1c8b9bcba0e67ab",
+  "backend": "Supabase de clase, Auth y perfiles reales",
+  "unitTests": {"passed": 66, "failed": 0},
+  "build": {"assembleDebug": "passed", "assembleDebugAndroidTest": "passed", "lintDebug": "passed"},
+  "instrumented": {
+    "class": "cl.surcode.conectasur.UnifiedAccessTest",
+    "device": "ConectaSur_Login_Test, emulador API 36",
+    "passed": 1,
+    "failed": 0,
+    "durationSeconds": 64.587,
+    "checks": [
+      "Contraseña incorrecta no abre sesión",
+      "Google deshabilitado no impide ingreso con contraseña",
+      "Formulario común enruta comprador, emprendedora y administrador por rol real",
+      "Comprador y administrador no ven formulario privado de tienda",
+      "Solo administrador ve enlace al panel web",
+      "Comprador y administrador pueden volver al catálogo",
+      "La portada muestra Mi cuenta o Mi tienda según perfil",
+      "Cerrar y relanzar actividades restaura cada perfil sin contraseña",
+      "Cerrar sesión de cada perfil elimina sesión y vuelve a visitante"
+    ]
+  },
+  "businessDataEdited": false,
+  "credentialsEmbedded": false,
+  "limitations": [
+    "Reapertura de actividades, no prueba de reinicio físico del teléfono",
+    "Google real permanece pendiente de configuración externa",
+    "Biometría física y TalkBack no comprobados en este recorrido",
+    "Correo de comprador cambia A10/RN-07 por decisión del usuario, sin afirmar exención del docente",
+    "Intentos anteriores del emulador compartido fueron interrumpidos y no se cuentan como aprobados"
+  ]
+}

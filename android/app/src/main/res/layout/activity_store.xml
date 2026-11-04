@@ -15,6 +15,13 @@
                 <EditText android:id="@+id/account_password" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="textPassword" android:autofillHints="password" android:saveEnabled="false" android:maxLines="1" android:imeOptions="actionDone"/>
                 <CheckBox android:id="@+id/account_show_password" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:text="@string/show_password" android:saveEnabled="false"/>
                 <Button android:id="@+id/account_login" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/login_button"/>
+                <Button android:id="@+id/account_google_login" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/account_google"/>
+            </LinearLayout>
+            <LinearLayout android:id="@+id/account_profile" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                <TextView android:id="@+id/account_profile_email" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                <TextView android:id="@+id/account_profile_intro" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                <Button android:id="@+id/account_catalog" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/see_products"/>
+                <Button android:id="@+id/account_admin_web" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/account_admin_web" android:visibility="gone"/>
             </LinearLayout>
             <LinearLayout android:id="@+id/account_locked" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
                 <Button android:id="@+id/account_unlock" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/bio_unlock"/>

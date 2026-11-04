@@ -74,16 +74,57 @@ class StoreViewModelTest {
         assertEquals(initial, reopened.state.value.shop)
     }
 
-    @Test fun rejectsBuyerAndDoesNotLoadAnotherStore() = runTest(dispatcher) {
-        auth.nextSession = owner.copy(role = Role.COMPRADOR, shopId = null)
+    @Test fun sameFormUsesTheServerRoleAndNeverInfersItFromEmail() = runTest(dispatcher) {
+        for (role in listOf(Role.COMPRADOR, Role.ADMIN)) {
+            auth.nextSession = owner.copy(role = role, shopId = null)
+            val vm = model()
+            vm.signIn("admin@example.cl", "secret")
+            advanceUntilIdle()
+            assertEquals(role, vm.state.value.session?.role)
+            assertNull(vm.state.value.shop)
+            assertNull(vm.draft)
+            assertFalse(vm.state.value.error)
+            assertEquals(auth.nextSession, auth.session)
+            vm.chooseLogo(byteArrayOf(1))
+            vm.save()
+            assertEquals(0, shops.writes)
+            assertEquals(0, shops.uploads)
+            val reopened = model()
+            reopened.start(false)
+            advanceUntilIdle()
+            assertEquals(role, reopened.state.value.session?.role)
+            assertNull(reopened.state.value.shop)
+            reopened.logout()
+            assertNull(auth.session)
+        }
+        assertEquals(0, shops.reads)
+        assertTrue(shops.associationQueries.isEmpty())
+    }
+
+    @Test fun ownerWithoutAssignedShopIsRejected() = runTest(dispatcher) {
+        auth.nextSession = owner.copy(shopId = null)
         val vm = model()
         vm.signIn("test@example.cl", "secret")
         advanceUntilIdle()
-        assertNull(vm.state.value.session)
-        assertNull(vm.state.value.shop)
         assertTrue(vm.state.value.error)
-        assertEquals(0, shops.reads)
         assertNull(auth.session)
+        assertEquals(0, shops.reads)
+    }
+
+    @Test fun disabledGoogleDoesNotBlockPasswordLogin() = runTest(dispatcher) {
+        val vm = model()
+        vm.beginGoogle()
+        advanceUntilIdle()
+        assertNull(vm.state.value.googleUrl)
+        assertNull(auth.session)
+        assertTrue(vm.state.value.message.contains("correo y contraseña"))
+        auth.nextSession = owner.copy(role = Role.COMPRADOR, shopId = null)
+        vm.signIn("buyer@example.cl", "secret")
+        advanceUntilIdle()
+        assertEquals(Role.COMPRADOR, vm.state.value.session?.role)
+        vm.signIn("another@example.cl", "secret")
+        advanceUntilIdle()
+        assertEquals("buyer@example.cl", auth.lastEmail)
     }
 
     @Test fun restoresOnlyAfterBiometricUnlock() = runTest(dispatcher) {

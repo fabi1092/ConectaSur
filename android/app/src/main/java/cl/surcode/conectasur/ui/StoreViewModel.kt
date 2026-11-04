@@ -20,6 +20,7 @@ data class StoreState(
     val choicesError: Boolean = false,
     val busy: Boolean = false,
     val locked: Boolean = false,
+    val googleUrl: String? = null,
     val message: String = "",
     val error: Boolean = false
 )
@@ -53,6 +54,7 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
     }
 
     fun signIn(email: String, password: String) {
+        if (mutable.value.session != null || mutable.value.locked) return
         if (email.trim().isEmpty() || password.isEmpty()) {
             message("Escribe tu correo y contraseña.", true)
             return
@@ -61,7 +63,13 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
     }
 
     private suspend fun loadShop(session: Session) {
-        if (session.role != Role.EMPRENDEDORA || session.shopId.isNullOrBlank()) {
+        // El rol viene del perfil activo validado por el servidor, nunca del texto del correo.
+        if (session.role != Role.EMPRENDEDORA) {
+            clearDraft()
+            mutable.value = StoreState(session = session)
+            return
+        }
+        if (session.shopId.isNullOrBlank()) {
             auth.signOut()
             clearDraft()
             mutable.value = StoreState(message = "Esta cuenta no tiene una tienda asignada. Consulta al administrador.", error = true)
@@ -75,6 +83,21 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         mutable.value = mutable.value.copy(session = session, shop = shop, associations = emptyList(), associationsError = false, message = "", error = false)
         readAssociations(shop.id, session.uid)
         readChoices()
+    }
+
+    fun beginGoogle() {
+        if (mutable.value.session != null || mutable.value.locked) return
+        runOperation("Consultando el acceso con Google…") {
+            if (auth.isGoogleEnabled()) {
+                mutable.value = mutable.value.copy(googleUrl = auth.beginGoogleSignIn())
+            } else message("Google aún no está disponible. Puedes ingresar con tu correo y contraseña.", true)
+        }
+    }
+    fun googleBrowserLaunched() { mutable.value = mutable.value.copy(googleUrl = null) }
+    fun googleBrowserUnavailable() {
+        auth.cancelGoogleSignIn()
+        googleBrowserLaunched()
+        message("No pudimos abrir el navegador. Puedes ingresar con tu correo y contraseña.", true)
     }
 
     fun retryChoices() {
@@ -117,14 +140,16 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         }
     }
 
-    fun edit(shop: Shop) { if (shop.id == mutable.value.shop?.id) draft = shop }
-    fun chooseLogo(bytes: ByteArray) { logoBytes = bytes; logoChanged = true; message("Logo listo. Pulsa Guardar cambios para publicarlo.") }
-    fun removeLogo() { logoBytes = null; logoChanged = true; draft = draft?.copy(logoUrl = null); message("Pulsa Guardar cambios para quitar el logo.") }
+    private fun canEdit() = !mutable.value.locked && mutable.value.session?.role == Role.EMPRENDEDORA && mutable.value.shop != null
+    fun edit(shop: Shop) { if (canEdit() && shop.id == mutable.value.shop?.id) draft = shop }
+    fun chooseLogo(bytes: ByteArray) { if (!canEdit()) return; logoBytes = bytes; logoChanged = true; message("Logo listo. Pulsa Guardar cambios para publicarlo.") }
+    fun removeLogo() { if (!canEdit()) return; logoBytes = null; logoChanged = true; draft = draft?.copy(logoUrl = null); message("Pulsa Guardar cambios para quitar el logo.") }
     fun hasChanges() = draft != mutable.value.shop || logoChanged
 
     fun save() {
         val changed = draft ?: return
-        if (mutable.value.locked || mutable.value.session == null) return
+        val session = mutable.value.session ?: return
+        if (mutable.value.locked || session.role != Role.EMPRENDEDORA || session.shopId != changed.id) return
         val clean = changed.copy(name = changed.name.trim(), description = changed.description.trim(),
             entrepreneurType = changed.entrepreneurType.trim(), sector = changed.sector.trim(), contact = changed.contact.trim())
         if (clean.name.isBlank() || clean.name.length > 120 || clean.description.length > 1000 ||
@@ -166,6 +191,7 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
     fun logout(message: String = "Sesión cerrada en este teléfono.") {
         operationId++
         operation?.cancel()
+        auth.cancelGoogleSignIn()
         auth.signOut() // El adaptador elimina los tokens locales antes de suspender la revocación remota.
         clearDraft()
         mutable.value = StoreState(message = message)

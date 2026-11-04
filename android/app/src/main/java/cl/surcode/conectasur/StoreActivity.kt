@@ -2,6 +2,7 @@ package cl.surcode.conectasur
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.net.Uri
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.text.method.HideReturnsTransformationMethod
@@ -29,6 +30,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import cl.surcode.conectasur.data.*
+import cl.surcode.conectasur.domain.Role
 import cl.surcode.conectasur.ui.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -118,6 +120,15 @@ class StoreActivity : FragmentActivity() {
             override fun onAuthenticationFailed() { model.message("No reconocimos la huella. Inténtalo nuevamente.", true) }
         })
         findViewById<Button>(R.id.account_login).setOnClickListener { signIn() }
+        findViewById<Button>(R.id.account_google_login).setOnClickListener { hideKeyboard(); model.beginGoogle() }
+        findViewById<Button>(R.id.account_catalog).setOnClickListener {
+            setResult(RESULT_OK, Intent().putExtra(MainActivity.OPEN_CATALOG, true))
+            finish()
+        }
+        findViewById<Button>(R.id.account_admin_web).setOnClickListener {
+            try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://conectasur-dev.web.app/#ingresar"))) }
+            catch (_: android.content.ActivityNotFoundException) { model.message("No encontramos un navegador para abrir el panel web.", true) }
+        }
         findViewById<EditText>(R.id.account_password).setOnEditorActionListener { _, action, _ ->
             if (action == EditorInfo.IME_ACTION_DONE) { signIn(); true } else false
         }
@@ -187,10 +198,15 @@ class StoreActivity : FragmentActivity() {
 
     private fun render(state: StoreState) {
         if (!state.locked && !state.busy && state.session == null && biometric.enabled) biometric.clear()
-        val privateVisible = !state.locked && state.shop != null
+        val owner = state.session?.role == Role.EMPRENDEDORA
+        val admin = state.session?.role == Role.ADMIN
+        val privateVisible = !state.locked && owner && state.shop != null
+        val profileVisible = !state.locked && state.session != null && !owner
         findViewById<TextView>(R.id.account_title).setText(when {
             state.locked -> R.string.bio_locked
-            state.session != null -> R.string.store_title
+            owner -> R.string.store_title
+            admin -> R.string.account_admin_title
+            state.session != null -> R.string.account_buyer_title
             else -> R.string.login_title
         })
         findViewById<TextView>(R.id.account_status).apply {
@@ -202,13 +218,23 @@ class StoreActivity : FragmentActivity() {
         findViewById<View>(R.id.login_form).isVisible = !state.locked && state.session == null
         findViewById<View>(R.id.account_locked).isVisible = state.locked
         findViewById<View>(R.id.shop_form).isVisible = privateVisible
+        findViewById<View>(R.id.account_profile).isVisible = profileVisible
+        findViewById<TextView>(R.id.account_profile_email).text = getString(R.string.store_account, state.session?.email.orEmpty())
+        findViewById<TextView>(R.id.account_profile_intro).setText(if (admin) R.string.account_admin_intro else R.string.account_buyer_intro)
+        findViewById<View>(R.id.account_admin_web).isVisible = profileVisible && admin
         findViewById<View>(R.id.account_logout).isVisible = state.session != null && !state.locked
-        findViewById<View>(R.id.shop_reload).isVisible = state.session != null && state.shop == null && !state.locked
+        findViewById<View>(R.id.shop_reload).isVisible = owner && state.shop == null && !state.locked
         setEnabled(findViewById(R.id.login_form), !state.busy)
         setEnabled(findViewById(R.id.shop_form), !state.busy && !choosingLogo)
+        setEnabled(findViewById(R.id.account_profile), !state.busy)
         findViewById<View>(R.id.shop_reload).isEnabled = !state.busy
         findViewById<View>(R.id.account_unlock).isEnabled = !state.busy
         findViewById<View>(R.id.account_logout).isEnabled = !state.busy && !choosingLogo
+        state.googleUrl?.let { url ->
+            model.googleBrowserLaunched()
+            try { reader.stop(); startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))); finish() }
+            catch (_: android.content.ActivityNotFoundException) { model.googleBrowserUnavailable() }
+        }
         if (privateVisible) {
             val draft = model.draft ?: state.shop!!
             binding = true
@@ -308,6 +334,10 @@ class StoreActivity : FragmentActivity() {
         if (!::model.isInitialized) return getString(R.string.access_not_configured)
         val state = model.state.value
         if (state.locked) return getString(R.string.bio_locked) + ". " + state.message
+        if (state.session != null && state.session.role != Role.EMPRENDEDORA) {
+            return getString(if (state.session.role == Role.ADMIN) R.string.account_admin_title else R.string.account_buyer_title) +
+                ". " + getString(if (state.session.role == Role.ADMIN) R.string.account_admin_intro else R.string.account_buyer_intro) + ". " + state.message
+        }
         if (state.shop == null) return getString(R.string.login_intro) + ". " + state.message
         val shop = model.draft ?: state.shop
         val assocText = associationText(state)
