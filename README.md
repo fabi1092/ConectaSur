@@ -8,9 +8,9 @@ Desde el 1 de noviembre se utiliza la instancia del grupo entregada por el profe
 
 Android mantiene Kotlin y Views con XML editables en Design/Palette, navegación simple, ajustes de letras/botones, contraste, lectura opcional y precios en pesos chilenos. El catálogo y la ficha pública consultan Supabase; las fotografías de ejemplo están alojadas en Storage. Los nombres y precios de esos ejemplos son ficticios.
 
-El acceso Android, cierre de sesión, huella opcional y edición de datos/logo de la tienda se implementan en StoreActivity. Ver [entrega de Fabián](docs/fabian/acceso-tienda.md) para configuración y verificación. El panel web administrativo también está integrado. Los productos, el flujo guiado con borradores recuperables, las variantes, la disponibilidad, las ventas y el historial también están integrados. Ver la [Entrega 5](docs/entrega-5/informe.md).
+El acceso Android, cierre de sesión, huella opcional y edición de datos/logo de la tienda se implementan en StoreActivity. Ver [entrega de Fabián](docs/fabian/acceso-tienda.md) para configuración y verificación. El panel web administrativo también está integrado. Los productos, el flujo guiado con borradores recuperables, las variantes, la disponibilidad, las ventas y el historial también están integrados. Ver el [Informe de Entrega 4](docs/entrega-4/informe.md) y el [Informe de Entrega 5](docs/entrega-5/informe.md).
 
-El panel web permite [guardar logos de asociaciones](docs/entrega-4/logos-asociaciones.md) y [crear, editar y buscar tipos de emprendimiento](docs/entrega-4/tipos-emprendimiento.md). Los tipos vigentes se sugieren en los editores web de tienda; renombrarlos no reclasifica las tiendas ya guardadas.
+El panel web permite [guardar logos de asociaciones](docs/entrega-4/logos-asociaciones.md), [crear, editar y buscar tipos de emprendimiento](docs/entrega-4/tipos-emprendimiento.md), crear y editar categorías y tipos de productos, y buscar o filtrar en todos los listados administrativos (emprendedoras, administradores, asociaciones y catálogos). Al dar de alta una emprendedora se entregan sus credenciales con opción de mostrarlas o copiarlas. Los tipos vigentes se sugieren en los editores web de tienda; renombrarlos no reclasifica las tiendas ya guardadas.
 
 También permite [gestionar otras cuentas administradoras](docs/entrega-4/cuentas-administradoras.md): crear, editar su nombre, desactivar y reactivar, sin cerrar la sesión de quien realiza el alta. La migración 006 protege estas operaciones en el servidor y bloquea la desactivación propia.
 
@@ -82,13 +82,13 @@ Para abrir el panel: usar Node 24.12 o superior; en web ejecutar npm ci y npm ru
 
 En Android, Mi tienda permite entrar con una cuenta de emprendedora, editar la ficha, cambiar el logo y cerrar sesión. Las cuentas administradoras utilizan el panel web.
 
-## Entrega 5: catálogo, productos y ventas
+## Entrega 4 y Entrega 5
 
 Panel publicado: https://conectasur-dev.web.app
 
 La portada y las fichas de tienda se pueden consultar sin cuenta. Para consultar o modificar datos administrativos se exige el inicio de sesión de administrador de ConectaSur. No incluye contraseñas de demostración.
 
-Revisión de Entrega 4 del 4 de noviembre: [bloque 1, ficha pública de tienda](docs/entrega-4/ficha-publica.md). La portada abre en la URL principal; cada ficha tiene un enlace `#tienda/ID`. El único acceso de cuenta es **Ingresar** (`#ingresar`): el rol validado en Supabase abre la tienda propia o el panel administrativo.
+Revisión de Entrega 4 del 4 de noviembre: [Informe de Entrega 4](docs/entrega-4/informe.md) y [bloque 1, ficha pública de tienda](docs/entrega-4/ficha-publica.md). La portada abre en la URL principal; cada ficha tiene un enlace `#tienda/ID`. El único acceso de cuenta es **Ingresar** (`#ingresar`): el rol validado en Supabase abre la tienda propia o el panel administrativo.
 
 [Bloque 2, acceso de cuentas](docs/entrega-4/acceso-emprendedoras.md): la emprendedora ingresa con las credenciales creadas por el administrador, consulta o edita su tienda y logo, y cierra sesión. Los cambios se guardan en el mismo registro que consulta Android. Los enlaces anteriores `#mi-tienda` y `#administracion` abren el mismo acceso y respetan el rol de la cuenta.
 
@@ -96,7 +96,8 @@ Revisión de Entrega 4 del 4 de noviembre: [bloque 1, ficha pública de tienda](
 
 En Android: Inicio → Mi tienda → ingresar con una cuenta de emprendedora → Mis productos / Registrar una venta / Historial de ventas. Las preferencias de productos e historial se abren desde Mis productos. La app abre el catálogo público sin preguntar un rol ni pedir huella al inicio.
 
-- [Informe breve, alcance y reparto](docs/entrega-5/informe.md).
+- [Informe breve de Entrega 4](docs/entrega-4/informe.md).
+- [Informe breve, alcance y reparto de Entrega 5](docs/entrega-5/informe.md).
 - [Requisitos y criterios de aceptación](docs/entrega-5/requisitos.md).
 - [Informe de seguridad y hallazgos](docs/entrega-5/seguridad.md).
 - [Cambios respecto del prototipo](docs/entrega-5/cambios-prototipo.md).
