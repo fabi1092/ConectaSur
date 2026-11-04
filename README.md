@@ -14,7 +14,7 @@ El panel web permite [guardar logos de asociaciones](docs/entrega-4/logos-asocia
 
 También permite [gestionar otras cuentas administradoras](docs/entrega-4/cuentas-administradoras.md): crear, editar su nombre, desactivar y reactivar, sin cerrar la sesión de quien realiza el alta. La migración 006 protege estas operaciones en el servidor y bloquea la desactivación propia.
 
-La pantalla **Editar cuenta** de emprendedora está preparada para cambiar el nombre de la persona, separado de **Editar tienda**. El guardado W06/W07 sigue pendiente de la función de backend de la Parte 2; su [contrato de integración](docs/entrega-4/contrato-cuenta-emprendedora.md) indica los parámetros y las validaciones. La pantalla informa cuando esa función todavía no está habilitada.
+La pantalla **Editar cuenta** cambia el nombre de la persona, separado de **Editar tienda**. W06/W07 están implementados con la migración 007 y comprobados guardando y recargando desde la web pública. El [contrato y su evidencia](docs/entrega-4/contrato-cuenta-emprendedora.md) describen permisos, conflictos y reintentos; correo, contraseña, rol, estado y tienda se conservan.
 
 ## Configuración local
 
@@ -101,6 +101,8 @@ Revisión de Entrega 4 del 4 de noviembre: [Informe de Entrega 4](docs/entrega-4
 En Android: Inicio → Mi tienda → ingresar con una cuenta de emprendedora → Mis productos / Registrar una venta / Historial de ventas. Las preferencias de productos e historial se abren desde Mis productos. La app abre el catálogo público sin preguntar un rol ni pedir huella al inicio.
 
 - [Informe breve de Entrega 4](docs/entrega-4/informe.md).
+- [Demostración de backend, índices y entorno de desarrollo](docs/entrega-4/backend-demostracion.md).
+- [Comprobaciones manuales antes de presentar](docs/entrega-4/verificacion-manual.md).
 - [Informe breve, alcance y reparto de Entrega 5](docs/entrega-5/informe.md).
 - [Requisitos y criterios de aceptación](docs/entrega-5/requisitos.md).
 - [Informe de seguridad y hallazgos](docs/entrega-5/seguridad.md).
@@ -113,5 +115,7 @@ Pruebas SQL aisladas: npm test en supabase con TEST_DATABASE_URL de una base loc
 Pruebas Android: ./gradlew assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug. Entrega5Test, StoreAccessTest y LaunchTest se ejecutan con el runner AndroidJUnitRunner en un emulador con supabaseLive=true y una cuenta ficticia por argumentos testEmail/testPassword. Para la navegación local: ./gradlew -PconectaDemo=true -Pandroid.testInstrumentationRunnerArguments.class=cl.surcode.conectasur.LaunchTest,cl.surcode.conectasur.NavigationTest connectedDebugAndroidTest.
 
 El workflow Analisis MobSF analiza el APK en un contenedor del runner y guarda el informe como artefacto. No se sube el APK a un analizador público ni se incluyen credenciales de Supabase en el APK de CI.
+
+El cierre de Entrega 4 incorpora la migración 007 para editar el nombre de la cuenta de emprendedora desde administración (W06/W07). Debe aplicarse mediante el migrador antes de comprobar el guardado; no abrir UPDATE directo de profiles. La evidencia real de guardar y recargar está en security/reports/entrepreneur-account-live/verification.json. Google sigue dependiendo de que el servidor del docente habilite el proveedor. No se afirma que exista producción independiente: web.app publica la interfaz de desarrollo conectada a Supabase de clase.
 
 La web incorpora un [dashboard de emprendedora y navegación con sesión](docs/entrega-4/dashboard-web.md): productos, ventas guardadas del día, disponibilidad y retorno directo a Mi tienda desde la vitrina.

@@ -1,10 +1,10 @@
 # Editar cuenta de emprendedora — W06 / W07
 
-Estado: pantalla y contrato preparados por Benjamín. **El guardado real depende de una función de backend a cargo del compañero de la Parte 2.** La consulta al catálogo SQL del servidor no encontró esa función al iniciar este hito; no se confirmó que ya esté trabajando en ella. No se aplicó una migración ni se modificó Auth, Google o Android para esta pantalla.
+Estado actual, 4 de noviembre: **implementado y comprobado contra Supabase real**. El usuario reasignó expresamente el cierre de esta función a Benjamín/este chat. La migración `007_editar_cuenta_emprendedora.sql` está aplicada; el panel guarda el nombre y lo conserva al recargar desde la URL pública. No se modificaron correo, contraseña, rol, estado ni tienda de las cuentas existentes. La evidencia actual es `security/reports/entrepreneur-account-live/verification.json`.
 
 En Emprendedoras, el panel muestra el nombre de la persona junto a su tienda. **Editar cuenta** cambia el nombre de la persona; **Editar tienda** conserva el editor de la ficha comercial. La búsqueda admite ambos nombres. El formulario conserva los datos ante errores, confirma antes de descartar y vuelve a consultar el perfil después de guardar. La cuenta puede estar activa o inactiva; editar el nombre no cambia su estado, rol, tienda, correo ni contraseña.
 
-## Contrato que necesita el compañero
+## Contrato implementado
 
 Función pública de PostgreSQL, llamada por PostgREST con la sesión del administrador:
 
@@ -26,7 +26,7 @@ public.update_entrepreneur_account(
 
 La respuesta exitosa es null (void). La pantalla confirma el valor mediante SELECT de profiles antes de anunciar éxito. No envía role, active, correo ni contraseña.
 
-## Condiciones de servidor pendientes de implementar y probar
+## Condiciones implementadas y probadas
 
 1. Autorizar únicamente al administrador activo según el perfil del servidor, no según metadatos de Auth o campos enviados por el cliente.
 2. Validar nombre y parámetros. Buscar la cuenta con bloqueo de fila; exigir rol emprendedora y shop_id coincidente. Mantener todos los otros campos.
@@ -45,12 +45,12 @@ Códigos esperados por el cliente:
 | CS005 | Cuenta, rol o tienda ya no coinciden |
 | PGRST202 | PostgREST no encuentra la función; el panel informa que el cambio aún no está habilitado |
 
-La implementación se integra en un archivo nuevo de migración del compañero. No editar migraciones ya aplicadas ni incluir credenciales en Git. Este contrato propone el nombre y los parámetros; si el compañero ya eligió otro contrato, adaptar el pequeño módulo web/entrepreneur-account-data.js antes de la integración.
+La implementación se añadió en la migración 007, sin editar ninguna ya aplicada y sin abrir escritura directa sobre perfiles. Comparte el bloqueo de administración de la migración 006 y vuelve a comprobar al actor antes de actualizar. No incluye credenciales en Git.
 
 ## Verificación y cierre
 
-security/entrepreneur-account-data.test.mjs prueba la capa de datos con respuestas simuladas. Las pruebas del formulario deben distinguir lectura real, escritura simulada y guardado real. **W06/W07 no se marcan cerrados hasta que la función esté aplicada y el cambio persista al recargar contra Supabase real.**
+`security/entrepreneur-account-data.test.mjs` conserva las nueve pruebas de la capa cliente. Siete nuevas pruebas SQL comprueban autorización, cuenta inactiva, validación, vínculos inconsistentes, reintentos, conflicto e invariantes. El verificador real ejecutó siete comprobaciones contra la URL pública: permisos directos, lectura posterior, conflicto, auditoría, guardado/recarga y reingreso con las mismas credenciales. Los fixtures propios se eliminaron y la limpieza quedó confirmada.
 
-La publicación final se coordina con el cierre de Google y los otros pendientes de la Parte 2; agregar este formulario no corrige por sí mismo el retorno OAuth revisado.
+La web actualizada se publicó conservando Google como bloqueo externo del servidor. W06/W07 no dependen de habilitar ese proveedor. El verificador antiguo del editor deriva al recorrido real cuando detecta la función instalada; no usa escrituras simuladas para acreditar este cierre.
 
 Resultado del hito de interfaz, 3 de noviembre de 2026: nueve pruebas de la capa de datos y nueve comprobaciones del editor aprobadas; las lecturas y el caso de función ausente usan la instancia real, mientras que los guardados, reintentos y conflictos se simulan. El informe security/reports/entrepreneur-account-editor/verification.json registra backendReady=false. También aprobaron 14 comprobaciones de tipos de emprendimiento, 21 de acceso y diez pruebas compartidas de modelos/reintentos. Vite compiló correctamente y se revisaron capturas de escritorio y celular con texto ampliado y contraste. Los fixtures reales se eliminaron al terminar. No se publicó Hosting en este hito.

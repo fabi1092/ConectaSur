@@ -27,3 +27,14 @@ where schemaname = 'public' order by tablename, policyname;
 
 select id, public, file_size_limit, allowed_mime_types
 from storage.buckets where id = 'shop-images';
+
+-- B09: índices reales de la instancia, no solo el diagrama.
+select tablename,indexname,indexdef from pg_indexes
+where schemaname='public' order by tablename,indexname;
+
+-- Versiones de esquema aplicadas; no incluye credenciales.
+select id,applied_at from app_private.schema_migrations order by id;
+
+-- W06/W07: disponibilidad de la función de edición de cuenta.
+select to_regprocedure('public.update_entrepreneur_account(uuid,text,text,text)') is not null
+as edicion_cuenta_disponible;
