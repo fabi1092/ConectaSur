@@ -42,6 +42,6 @@ jobs:
       - run: npm audit --audit-level=moderate
         working-directory: supabase
       - name: Probar cuentas y modelos web sin credenciales
-        run: node --test security/entrepreneur-account-data.test.mjs security/parte2-web-google.test.mjs supabase/test/dashboard-model.test.js supabase/test/read-retry.test.js supabase/test/sales-model.test.js
+        run: node --test security/entrepreneur-account-data.test.mjs security/parte2-web-google.test.mjs security/firebase-buyer-session.test.mjs supabase/test/dashboard-model.test.js supabase/test/read-retry.test.js supabase/test/sales-model.test.js
       - run: npm test
         working-directory: supabase
