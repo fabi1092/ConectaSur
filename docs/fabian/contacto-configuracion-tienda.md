@@ -32,6 +32,7 @@ Antes, `unlock()` publicaba un estado desbloqueado sin sesión antes de comproba
 - PostgreSQL de pruebas mediante PGlite: 45 aprobadas y una omitida, contando las cinco pruebas web de contacto. Se omite la prueba existente de concurrencia real entre conexiones; no se atribuye esa cobertura a PGlite.
 - API real de Supabase: envío anónimo, reintento sin duplicado, lectura por la dueña, aislamiento entre dueñas, rechazo de lectura anónima, marcado leído, persistencia de canales/precios y rechazo del formulario en modo solo WhatsApp. Se crearon dos cuentas y tiendas ficticias temporales y se eliminaron al terminar.
 - Revisión visual del formulario web en la vista previa local con datos públicos de demostración. No se enviaron mensajes de prueba a las tiendas existentes del equipo.
+- El código web quedó en `main`, pero su publicación en Hosting no se completó: la herramienta oficial devolvió `Failed to authenticate`. Hace falta renovar el ingreso de Firebase antes de repetir la publicación. No se afirma que el sitio publicado ya muestre el formulario nuevo.
 - La huella física y la interacción Android requieren un teléfono o emulador disponible. Las pruebas unitarias verifican el fallo de estado corregido, pero no sustituyen una prueba del sensor real.
 
 ## Recorrido de demostración
