@@ -68,6 +68,7 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
     override suspend fun updateShop(shop: Shop) {
         val body = JSONObject().put("name", shop.name).put("description", shop.description).put("logo_url", shop.logoUrl ?: JSONObject.NULL)
             .put("entrepreneur_type", shop.entrepreneurType).put("sector", shop.sector).put("contact", shop.contact).put("show_prices", shop.showPrices)
+            .put("contact_mode", shop.contactMode.wire).put("whatsapp_number", shop.whatsappNumber)
         val rows = client.request("/rest/v1/shops?id=eq.${SupabaseClient.encode(shop.id)}", "PATCH", body, true, "return=representation") as JSONArray
         if (rows.length() == 0) throw BackendException(403, "No tienes permiso para editar esta tienda")
     }

@@ -21,6 +21,7 @@ object RepositoryProvider {
     }
     fun auth(): AuthRepository = SupabaseAuthRepository(client(),firebaseBuyer)
     fun shops(): ShopRepository = SupabaseShopRepository(client())
+    fun messages(): ShopMessageRepository = SupabaseShopMessages(client())
     suspend fun syncPendingOwner() {
         val api=backend?:return
         val profile=api.cachedProfile()?:return

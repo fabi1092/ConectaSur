@@ -160,7 +160,12 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         val session = mutable.value.session ?: return
         if (mutable.value.locked || session.role != Role.EMPRENDEDORA || session.shopId != changed.id) return
         val clean = changed.copy(name = changed.name.trim(), description = changed.description.trim(),
-            entrepreneurType = changed.entrepreneurType.trim(), sector = changed.sector.trim(), contact = changed.contact.trim())
+            entrepreneurType = changed.entrepreneurType.trim(), sector = changed.sector.trim(), contact = changed.contact.trim(),
+            whatsappNumber = if (changed.contactMode.hasWhatsApp) whatsappNumber(changed.whatsappNumber).orEmpty() else "")
+        if (clean.contactMode.hasWhatsApp && clean.whatsappNumber.isEmpty()) {
+            message("Escribe un WhatsApp válido con código de país, por ejemplo +56 9 1234 5678.", true)
+            return
+        }
         if (clean.name.isBlank() || clean.name.length > 120 || clean.description.length > 1000 ||
             clean.entrepreneurType.length > 120 || clean.sector.length > 240 || clean.contact.length > 240) {
             message("Revisa el nombre y los límites de los campos de la tienda.", true)

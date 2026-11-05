@@ -64,6 +64,7 @@ abstract class OwnerActivity : FragmentActivity() {
     private fun validate() = lifecycleScope.launch {
         try {
             val session=RepositoryProvider.auth().currentSession()
+            if(!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) return@launch
             if(session?.role!=Role.EMPRENDEDORA || session.shopId.isNullOrBlank()){status("Ingresa con una cuenta de emprendedora desde Mi tienda.");return@launch}
             owner=session;authorized=true;content.isVisible=true;findViewById<View>(R.id.owner_unlock).isVisible=false
             onOwnerReady();applyAccessibility(content,settings)

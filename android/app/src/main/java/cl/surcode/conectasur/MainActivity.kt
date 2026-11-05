@@ -404,6 +404,10 @@ class MainActivity : ComponentActivity() {
                 if (shop != null && current.screen == "public_store" && current.productId == shopId) {
                     page.findViewById<TextView>(R.id.store_name).text = shop.name
                     page.findViewById<TextView>(R.id.store_description).text = shop.description
+                    page.findViewById<Button>(R.id.store_contact).apply {
+                        isVisible = true
+                        setOnClickListener { startActivity(Intent(this@MainActivity, ShopContactActivity::class.java).putExtra("shop_id", shop.id)) }
+                    }
                     PublicImageLoader.load(lifecycleScope, page.findViewById(R.id.store_logo), shop.logoUrl, BuildConfig.SUPABASE_URL)
                 }
             }

@@ -444,6 +444,23 @@ class StoreViewModelTest {
         assertFalse(vm.state.value.error)
     }
 
+    @Test fun contactPreferencesAndPriceVisibilitySurviveReopenAndWhatsAppNeedsANumber() = runTest(dispatcher) {
+        auth.session=owner
+        val vm=model();vm.start(false);advanceUntilIdle()
+        vm.edit(initial.copy(contactMode=ContactMode.BOTH,whatsappNumber="sin teléfono"))
+        vm.save();advanceUntilIdle();assertEquals(0,shops.writes)
+        vm.edit(initial.copy(contactMode=ContactMode.BOTH,whatsappNumber="9 1234 5678",showPrices=false))
+        vm.save();advanceUntilIdle();assertFalse(vm.state.value.error)
+        val reopened=model();reopened.start(false);advanceUntilIdle()
+        assertEquals(ContactMode.BOTH,reopened.draft?.contactMode)
+        assertEquals("56912345678",reopened.draft?.whatsappNumber)
+        assertEquals(false,reopened.draft?.showPrices)
+        reopened.edit(reopened.draft!!.copy(contactMode=ContactMode.FORM))
+        reopened.save();advanceUntilIdle()
+        assertEquals("",shops.saved.whatsappNumber)
+        assertFalse(shops.saved.showPrices)
+    }
+
     private inner class FakeAuth : AuthRepository {
         var session: Session? = null
         var nextSession = owner

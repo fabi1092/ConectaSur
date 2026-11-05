@@ -11,7 +11,8 @@ data class Session(val uid: String, val email: String?, val role: Role, val shop
 
 data class Shop(
     val id: String, val name: String, val description: String, val logoUrl: String?,
-    val entrepreneurType: String, val sector: String, val contact: String, val showPrices: Boolean
+    val entrepreneurType: String, val sector: String, val contact: String, val showPrices: Boolean,
+    val contactMode: ContactMode = ContactMode.FORM, val whatsappNumber: String = ""
 )
 
 /** Una opcion de un producto (talla, color...), con su propio stock. */

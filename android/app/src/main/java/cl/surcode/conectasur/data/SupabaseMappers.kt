@@ -35,7 +35,8 @@ internal fun OwnerProduct.toSupabase(): JSONObject = JSONObject().apply {
         .put("priceClp", v.priceClp ?: JSONObject.NULL).put("photo", v.photo ?: JSONObject.NULL)) } })
 }
 internal fun JSONObject.toShop() = Shop(getString("id"), getString("name"), optString("description"), nullableString("logo_url"),
-    optString("entrepreneur_type"), optString("sector"), optString("contact"), getBoolean("show_prices"))
+    optString("entrepreneur_type"), optString("sector"), optString("contact"), getBoolean("show_prices"),
+    ContactMode.from(optString("contact_mode")), optString("whatsapp_number"))
 internal fun JSONObject.toSale() = Sale(getString("id"), getString("product_id"), getString("product_name"),
     nullableString("variant_id"), getInt("quantity"), getLong("price_clp"), optString("place"), getLong("date_millis"))
 internal fun <T> JSONArray.rows(map: (JSONObject) -> T): List<T> = (0 until length()).map { map(getJSONObject(it)) }

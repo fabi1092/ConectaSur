@@ -50,6 +50,13 @@
                 <Button android:id="@+id/shop_choices_retry" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_choices_retry" android:visibility="gone"/>
                 <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_contact_label" android:labelFor="@id/shop_edit_contact"/>
                 <EditText android:id="@+id/shop_edit_contact" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="text" android:maxLength="240" android:saveEnabled="false" android:importantForAutofill="no"/>
+                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/contact_mode_title" android:labelFor="@id/shop_contact_mode"/>
+                <Button android:id="@+id/shop_contact_mode" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/contact_form"/>
+                <LinearLayout android:id="@+id/shop_whatsapp_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                    <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/contact_whatsapp_number" android:labelFor="@id/shop_whatsapp"/>
+                    <EditText android:id="@+id/shop_whatsapp" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="phone" android:maxLength="24" android:saveEnabled="false" android:importantForAutofill="no"/>
+                </LinearLayout>
+                <Button android:id="@+id/shop_messages" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/contact_inbox"/>
                 <CheckBox android:id="@+id/shop_show_prices" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:text="@string/shop_prices_label" android:saveEnabled="false"/>
                 <Button android:id="@+id/shop_save" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save_shop"/>
                 <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/bio_intro"/>

@@ -30,6 +30,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import cl.surcode.conectasur.data.*
+import cl.surcode.conectasur.domain.ContactMode
 import cl.surcode.conectasur.domain.Role
 import cl.surcode.conectasur.ui.*
 import kotlinx.coroutines.CancellationException
@@ -45,7 +46,7 @@ class StoreActivity : FragmentActivity() {
     private var binding = false
     private var choosingLogo = false
     private var choosingGoogle = false
-    private val fields = listOf(R.id.shop_edit_name, R.id.shop_edit_description, R.id.shop_edit_contact)
+    private val fields = listOf(R.id.shop_edit_name, R.id.shop_edit_description, R.id.shop_edit_contact, R.id.shop_whatsapp)
     private val picker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null && ::model.isInitialized && model.state.value.session != null) {
             val owner = model.state.value.session?.uid
@@ -156,6 +157,18 @@ class StoreActivity : FragmentActivity() {
         }
         fields.forEach { id -> findViewById<EditText>(id).doAfterTextChanged { if (!binding) captureDraft() } }
         findViewById<CheckBox>(R.id.shop_show_prices).setOnCheckedChangeListener { _, _ -> if (!binding) captureDraft() }
+        findViewById<Button>(R.id.shop_contact_mode).setOnClickListener {
+            captureDraft()
+            val current = model.draft ?: return@setOnClickListener
+            AlertDialog.Builder(this).setTitle(R.string.contact_mode_title)
+                .setSingleChoiceItems(ContactMode.entries.map { it.label }.toTypedArray(), current.contactMode.ordinal) { dialog, index ->
+                    model.draft?.let { model.edit(it.copy(contactMode = ContactMode.entries[index])) }
+                    render(model.state.value); dialog.dismiss()
+                }.setNegativeButton(android.R.string.cancel, null).show()
+        }
+        findViewById<Button>(R.id.shop_messages).setOnClickListener {
+            discardIfNeeded { startActivity(Intent(this, ShopInboxActivity::class.java)) }
+        }
         findViewById<Button>(R.id.shop_save).setOnClickListener { captureDraft(); hideKeyboard(); showStatus(); model.save() }
         findViewById<Button>(R.id.shop_choose_logo).setOnClickListener { captureDraft(); picker.launch("image/*") }
         findViewById<Button>(R.id.shop_remove_logo).setOnClickListener { captureDraft(); model.removeLogo() }
@@ -255,11 +268,13 @@ class StoreActivity : FragmentActivity() {
         if (privateVisible) {
             val draft = model.draft ?: state.shop!!
             binding = true
-            listOf(draft.name, draft.description, draft.contact).forEachIndexed { index, value ->
+            listOf(draft.name, draft.description, draft.contact, draft.whatsappNumber).forEachIndexed { index, value ->
                 findViewById<EditText>(fields[index]).let { if (it.text.toString() != value) it.setText(value) }
             }
             findViewById<CheckBox>(R.id.shop_show_prices).isChecked = draft.showPrices
             binding = false
+            findViewById<Button>(R.id.shop_contact_mode).text = draft.contactMode.label
+            findViewById<View>(R.id.shop_whatsapp_group).isVisible = draft.contactMode.hasWhatsApp
             bindChoice(R.id.shop_edit_type, draft.entrepreneurType, if (state.choicesError) emptyList() else state.choices.entrepreneurTypes, R.string.shop_choose_type, state)
             bindChoice(R.id.shop_edit_sector, draft.sector, state.choices.sectors, R.string.shop_choose_sector, state)
             findViewById<TextView>(R.id.shop_choices_status).setText(when {
@@ -291,7 +306,7 @@ class StoreActivity : FragmentActivity() {
         if (!::model.isInitialized || model.state.value.locked) return
         val base = model.draft ?: return
         val values = fields.map { findViewById<EditText>(it).text.toString() }
-        model.edit(base.copy(name = values[0], description = values[1], contact = values[2],
+        model.edit(base.copy(name = values[0], description = values[1], contact = values[2], whatsappNumber = values[3],
             showPrices = findViewById<CheckBox>(R.id.shop_show_prices).isChecked))
     }
     private fun bindChoice(id: Int, current: String, choices: List<String>, action: Int, state: StoreState) {
