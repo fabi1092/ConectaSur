@@ -7,9 +7,11 @@ import cl.surcode.conectasur.domain.*
 /** Una instancia y una sesion compartidas. Sin configuracion se utiliza la demostracion. */
 object RepositoryProvider {
     private var backend: SupabaseClient? = null
+    private var firebaseBuyer: FirebaseBuyerAuth? = null
     @Synchronized fun initialize(context: Context) {
         if (backend == null && supabaseReady()) backend = SupabaseClient(
             BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY, SecureBackendStore(context.applicationContext))
+        if(firebaseBuyer == null && FirebaseBuyerAuth.configured()) firebaseBuyer = FirebaseBuyerAuth(context.applicationContext)
     }
     fun supabaseReady() = BuildConfig.SUPABASE_URL.isNotBlank() && BuildConfig.SUPABASE_ANON_KEY.isNotBlank()
     private fun client() = checkNotNull(backend) { "Inicializa RepositoryProvider con el contexto de la aplicacion" }
@@ -17,7 +19,7 @@ object RepositoryProvider {
         initialize(context)
         return if (supabaseReady()) SupabaseCatalogRepository(client()) else DemoCatalogRepository()
     }
-    fun auth(): AuthRepository = SupabaseAuthRepository(client())
+    fun auth(): AuthRepository = SupabaseAuthRepository(client(),firebaseBuyer)
     fun shops(): ShopRepository = SupabaseShopRepository(client())
     suspend fun syncPendingOwner() {
         val api=backend?:return

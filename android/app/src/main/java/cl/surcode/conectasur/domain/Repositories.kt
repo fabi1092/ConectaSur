@@ -31,6 +31,9 @@ interface AuthRepository {
     suspend fun currentSession(): Session?
     fun signOut()
     suspend fun isGoogleEnabled(): Boolean = false
+    val nativeGoogleAvailable: Boolean get() = false
+    suspend fun signInWithGoogleIdToken(idToken: String): Session =
+        throw UnsupportedOperationException("Acceso con Google no disponible")
     fun beginGoogleSignIn(): String = throw UnsupportedOperationException("Acceso con Google no disponible")
     fun hasPendingGoogleSignIn(): Boolean = false
     fun cancelGoogleSignIn() { }
