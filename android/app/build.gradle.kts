@@ -7,6 +7,10 @@ val supabase = Properties().apply {
     if (config.exists()) config.inputStream().use { load(it) }
 }
 val demoBuild = providers.gradleProperty("conectaDemo").orNull == "true"
+val firebase = Properties().apply {
+    val config = rootProject.file("firebase.properties")
+    if (config.exists()) config.inputStream().use { load(it) }
+}
 fun quoted(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 android {
     namespace = "cl.surcode.conectasur"
@@ -15,10 +19,13 @@ android {
         applicationId = "cl.surcode.conectasur"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.5.2-inicio-comprador"
+        versionCode = 7
+        versionName = "0.5.3-google-firebase"
         buildConfigField("String", "SUPABASE_URL", quoted(if (demoBuild) "" else supabase.getProperty("SUPABASE_URL", "")))
         buildConfigField("String", "SUPABASE_ANON_KEY", quoted(if (demoBuild) "" else supabase.getProperty("SUPABASE_ANON_KEY", "")))
+        for (key in listOf("FIREBASE_API_KEY", "FIREBASE_APP_ID", "FIREBASE_PROJECT_ID", "GOOGLE_WEB_CLIENT_ID")) {
+            buildConfigField("String", key, quoted(if(demoBuild) "" else firebase.getProperty(key, "")))
+        }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
@@ -27,6 +34,12 @@ android {
     lint { abortOnError = true; warningsAsErrors = false; htmlReport = true; xmlReport = true }
 }
 dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
     implementation("androidx.activity:activity:1.11.0")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.9")

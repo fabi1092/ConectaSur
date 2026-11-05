@@ -44,6 +44,7 @@ class StoreActivity : FragmentActivity() {
     private var biometricAction: String? = null
     private var binding = false
     private var choosingLogo = false
+    private var choosingGoogle = false
     private val fields = listOf(R.id.shop_edit_name, R.id.shop_edit_description, R.id.shop_edit_contact)
     private val picker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null && ::model.isInitialized && model.state.value.session != null) {
@@ -120,7 +121,22 @@ class StoreActivity : FragmentActivity() {
             override fun onAuthenticationFailed() { model.message("No reconocimos la huella. Inténtalo nuevamente.", true) }
         })
         findViewById<Button>(R.id.account_login).setOnClickListener { signIn() }
-        findViewById<Button>(R.id.account_google_login).setOnClickListener { hideKeyboard(); model.beginGoogle() }
+        findViewById<Button>(R.id.account_google_login).setOnClickListener {
+            hideKeyboard()
+            if(!RepositoryProvider.auth().nativeGoogleAvailable) model.beginGoogle()
+            else if(!choosingGoogle && !model.state.value.busy && model.state.value.session==null) {
+                choosingGoogle=true
+                findViewById<Button>(R.id.account_google_login).isEnabled=false
+                lifecycleScope.launch {
+                    try { model.signInGoogle(GoogleAccountChooser(this@StoreActivity).requestToken()) }
+                    catch(cancelled: kotlinx.coroutines.CancellationException) { RepositoryProvider.auth().cancelGoogleSignIn(); throw cancelled }
+                    catch(_: androidx.credentials.exceptions.GetCredentialCancellationException) { model.message("Cancelaste el acceso con Google. Puedes intentarlo nuevamente.") }
+                    catch(_: androidx.credentials.exceptions.NoCredentialException) { model.message("Agrega una cuenta de Google en los ajustes del teléfono y vuelve a intentarlo.",true) }
+                    catch(_: Exception) { model.message("No pudimos abrir Google. Revisa tu conexión y vuelve a intentarlo.",true) }
+                    finally { choosingGoogle=false; render(model.state.value) }
+                }
+            }
+        }
         findViewById<Button>(R.id.account_catalog).setOnClickListener {
             setResult(RESULT_OK, Intent().putExtra(MainActivity.OPEN_CATALOG, true))
             finish()
@@ -225,6 +241,7 @@ class StoreActivity : FragmentActivity() {
         findViewById<View>(R.id.account_logout).isVisible = state.session != null && !state.locked
         findViewById<View>(R.id.shop_reload).isVisible = owner && state.shop == null && !state.locked
         setEnabled(findViewById(R.id.login_form), !state.busy)
+        findViewById<View>(R.id.account_google_login).isEnabled = !state.busy && !choosingGoogle
         setEnabled(findViewById(R.id.shop_form), !state.busy && !choosingLogo)
         setEnabled(findViewById(R.id.account_profile), !state.busy)
         findViewById<View>(R.id.shop_reload).isEnabled = !state.busy

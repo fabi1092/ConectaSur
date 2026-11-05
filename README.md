@@ -4,13 +4,13 @@ Aplicación de SurCode para conectar emprendedoras y compradores de Puerto Montt
 
 ## Backend actual: Supabase
 
-Desde el 1 de noviembre se utiliza la instancia del grupo entregada por el profesor: PostgreSQL, Auth y Storage. Android y web consumen la API con la clave anon y la sesión del usuario. El código activo ya no utiliza Firebase/Firestore.
+Desde el 1 de noviembre se utiliza la instancia Supabase del grupo entregada por el profesor: PostgreSQL, Auth por correo y Storage. Android y web consumen su API mediante la capa de datos. Firebase Authentication se usa exclusivamente para compradores con Google; Firestore no participa en los flujos actuales. Ver [configuración y límites de Google](docs/entrega-4/google-firebase.md).
 
 Android mantiene Kotlin y Views con XML editables en Design/Palette, navegación simple, ajustes de letras/botones, contraste, lectura opcional y precios en pesos chilenos. El catálogo y la ficha pública consultan Supabase; las fotografías de ejemplo están alojadas en Storage. Los nombres y precios de esos ejemplos son ficticios.
 
 El acceso Android, cierre de sesión, huella opcional y edición de datos/logo de la tienda se implementan en StoreActivity. Ver [entrega de Fabián](docs/fabian/acceso-tienda.md) para configuración y verificación. El panel web administrativo también está integrado. Los productos, el flujo guiado con borradores recuperables, las variantes, la disponibilidad, las ventas y el historial también están integrados. Ver el [Informe de Entrega 4](docs/entrega-4/informe.md) y el [Informe de Entrega 5](docs/entrega-5/informe.md).
 
-Android ahora usa un [inicio de sesión común por perfil](docs/entrega-4/acceso-unificado-android.md): correo y contraseña para comprador, emprendedora o acceso al panel web administrativo. La sesión se conserva al reabrir. Esta decisión del usuario cambia A10/RN-07 de la pauta; Google real sigue pendiente de habilitación externa.
+Android usa un [inicio de sesión común por perfil](docs/entrega-4/acceso-unificado-android.md): correo y contraseña para comprador, emprendedora o acceso al panel web administrativo, y Google mediante Firebase para comprador. La sesión se conserva al reabrir. Conservar también el correo para comprador es una decisión del usuario que cambia el literal de A10/RN-07; no se presenta como una excepción otorgada por el profesor.
 
 El panel web permite [guardar logos de asociaciones](docs/entrega-4/logos-asociaciones.md), [crear, editar y buscar tipos de emprendimiento](docs/entrega-4/tipos-emprendimiento.md), crear y editar categorías y tipos de productos, y buscar o filtrar en todos los listados administrativos (emprendedoras, administradores, asociaciones y catálogos). Al dar de alta una emprendedora se entregan sus credenciales con opción de mostrarlas o copiarlas. Los tipos vigentes se sugieren en los editores web de tienda; renombrarlos no reclasifica las tiendas ya guardadas.
 

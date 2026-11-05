@@ -24,16 +24,27 @@ class SupabaseCatalogRepository(private val client: SupabaseClient) : CatalogRep
         catch (_: Exception) { sync.value = "No pudimos actualizar el catalogo. Intentaremos nuevamente." }
     }
 }
-class SupabaseAuthRepository(private val client: SupabaseClient) : AuthRepository {
+class SupabaseAuthRepository(private val client: SupabaseClient, private val firebase: FirebaseBuyerAuth? = null) : AuthRepository {
     override fun beginGoogleSignIn() = client.beginGoogleSignIn()
     override fun hasPendingGoogleSignIn() = client.hasPendingGoogleSignIn()
-    override fun cancelGoogleSignIn() = client.cancelGoogleSignIn()
+    override fun cancelGoogleSignIn() { client.cancelGoogleSignIn(); firebase?.cancelPending() }
     override suspend fun completeGoogleSignIn(callbackUrl: String) = client.completeGoogleSignIn(callbackUrl)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    override suspend fun signIn(email: String, password: String) = client.signIn(email, password)
-    override suspend fun currentSession() = client.currentSession()
-    override fun signOut() { scope.launch(start = CoroutineStart.UNDISPATCHED) { client.signOut() } }
-    override suspend fun isGoogleEnabled() = client.isGoogleOAuthEnabled()
+    override suspend fun signIn(email: String, password: String): Session {
+        check(firebase?.hasUser != true) { "Cierra tu sesión antes de cambiar de cuenta." }
+        return client.signIn(email, password)
+    }
+    override suspend fun currentSession() = client.currentSession() ?: firebase?.currentSession()
+    override fun signOut() {
+        firebase?.signOut()
+        scope.launch(start = CoroutineStart.UNDISPATCHED) { client.signOut(); firebase?.clearCredentialState() }
+    }
+    override val nativeGoogleAvailable get() = firebase != null
+    override suspend fun isGoogleEnabled() = firebase != null || client.isGoogleOAuthEnabled()
+    override suspend fun signInWithGoogleIdToken(idToken: String): Session {
+        check(client.currentSession() == null) { "Cierra tu sesión antes de cambiar de cuenta." }
+        return requireNotNull(firebase) { "Google aún no está configurado." }.signIn(idToken)
+    }
 }
 class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepository {
     override suspend fun getShopChoices(): ShopChoices {

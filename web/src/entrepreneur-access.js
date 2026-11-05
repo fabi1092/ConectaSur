@@ -81,7 +81,8 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
       status.className = 'owner-status';
       status.textContent = 'Conectando con Google…';
       try {
-        await db.loginWithGoogle();
+        const user=await db.loginWithGoogle();
+        if(user && typeof user==='object' && alive())await openAccount(user);
       } catch (error) {
         if (!alive() || !googleButton.isConnected) return;
         status.textContent = messageFor(error);

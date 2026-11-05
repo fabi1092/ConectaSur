@@ -1,0 +1,6 @@
+# Configuración de cliente del proyecto propio, nunca claves de administrador.
+# Copiar a firebase.properties (ignorado) usando la configuración Android de Firebase.
+FIREBASE_API_KEY=CLAVE_PUBLICA_DE_CLIENTE
+FIREBASE_APP_ID=ID_DE_LA_APP_ANDROID
+FIREBASE_PROJECT_ID=ID_DEL_PROYECTO
+GOOGLE_WEB_CLIENT_ID=ID_CLIENTE_OAUTH_WEB

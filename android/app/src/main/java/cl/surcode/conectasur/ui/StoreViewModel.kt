@@ -93,6 +93,10 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
             } else message("Google aún no está disponible. Puedes ingresar con tu correo y contraseña.", true)
         }
     }
+    fun signInGoogle(idToken: String) {
+        if(mutable.value.session != null || mutable.value.locked || mutable.value.busy)return
+        runOperation("Comprobando tu cuenta de Google…") { loadShop(auth.signInWithGoogleIdToken(idToken)) }
+    }
     fun googleBrowserLaunched() { mutable.value = mutable.value.copy(googleUrl = null) }
     fun googleBrowserUnavailable() {
         auth.cancelGoogleSignIn()
