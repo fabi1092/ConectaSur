@@ -141,6 +141,44 @@ class StoreViewModelTest {
         assertEquals(initial, vm.state.value.shop)
     }
 
+    @Test fun biometricUnlockRemainsLockedUntilTheSessionAndShopAreVerifiedAndCanBeRepeated() = runTest(dispatcher) {
+        auth.session = owner
+        shops.gate = CompletableDeferred()
+        val vm = model()
+        vm.start(true)
+        vm.unlock()
+        // Antes de ejecutar la consulta no debe aparecer un estado vacío y desbloqueado.
+        assertTrue(vm.state.value.locked)
+        runCurrent()
+        assertTrue(vm.state.value.locked)
+        assertTrue(vm.state.value.busy)
+        shops.gate!!.complete(Unit)
+        advanceUntilIdle()
+        assertFalse(vm.state.value.locked)
+        assertEquals(owner, vm.state.value.session)
+        vm.lock()
+        vm.unlock()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.locked)
+        assertEquals(initial, vm.state.value.shop)
+    }
+
+    @Test fun leavingWhileBiometricSessionIsCheckedRequiresAnotherUnlock() = runTest(dispatcher) {
+        auth.session = owner
+        shops.gate = CompletableDeferred()
+        val vm = model()
+        vm.start(true)
+        vm.unlock()
+        runCurrent()
+        vm.lock()
+        shops.gate!!.complete(Unit)
+        advanceUntilIdle()
+        assertTrue(vm.state.value.locked)
+        vm.unlock()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.locked)
+    }
+
     @Test fun networkFailureKeepsDraftAndNeverClaimsSaveSucceeded() = runTest(dispatcher) {
         auth.session = owner
         val vm = model()

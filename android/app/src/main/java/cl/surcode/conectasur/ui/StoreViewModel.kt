@@ -38,6 +38,7 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
     private var operation: Job? = null
     private var operationId = 0
     private var started = false
+    private var lockVersion = 0
 
     fun start(requireBiometric: Boolean) {
         if (started) return
@@ -45,12 +46,16 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         if (requireBiometric) mutable.value = StoreState(locked = true) else restore()
     }
 
-    fun restore() = runOperation("Comprobando tu sesión…") {
+    fun restore() = restoreSession(null)
+    private fun restoreSession(unlockVersion: Int?) = runOperation("Comprobando tu sesión…") {
         val session = auth.currentSession()
         if (session == null) {
             clearDraft()
             mutable.value = StoreState(message = "Ingresa con tu correo y contraseña.")
-        } else loadShop(session)
+        } else {
+            loadShop(session)
+            if (unlockVersion != null && unlockVersion == lockVersion) mutable.value = mutable.value.copy(locked = false)
+        }
     }
 
     fun signIn(email: String, password: String) {
@@ -189,8 +194,8 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         }
     }
 
-    fun lock() { mutable.value = mutable.value.copy(locked = true) }
-    fun unlock() { mutable.value = mutable.value.copy(locked = false); restore() }
+    fun lock() { lockVersion++; mutable.value = mutable.value.copy(locked = true) }
+    fun unlock() { if (mutable.value.locked) restoreSession(lockVersion) }
     fun message(value: String, error: Boolean = false) { mutable.value = mutable.value.copy(message = value, error = error) }
     fun logout(message: String = "Sesión cerrada en este teléfono.") {
         operationId++
