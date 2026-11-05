@@ -35,6 +35,55 @@ async function actor(role,user,fn){const c=await pool.connect();try{
  return await fn(c);
 }finally{await c.query('rollback');c.release()}}
 const as=(user,fn)=>actor('authenticated',ids[user],fn);
+describe('Contacto: privacidad, entrega y preferencias',()=>{
+ const mid='20000000-0000-0000-0000-000000000001';
+ before(async()=>{await pool.query("insert into public.shop_messages(id,shop_id,sender_name,sender_contact,body) values($1,'ana','Visitante ficticio','demo@example.cl','Consulta ficticia')",[mid]);});
+ it('solo la dueña activa lee sus mensajes; otra dueña, admin y comprador no los leen',async()=>{
+   assert.equal((await as('ana',c=>c.query('select * from public.shop_messages'))).rows.length,1);
+   for(const user of ['bea','admin','buyer'])assert.equal((await as(user,c=>c.query('select * from public.shop_messages'))).rows.length,0);
+   await assert.rejects(actor('anon',null,c=>c.query('select * from public.shop_messages')),{code:'42501'});
+ });
+ it('visitante envía y reintenta sin duplicar; no puede insertar evitando el RPC',async()=>{
+   await actor('anon',null,async c=>{
+     const id=randomUUID(),args=[id,'ana',' Ana ',' prueba@example.cl ',' Hola '];
+     await c.query('select public.send_shop_message($1,$2,$3,$4,$5)',args);
+     await c.query('select public.send_shop_message($1,$2,$3,$4,$5)',args);
+     await c.query('set local role authenticated');await c.query("select set_config('request.jwt.claim.sub',$1,true)",[ids.ana]);
+     const rows=(await c.query('select * from public.shop_messages where id=$1',[id])).rows;
+     assert.equal(rows.length,1);assert.equal(rows[0].body,'Hola');assert.equal(rows[0].read_at,null);
+   });
+   await assert.rejects(actor('anon',null,c=>c.query("insert into public.shop_messages(id,shop_id,sender_name,sender_contact,body) values($1,'ana','x','abc','hola')",[randomUUID()])),{code:'42501'});
+ });
+ it('solo la dueña marca leído y nadie edita el contenido recibido',async()=>{
+   await as('ana',async c=>{await c.query('select public.read_shop_message($1)',[mid]);assert.ok((await c.query('select read_at from public.shop_messages where id=$1',[mid])).rows[0].read_at);});
+   for(const user of ['bea','admin','buyer'])await assert.rejects(as(user,c=>c.query('select public.read_shop_message($1)',[mid])),{code:'42501'});
+   await assert.rejects(as('ana',c=>c.query("update public.shop_messages set body='cambio' where id=$1",[mid])),{code:'42501'});
+ });
+ it('desactivar la cuenta impide leer y recibir mensajes',async()=>{
+   await pool.query('update public.profiles set active=false where id=$1',[ids.ana]);
+   try {
+     assert.equal((await as('ana',c=>c.query('select * from public.shop_messages'))).rows.length,0);
+     await assert.rejects(actor('anon',null,c=>c.query("select public.send_shop_message($1,'ana','Ana','test@example.cl','Hola')",[randomUUID()])),{code:'42501'});
+   }finally{await pool.query('update public.profiles set active=true where id=$1',[ids.ana]);}
+ });
+ it('modo WhatsApp rechaza formulario; contacto y precios persisten en su tienda',()=>as('ana',async c=>{
+   await c.query("update public.shops set contact_mode='both',whatsapp_number='56912345678',show_prices=false where id='ana'");
+   const s=(await c.query("select contact_mode,whatsapp_number,show_prices from public.public_shops where id='ana'")).rows[0];
+   assert.deepEqual(s,{contact_mode:'both',whatsapp_number:'56912345678',show_prices:false});
+   const p=(await c.query("select price_clp from public.public_products where shop_id='ana'")).rows[0];assert.equal(p.price_clp,null);
+   await c.query("update public.shops set contact_mode='whatsapp' where id='ana'");
+   await assert.rejects(c.query("select public.send_shop_message($1,'ana','Ana','test@example.cl','Hola')",[randomUUID()]),{code:'42501'});
+ }));
+ it('el límite de frecuencia rechaza el cuarto mensaje del mismo contacto',()=>actor('anon',null,async c=>{
+   for(let i=0;i<3;i++)await c.query("select public.send_shop_message($1,'ana','Ana','limited@example.cl','Hola')",[randomUUID()]);
+   await assert.rejects(c.query("select public.send_shop_message($1,'ana','Ana','limited@example.cl','Hola')",[randomUUID()]),{code:'P0001'});
+ }));
+ it('validación rechaza mensajes vacíos, números inválidos y destinatarios inexistentes',async()=>{
+   await assert.rejects(actor('anon',null,c=>c.query("select public.send_shop_message($1,'ana',' ','abc','Hola')",[randomUUID()])),{code:'23514'});
+   await assert.rejects(as('ana',c=>c.query("update public.shops set contact_mode='both',whatsapp_number='url' where id='ana'")),{code:'23514'});
+   await assert.rejects(actor('anon',null,c=>c.query("select public.send_shop_message($1,'no-existe','Ana','abc','Hola')",[randomUUID()])),{code:'42501'});
+ });
+});
 describe('PostgreSQL: RLS y RPC',()=>{
  it('solo el administrador activo edita cuentas de emprendedoras; ni la propia dueña tiene permiso',async()=>{
    for(const name of ['ana','bea','buyer'])await assert.rejects(as(name,c=>c.query("select public.update_entrepreneur_account($1,'ana','Cambio','Comprador')",[ids.ana])),{code:'42501'});
