@@ -7,6 +7,7 @@ import { browserAuthStorage, invalidSession } from './auth-session.js';
 import { createPasswordRecovery } from './password-recovery.js';
 import { adminCreation } from './admin-creation.js';
 import { createGoogleAuth } from './google-auth.js';
+import { messageValues } from './contact-model.js';
 
 const unwrap = ({ data, error }) => {
   if (error) throw Object.assign(new Error(error.message), { code: error.code, status: error.status });
@@ -23,6 +24,8 @@ const shop = r => r && ({
   sector: r.sector,
   contact: r.contact,
   showPrices: r.show_prices,
+  contactMode: r.contact_mode || 'form',
+  whatsappNumber: r.whatsapp_number || '',
   historyEnabled: r.history_enabled,
   active: r.active,
   defaultProducts: r.default_products
@@ -476,6 +479,12 @@ export function createDataLayer(config, { storage, storageKey, firebaseBuyer = n
             .maybeSingle()
         )
       );
+    },
+
+    async sendShopMessage(shopId, requestId, input) {
+      const values = messageValues(input);
+      return unwrap(await sdk.rpc('send_shop_message', { p_id: requestId, p_shop_id: shopId,
+        p_name: values.name, p_contact: values.contact, p_body: values.body }));
     },
 
     async listPublicShops() {

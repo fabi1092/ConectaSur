@@ -3,6 +3,7 @@ import { escapeHtml as escape, safeImageUrl as imageUrl } from './content.js';
 import { icon, brand } from './visuals.js';
 import { accountDestination } from './account-navigation.js';
 import { photo, wirePhotos, productCard, wireProducts } from './public-products.js';
+import { contactMarkup, wireContact } from './shop-contact.js';
 
 const shopLink = id => '#tienda/' + encodeURIComponent(id);
 const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-CL');
@@ -149,18 +150,6 @@ export async function showPublicShops(app, db, isCurrent = () => true) {
   }
 }
 
-function contactLink(contact) {
-  const value = contact.trim();
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-    return `<a class="public-primary" href="mailto:${escape(encodeURIComponent(value))}">Enviar correo <span aria-hidden="true">↗</span></a>`;
-  }
-  if (/^\+?[\d\s()-]{8,22}$/.test(value)) {
-    return `<a class="public-primary" href="tel:${escape(value.replace(/[^+\d]/g, ''))}">Llamar a la tienda <span aria-hidden="true">↗</span></a>`;
-  }
-  const url = imageUrl(value);
-  return url ? `<a class="public-primary" href="${escape(url)}" target="_blank" rel="noopener noreferrer">Abrir contacto <span aria-hidden="true">↗</span></a>` : '';
-}
-
 export async function showPublicShop(app, db, id, isCurrent = () => true) {
   document.title = 'ConectaSur | Tienda';
   app.innerHTML = shell('<section class="public-state"><p role="status">Cargando la tienda…</p></section>');
@@ -184,12 +173,13 @@ export async function showPublicShop(app, db, id, isCurrent = () => true) {
         <section class="public-about" aria-labelledby="about-title"><p class="public-eyebrow">Detrás de este emprendimiento</p><h2 id="about-title">Conoce nuestra tienda</h2><p class="public-description">${escape(shop.description || 'Esta tienda aún no ha agregado una descripción.')}</p></section>
         <section class="public-contact" aria-labelledby="contact-title"><p class="public-eyebrow">Conversemos</p><h2 id="contact-title">Contacta a la tienda</h2><p>Consulta directamente por sus productos y disponibilidad.</p>
           <dl><dt>Datos de contacto</dt><dd class="public-description">${escape(shop.contact || 'La tienda aún no ha agregado sus datos de contacto.')}</dd><dt>Sector</dt><dd>${escape(shop.sector || 'Por informar')}</dd></dl>
-          ${shop.contact ? contactLink(shop.contact) : ''}
+          ${contactMarkup(shop)}
         </section>
       </div>
       <section class="shop-catalog" aria-labelledby="shop-products-title"><div class="section-title-row"><div><p class="public-eyebrow">Descubre sus creaciones</p><h2 id="shop-products-title">Productos de esta tienda</h2></div></div><div id="shop-catalog-results" class="catalog-grid" aria-busy="true"><p role="status">Cargando productos…</p></div></section>
     </div>`);
     imageFallbacks(app);
+    wireContact(app, db, shop, isCurrent);
     app.querySelector('#shop-title').focus({ preventScroll: true });
     window.scrollTo(0, 0);
     try {
