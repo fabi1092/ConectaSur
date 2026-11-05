@@ -32,12 +32,14 @@ class BuyerAccessTest {
     }
     @Test fun demoBuyerPersistsWhenReopenedAndLogoutReturnsToVisitor() {
         scenario = ActivityScenario.launch(MainActivity::class.java)
+        onView(withId(R.id.nav_home)).perform(click())
         onView(withId(R.id.open_store)).check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
         onView(withId(R.id.buyer_demo_login)).perform(scrollTo(), click())
         onView(withId(R.id.buyer_session_status)).check(matches(withText(R.string.buyer_demo_active)))
         onView(withId(R.id.buyer_logout)).check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
         scenario!!.close()
         scenario = ActivityScenario.launch(MainActivity::class.java)
+        onView(withId(R.id.nav_home)).perform(click())
         onView(withId(R.id.buyer_session_status)).check(matches(withText(R.string.buyer_demo_active)))
         onView(withId(R.id.buyer_logout)).perform(scrollTo(), click())
         onView(withId(R.id.buyer_logout)).check(matches(withEffectiveVisibility(Visibility.GONE)))
@@ -47,6 +49,7 @@ class BuyerAccessTest {
         val intent = Intent(context, MainActivity::class.java).setData(Uri.parse(
             "conectasur://auth/callback#access_token=foreign&refresh_token=foreign"))
         scenario = ActivityScenario.launch(intent)
+        onView(withId(R.id.nav_home)).perform(click())
         onView(withId(R.id.buyer_logout)).check(matches(withEffectiveVisibility(Visibility.GONE)))
         onView(withId(R.id.open_store)).check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
     }

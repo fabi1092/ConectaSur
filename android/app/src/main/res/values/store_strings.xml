@@ -3,6 +3,8 @@
     <string name="login_title">Ingresa a tu cuenta</string>
     <string name="login_intro">Escribe tu correo y contraseña. Abriremos tu cuenta de comprador, tu tienda o el acceso al panel web según tu perfil.</string>
     <string name="account_entry">Ingresar</string>
+    <string name="buyer_public_mode">Modo comprador · Explora sin iniciar sesión</string>
+    <string name="public_catalog_mode">Catálogo público</string>
     <string name="account_home">Mi cuenta</string>
     <string name="account_buyer_title">Modo comprador</string>
     <string name="account_admin_title">Cuenta administradora</string>

@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
     private val prefs by lazy { AccessibilityPreferences(applicationContext) }
     private val repository: CatalogRepository by lazy { RepositoryProvider.catalog(applicationContext) }
     private var products = emptyList<PublicProduct>()
-    private var current = Destination("home")
+    private var current = Destination("catalog")
     private val history = mutableListOf<Destination>()
     private val scrollPositions = mutableMapOf<String, Int>()
     private var query = ""
@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
         content = findViewById(R.id.screen_content)
         savedInstanceState?.let { state ->
-            current = Destination.decode(state.getString("route") ?: "home|")
+            current = Destination.decode(state.getString("route") ?: "catalog|")
             history.addAll(state.getStringArrayList("history").orEmpty().map(Destination::decode))
             query = state.getString("query").orEmpty()
             shopFilter = state.getString("shop_filter")
@@ -92,6 +92,7 @@ class MainActivity : ComponentActivity() {
         }
         findViewById<Button>(R.id.back_button).setOnClickListener { goBack() }
         findViewById<Button>(R.id.large_menu).setOnClickListener { openLargeMenu() }
+        findViewById<Button>(R.id.main_account).setOnClickListener { openAccount() }
         findViewById<Button>(R.id.nav_home).setOnClickListener { navigate(Destination("home"), clear = true) }
         findViewById<Button>(R.id.nav_catalog).setOnClickListener { shopFilter = null; navigate(Destination("catalog")); if (current.screen == "catalog") renderProducts() }
         findViewById<Button>(R.id.nav_help).setOnClickListener { navigate(Destination("help")) }
@@ -115,6 +116,7 @@ class MainActivity : ComponentActivity() {
                 launch { repository.status.collect { if (current.screen == "catalog") bindCatalogStatus() } }
                 launch {
                     buyerModel.state.collect { state ->
+                        renderAccountAccess(state)
                         if (current.screen == "home") renderHomeBuyerState(state)
                         state.launchUrl?.let { url ->
                             buyerModel.browserLaunched()
@@ -156,7 +158,8 @@ class MainActivity : ComponentActivity() {
         findViewById<View>(R.id.normal_navigation).isVisible = !large
         findViewById<View>(R.id.large_menu).isVisible = large
         findViewById<View>(R.id.read_button).isVisible = !large || current.screen == "home"
-        findViewById<View>(R.id.back_button).isVisible = current.screen != "home"
+        findViewById<View>(R.id.main_account).isVisible = !large && current.screen != "home"
+        findViewById<View>(R.id.back_button).isVisible = current.screen !in listOf("home", "catalog")
     }
     private fun openLargeMenu() {
         val menu = layoutInflater.inflate(R.layout.dialog_menu, null)
@@ -169,6 +172,11 @@ class MainActivity : ComponentActivity() {
             setOnClickListener { dialog.dismiss(); if (reader.active) reader.stop() else reader.read(screenSpeech(), prefs.read().slowVoice) }
         }
         menu.findViewById<Button>(R.id.menu_close).setOnClickListener { dialog.dismiss() }
+        menu.findViewById<Button>(R.id.menu_account).apply {
+            setText(accountLabel(buyerModel.state.value))
+            isEnabled = !buyerModel.state.value.busy && !buyerModel.state.value.awaitingGoogle && !buyerModel.state.value.demo
+            setOnClickListener { dialog.dismiss(); openAccount() }
+        }
         dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, prefs.read()) }
         dialog.show()
     }
@@ -187,7 +195,7 @@ class MainActivity : ComponentActivity() {
     private fun goBack() {
         if (history.isNotEmpty()) {
             saveScroll(); reader.stop(); current = history.removeAt(history.lastIndex); showScreen()
-        } else if (current.screen != "home") navigate(Destination("home"), clear = true) else finish()
+        } else if (current.screen !in listOf("home", "catalog")) navigate(Destination("catalog"), clear = true) else finish()
     }
     private fun showScreen() {
         val layout = when (current.screen) {
@@ -212,11 +220,7 @@ class MainActivity : ComponentActivity() {
         when (current.screen) {
             "home" -> {
                 page.findViewById<Button>(R.id.open_catalog).setOnClickListener { shopFilter = null; navigate(Destination("catalog")) }
-                page.findViewById<Button>(R.id.open_store).setOnClickListener {
-                    reader.stop()
-                    buyerModel.pauseForAccountAccess()
-                    accountAccess.launch(Intent(this, StoreActivity::class.java))
-                }
+                page.findViewById<Button>(R.id.open_store).setOnClickListener { openAccount() }
                 page.findViewById<Button>(R.id.open_settings).setOnClickListener { navigate(Destination("settings")) }
                 bindHomeBuyerAccess()
             }
@@ -227,6 +231,7 @@ class MainActivity : ComponentActivity() {
             "help" -> page.findViewById<Button>(R.id.open_settings).setOnClickListener { navigate(Destination("settings")) }
             "sales" -> page.findViewById<Button>(R.id.go_home).setOnClickListener { navigate(Destination("home"), true) }
         }
+        renderAccountAccess(buyerModel.state.value)
         applyPresentation()
         val heading = page.findViewById<TextView>(if (current.screen == "home") R.id.welcome_title else R.id.page_title)
         heading?.let { ViewCompat.setAccessibilityHeading(it, true) }
@@ -234,6 +239,27 @@ class MainActivity : ComponentActivity() {
             page.findViewById<ScrollView>(R.id.page_scroll)?.scrollTo(0, scrollPositions[current.encode()] ?: 0)
             heading?.let { ViewCompat.setAccessibilityPaneTitle(content, it.text) }
         }
+    }
+    private fun openAccount() {
+        reader.stop()
+        buyerModel.pauseForAccountAccess()
+        accountAccess.launch(Intent(this, StoreActivity::class.java))
+    }
+    private fun accountLabel(state: BuyerState) = when {
+        state.session == null -> R.string.account_entry
+        state.session.role == Role.EMPRENDEDORA -> R.string.my_store
+        else -> R.string.account_home
+    }
+    private fun renderAccountAccess(state: BuyerState) {
+        findViewById<Button>(R.id.main_account).apply {
+            setText(accountLabel(state))
+            isEnabled = !state.busy && !state.awaitingGoogle && !state.demo
+        }
+        if (::page.isInitialized) page.findViewById<TextView>(R.id.catalog_mode)?.setText(when {
+            state.session == null -> R.string.buyer_public_mode
+            state.session.role == Role.COMPRADOR -> R.string.account_buyer_title
+            else -> R.string.public_catalog_mode
+        })
     }
     private fun bindHomeBuyerAccess() {
         page.findViewById<Button>(R.id.buyer_demo_login).setOnClickListener { buyerModel.enterDemo() }
@@ -407,7 +433,7 @@ class MainActivity : ComponentActivity() {
     }
     private fun screenSpeech(): String = when(current.screen) {
             "home" -> "ConectaSur. Tu tienda, más cerca. Puedes ver productos sin una cuenta. En Ingresar, usa tu correo y contraseña para abrir tu cuenta de comprador o tu tienda, según tu perfil. También puedes ajustar letras y botones."
-        "catalog" -> "Productos de ejemplo. " + searchProducts(products, query).joinToString(". ") { "${it.name}. ${spokenPrice(it.priceClp)}" }.ifBlank { getString(R.string.empty_search) }
+        "catalog" -> "Catálogo de productos. Puedes explorar sin iniciar sesión. " + searchProducts(products, query).joinToString(". ") { "${it.name}. ${spokenPrice(it.priceClp)}" }.ifBlank { getString(R.string.empty_search) }
         "detail" -> products.find { it.id == current.productId }?.let { "${it.name}. ${spokenPrice(it.priceClp)}. ${it.description}. Nombre y precio de ejemplo." } ?: getString(R.string.product_missing)
         "public_store" -> "Emprendimiento de ejemplo. Aquí puedes ver el catálogo público."
         "settings" -> "A tu medida. Cambia las letras a normal, grande o muy grande. Activa botones más grandes o mayor contraste. La lectura puede ser normal o más lenta."

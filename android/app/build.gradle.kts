@@ -15,8 +15,8 @@ android {
         applicationId = "cl.surcode.conectasur"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.5.1-acceso-unificado"
+        versionCode = 6
+        versionName = "0.5.2-inicio-comprador"
         buildConfigField("String", "SUPABASE_URL", quoted(if (demoBuild) "" else supabase.getProperty("SUPABASE_URL", "")))
         buildConfigField("String", "SUPABASE_ANON_KEY", quoted(if (demoBuild) "" else supabase.getProperty("SUPABASE_ANON_KEY", "")))
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
