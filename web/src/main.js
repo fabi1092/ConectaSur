@@ -1,6 +1,7 @@
 import './style.css';
 import config from '../supabase-config.js';
 import { createDataLayer } from '../supabase-data.js';
+import { createFirebaseBuyerAuth } from '../firebase-buyer-auth.js';
 import { showPublicShops, showPublicShop, shopLogo, wireShopImages } from './public-shops.js';
 import { showAccountAccess } from './entrepreneur-access.js';
 import { icon, brand } from './visuals.js';
@@ -22,7 +23,7 @@ function leaveAdminEditor(){if(adminEditor && !adminEditor.requestLeave())return
 let incomingRecovery = takeRecoveryLocation();
 const app = document.querySelector('#app');
 const accessibility = initAccessibility(app);
-const db = createDataLayer(config);
+const db = createDataLayer(config,{firebaseBuyer:createFirebaseBuyerAuth(config.firebase)});
 const entrepreneurAccounts = createEntrepreneurAccountData(db);
 let sessionNavigationVersion=0;
 // El callback de Auth permanece síncrono: no consulta al SDK bajo el bloqueo de Auth.

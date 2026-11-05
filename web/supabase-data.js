@@ -61,7 +61,7 @@ const listTables = {
   entrepreneurTypes: 'entrepreneur_types'
 };
 
-export function createDataLayer(config, { storage, storageKey } = {}) {
+export function createDataLayer(config, { storage, storageKey, firebaseBuyer = null } = {}) {
   const url = new URL(config.url);
 
   if (
@@ -105,6 +105,8 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
     history: typeof window === 'undefined' ? null : window.history });
 
   async function profile() {
+    const local=unwrap(await sdk.auth.getSession())?.session;
+    if(!local && firebaseBuyer){const buyer=await firebaseBuyer.currentSession();if(buyer)return buyer;}
     const user = unwrap(await sdk.auth.getUser())?.user;
 
     if (!user) {
@@ -187,7 +189,7 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
       if (!name || name.length > 120 || typeof email !== 'string' || !email.trim() || typeof password !== 'string' || password.length < 8) {
         throw Object.assign(new Error('Revisa los datos de registro'), { code: 'invalid_registration' });
       }
-      if (unwrap(await sdk.auth.getSession())?.session) {
+      if (unwrap(await sdk.auth.getSession())?.session || (firebaseBuyer && await firebaseBuyer.currentSession())) {
         throw Object.assign(new Error('Cierra tu sesión antes de crear otra cuenta'), { code: 'session_exists' });
       }
       // El trigger del servidor asigna comprador; nunca se acepta un rol desde el formulario.
@@ -206,6 +208,7 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
     },
 
     async login(email, password) {
+      if(firebaseBuyer && await firebaseBuyer.currentSession())throw Object.assign(new Error('Cierra tu sesión antes de cambiar de cuenta'),{code:'session_exists'});
       unwrap(
         await sdk.auth.signInWithPassword({
           email: email.trim(),
@@ -221,15 +224,19 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
       }
     },
 
-    loginWithGoogle(redirectTo) { return google.start(redirectTo); },
+    async loginWithGoogle(redirectTo) {
+      if(!firebaseBuyer)return google.start(redirectTo);
+      if(unwrap(await sdk.auth.getSession())?.session)throw Object.assign(new Error('Ya hay una sesión abierta'),{code:'session_exists'});
+      return firebaseBuyer.start();
+    },
 
     async currentSession() {
-      await google.complete();
+      if(!firebaseBuyer)await google.complete();
       const session = unwrap(
         await sdk.auth.getSession()
       )?.session;
 
-      if (!session) return null;
+      if (!session) return firebaseBuyer?firebaseBuyer.currentSession():null;
 
       try {
         return await profile();
@@ -346,15 +353,16 @@ export function createDataLayer(config, { storage, storageKey } = {}) {
     },
 
     async logout() {
+      if(firebaseBuyer)await firebaseBuyer.logout();
       unwrap(await sdk.auth.signOut({ scope: 'local' }));
     },
 
     onSession(callback) {
       const { data } = sdk.auth.onAuthStateChange(
-        (event, session) => callback(session?.user ?? null, event)
+        (event, session) => {if(session?.user)callback(session.user,event);else if(!firebaseBuyer)callback(null,event);else queueMicrotask(()=>firebaseBuyer.currentSession().then(buyer=>callback(buyer?{id:buyer.uid}:null,event)).catch(()=>{}));}
       );
-
-      return () => data.subscription.unsubscribe();
+      const stopFirebase=firebaseBuyer?.onSession(buyer=>{queueMicrotask(()=>sdk.auth.getSession().then(({data})=>{if(!data?.session)callback(buyer?{id:buyer.uid}:null,'FIREBASE_AUTH');}));});
+      return () => {data.subscription.unsubscribe();stopFirebase?.();};
     },
 
     async createEmprendedora({

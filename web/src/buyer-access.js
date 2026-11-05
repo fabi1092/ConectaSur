@@ -58,7 +58,8 @@ export function showBuyerRegistration(app, db, { isCurrent, onSignedIn, onLogin 
     status.setAttribute('role', 'status');
     status.textContent = 'Conectando con Google…';
     try {
-      await db.loginWithGoogle();
+      const user=await db.loginWithGoogle();
+      if(user && typeof user==='object' && alive()){password.value='';repeat.value='';onSignedIn(user);}
     } catch (error) {
       if (!alive() || !googleButton.isConnected) return;
       status.className = 'owner-status owner-error';
