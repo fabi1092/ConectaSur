@@ -58,10 +58,10 @@ class SalesActivity : OwnerActivity() {
         val product=products.getOrNull(option(R.id.sv_product))?:run{status("Primero agrega un producto.");return}
         val variant=product.variants.getOrNull(option(R.id.sv_variant))
         val amount=pending?.optInt("quantity")?:text(R.id.sv_quantity).toIntOrNull()
-        if(amount==null||amount<=0){status("Escribe una cantidad mayor que cero.");return}
         val place=pending?.optString("place")?:text(R.id.sv_place)
         if(place.length>240){status("El lugar puede tener hasta 240 letras.");return}
-        if(pending==null && !(product.base.stockMode==StockMode.UNITS && product.base.quantity==0 && product.base.soldOut=="ORDER") && product.base.stockMode in listOf(StockMode.UNITS,StockMode.UNIQUE) && amount>(variant?.quantity?:product.base.quantity?:0)){status("No tienes suficientes unidades. Revisa la cantidad.");return}
+        if(pending==null){product.saleError(variant?.id,amount)?.let{status(it);return}}
+        else if(amount==null||amount<=0){status("Escribe una cantidad mayor que cero.");return}
         AlertDialog.Builder(this).setTitle(if(pending==null)"Confirmar venta" else "Confirmar venta pendiente")
             .setMessage("$amount × ${product.base.name}${variant?.let{" · ${it.label}"}?:""}\nPrecio por unidad: ${priceLabel(variant?.priceClp?:product.base.priceClp)}\nLugar: ${place.ifBlank{"No indicado"}}\nEl servidor verificará el stock.")
             .setNegativeButton("Volver",null).setPositiveButton("Confirmar"){_,_->
@@ -81,7 +81,7 @@ class SalesActivity : OwnerActivity() {
             }.show()
     }
     private fun showHistory(){action("Cargando historial…"){
-        sales=workspace.sales(shopId);screen(R.layout.screen_owner_history)
+        sales=workspace.sales(shopId);products=workspace.sync(shopId).products;screen(R.layout.screen_owner_history)
         click(R.id.sh_filter){renderHistory()};renderHistory()
         val config=workspace.refreshConfiguration(shopId)
         status(if(config.optBoolean("history_enabled",true))"Historial de tu tienda. Puedes filtrar por fechas, lugar o feria y producto." else "Historial desactivado: las nuevas ventas no guardan detalle. Aquí puedes consultar las anteriores.")
@@ -99,8 +99,9 @@ class SalesActivity : OwnerActivity() {
         val filtered=sales.filter{(from==null||it.dateMillis>=from)&&(until==null||it.dateMillis<until)&&it.place.contains(place,true)&&it.productName.contains(product,true)}
         val box=findViewById<LinearLayout>(R.id.sh_items);box.removeAllViews()
         findViewById<TextView>(R.id.sh_summary).text="${filtered.size} ventas · Total: ${priceLabel(filtered.sumOf{it.priceClp*it.quantity})}"
+        val labels=products.flatMap{it.variants}.associate{it.id to it.label}
         val fmt=DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm").withZone(ZoneId.systemDefault())
-        filtered.forEach{s->box.addView(TextView(this).apply{text="${s.productName}${s.variantId?.let{" · variante $it"}?:""}\n${s.quantity} unidades × ${priceLabel(s.priceClp)}\n${fmt.format(Instant.ofEpochMilli(s.dateMillis))} · ${s.place.ifBlank{"Lugar no indicado"}}\n";textSize=18f})}
+        filtered.forEach{s->box.addView(TextView(this).apply{text="${s.productName}${s.variantId?.let{" · ${labels[it]?:"opción eliminada"}"}?:""}\n${s.quantity} unidades × ${priceLabel(s.priceClp)}\n${fmt.format(Instant.ofEpochMilli(s.dateMillis))} · ${s.place.ifBlank{"Lugar no indicado"}}\n";textSize=18f})}
         if(filtered.isEmpty())box.addView(TextView(this).apply{text="No hay ventas para estos filtros.";textSize=18f})
         applyAccessibility(box,settings)
     }
