@@ -46,3 +46,15 @@ class SalesTest {
         OwnerProduct(base()).sell(null, 0)
     }
 }
+
+class SaleRulesTest {
+    private val base = CatalogProduct("gorro", "demo", "Gorro", "Gorro de lana", "Ropa", 9500, true, StockMode.UNITS, 6, true, "flores")
+    private val sizes = listOf(Variant("S", "Talla S", 1), Variant("M", "Talla M", 2))
+
+    @org.junit.Test fun validSaleHasNoError() = org.junit.Assert.assertNull(OwnerProduct(base, sizes).saleError("M", 2))
+    @org.junit.Test fun variantProductWithoutOptionIsRejected() = org.junit.Assert.assertNotNull(OwnerProduct(base, sizes).saleError(null, 1))
+    @org.junit.Test fun moreThanVariantStockIsRejected() = org.junit.Assert.assertNotNull(OwnerProduct(base, sizes).saleError("S", 2))
+    @org.junit.Test fun zeroQuantityIsRejected() = org.junit.Assert.assertNotNull(OwnerProduct(base).saleError(null, 0))
+    @org.junit.Test fun madeToOrderIsNeverBlocked() =
+        org.junit.Assert.assertNull(OwnerProduct(base.copy(stockMode = StockMode.ON_REQUEST, quantity = null)).saleError(null, 50))
+}
