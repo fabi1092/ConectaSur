@@ -203,3 +203,76 @@ describe('PostgreSQL: RLS y RPC',()=>{
  it('la politica Storage permite la carpeta propia',()=>as('ana',async c=>{await c.query("insert into storage.objects(bucket_id,name) values('shop-images','ana/foto.jpg')");assert.equal((await c.query("select * from storage.objects")).rows.length,1)}));
  it('la politica Storage rechaza la carpeta ajena',()=>assert.rejects(as('ana',c=>c.query("insert into storage.objects(bucket_id,name) values('shop-images','bea/foto.jpg')")),/row-level security/));
 });
+
+// >>> Entrega 6 (Felipe): ferias, navegación anónima y punto de venta
+describe('Entrega 6: ferias, navegacion anonima y punto de venta',()=>{
+ const near=randomUUID(),far=randomUUID(),draft=randomUUID(),past=randomUUID(),cancelled=randomUUID();
+ const seed="insert into public.fairs(id,name,place_name,latitude,longitude,starts_at,ends_at,status) values($1,$2,'Lugar',$3,$4,now()+($5||' days')::interval,now()+($5||' days')::interval+interval '3 hours',$6)";
+ before(async()=>{
+   // Puerto Montt (cerca), Santiago (lejos), borrador, ya terminada y cancelada.
+   await pool.query(seed,[near,'Feria Puerto Montt',-41.4717,-72.9411,'5','published']);
+   await pool.query(seed,[far,'Feria Santiago',-33.4489,-70.6693,'2','published']);
+   await pool.query(seed,[draft,'Borrador',-41.47,-72.94,'3','draft']);
+   await pool.query(seed,[past,'Pasada',-41.47,-72.94,'-9','published']);
+   await pool.query(seed,[cancelled,'Cancelada',-41.47,-72.94,'4','cancelled']);
+ });
+ after(async()=>{await pool.query('delete from public.fairs');await pool.query("update public.shops set pickup_label='',pickup_lat=null,pickup_lng=null")});
+ it('el administrador crea una feria y queda en la auditoria',()=>as('admin',async c=>{
+   await c.query("insert into public.fairs(name,place_name,latitude,longitude,starts_at,ends_at) values('Nueva','Plaza',-41.47,-72.94,now()+interval '1 day',now()+interval '2 days')");
+   assert.ok((await c.query("select * from public.admin_actions where target_table='fairs'")).rows.length>=1);
+ }));
+ it('emprendedora y comprador NO crean ferias; el visitante no tiene permisos',async()=>{
+   const sql="insert into public.fairs(name,place_name,latitude,longitude,starts_at,ends_at) values('X','Y',-41,-72,now(),now()+interval '1 hour')";
+   for(const user of ['ana','buyer'])await assert.rejects(as(user,c=>c.query(sql)),/row-level security/);
+   await assert.rejects(actor('anon',null,c=>c.query(sql)),/permission denied/);
+ });
+ it('rechaza una feria que termina antes de empezar o con coordenadas invalidas',async()=>{
+   await assert.rejects(as('admin',c=>c.query("insert into public.fairs(name,place_name,latitude,longitude,starts_at,ends_at) values('X','Y',-41,-72,now()+interval '2 days',now()+interval '1 day')")),/check constraint/);
+   await assert.rejects(as('admin',c=>c.query("insert into public.fairs(name,place_name,latitude,longitude,starts_at,ends_at) values('X','Y',95,-72,now(),now()+interval '1 hour')")),/check constraint/);
+ });
+ it('el visitante ve ferias publicadas y canceladas, nunca borradores, y no lee la tabla',async()=>{
+   const names=(await actor('anon',null,c=>c.query('select name from public.public_fairs'))).rows.map(r=>r.name);
+   assert.ok(names.includes('Feria Puerto Montt')&&names.includes('Cancelada'));
+   assert.equal(names.includes('Borrador'),false);
+   await assert.rejects(actor('anon',null,c=>c.query('select * from public.fairs')),/permission denied/);
+ });
+ it('sin ubicacion las proximas ferias salen por fecha y sin distancia',async()=>{
+   const rows=(await actor('anon',null,c=>c.query('select * from public.upcoming_fairs()'))).rows;
+   assert.deepEqual(rows.map(r=>r.name),['Feria Santiago','Feria Puerto Montt']);
+   assert.ok(rows.every(r=>r.distance_km===null));
+ });
+ it('con ubicacion salen por distancia y se excluyen borrador, pasadas y canceladas',async()=>{
+   const rows=(await actor('anon',null,c=>c.query('select * from public.upcoming_fairs($1,$2)',[-41.4693,-72.9424]))).rows;
+   assert.deepEqual(rows.map(r=>r.name),['Feria Puerto Montt','Feria Santiago']);
+   assert.ok(rows[0].distance_km<5);
+   assert.ok(rows[1].distance_km>700&&rows[1].distance_km<1100);
+ });
+ it('rechaza ubicaciones invalidas o incompletas',async()=>{
+   await assert.rejects(actor('anon',null,c=>c.query('select * from public.upcoming_fairs($1,$2)',[95,-72])),/inv/);
+   await assert.rejects(actor('anon',null,c=>c.query('select * from public.upcoming_fairs($1,$2)',[-41,null])),/inv/);
+ });
+ it('la navegacion anonima parte en "allow" y es legible sin sesion',async()=>{
+   assert.equal((await actor('anon',null,c=>c.query('select anonymous_navigation from public.platform_settings'))).rows[0].anonymous_navigation,'allow');
+ });
+ it('solo el administrador cambia la navegacion anonima y queda auditado',async()=>{
+   await as('admin',async c=>{
+     await c.query("select public.set_anonymous_navigation('require')");
+     assert.equal((await c.query('select anonymous_navigation from public.platform_settings')).rows[0].anonymous_navigation,'require');
+     assert.ok((await c.query("select * from public.admin_actions where target_table='platform_settings'")).rows.length>=1);
+   });
+   for(const user of ['ana','buyer'])await assert.rejects(as(user,c=>c.query("select public.set_anonymous_navigation('require')")),/Solo administrador/);
+   await assert.rejects(actor('anon',null,c=>c.query("select public.set_anonymous_navigation('require')")),/permission denied/);
+   await assert.rejects(as('admin',c=>c.query("select public.set_anonymous_navigation('otra')")),/inv/);
+   await assert.rejects(as('admin',c=>c.query("update public.platform_settings set anonymous_navigation='require'")),/permission denied/);
+ });
+ it('la emprendedora publica su punto de venta; las coordenadas van en pareja',async()=>{
+   await as('ana',async c=>{await c.query("update public.shops set pickup_label='Mi local',pickup_lat=-41.47,pickup_lng=-72.94 where id='ana'")});
+   await assert.rejects(as('ana',c=>c.query("update public.shops set pickup_lat=-41.47 where id='ana'")),/shops_pickup_pair/);
+   await assert.rejects(as('ana',c=>c.query("update public.shops set pickup_lat=95,pickup_lng=-72 where id='ana'")),/check constraint/);
+ });
+ it('por defecto ninguna tienda publica ubicacion',async()=>{
+   const rows=(await actor('anon',null,c=>c.query('select id,pickup_lat,pickup_lng from public.public_shops'))).rows;
+   assert.ok(rows.length>=1&&rows.every(r=>r.pickup_lat===null&&r.pickup_lng===null));
+ });
+});
+// <<< Fin Entrega 6 (Felipe)

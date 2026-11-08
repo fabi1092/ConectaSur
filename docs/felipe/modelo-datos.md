@@ -90,3 +90,21 @@ shops.default_products contiene stockMode, soldOut, visible y showPrice; solo se
 register_sale recibe p_quantity numeric y exige un entero positivo dentro del rango admitido, para evitar conversiones implícitas. Mantiene bloqueo de fila, precio de servidor e idempotencia.
 
 Android conserva borradores completos, fotos por subir, ediciones y eliminaciones pendientes en OwnerWorkspaceRepository con AES-GCM, separados por UID y tienda. Las fotos se suben al recuperar red antes de enviar las filas. Las ventas exigen conexión y conservan la solicitud de reintento hasta recibir confirmación.
+<!-- entrega-6-felipe -->
+
+## Ampliación de Entrega 6
+
+Migraciones 009–011 (backend de ferias, mapas y navegación anónima). No modifican las anteriores.
+
+| Tabla / objeto | Clave y relación | Lectura | Escritura |
+|---|---|---|---|
+| fairs | id uuid; nombre, descripción, imagen, lugar, latitude/longitude, starts_at/ends_at, organizer, status (draft, published, cancelled) | Solo administrador; el público usa la vista public_fairs | Solo administrador (RLS); auditoría por trigger |
+| public_fairs | Vista con security_barrier, lista explícita de columnas | Pública | Ninguna |
+| platform_settings | Fila única (id boolean); anonymous_navigation: allow, invite o require | Pública (la app la necesita antes de iniciar sesión) | Solo mediante set_anonymous_navigation (administrador) |
+| shops.pickup_label / pickup_lat / pickup_lng | Opcionales; ambas coordenadas o ninguna | Pública vía public_shops, solo si la emprendedora la definió | La dueña, con la política shops_update ya existente |
+
+- **Ferias (RF-FER-01, RF-MAP-01):** el administrador guarda la ubicación marcada en el mapa como latitud/longitud. Una feria cancelada sigue visible en public_fairs con su estado, para que un enlace ya compartido no quede roto; un borrador nunca es público.
+- **upcoming_fairs(p_lat, p_lng) (RF-MAP-03, RNF-PRI-04):** devuelve las próximas ferias publicadas. Con ubicación ordena por distancia en km (haversine); sin ella, por fecha, con distance_km nulo. Es una función STABLE que no escribe: la ubicación de la persona no se guarda en el servidor. Si la persona rechaza el permiso, el cliente la llama sin parámetros.
+- **Navegación anónima (RF-ACC-06, RF-ADM-02):** la app lee platform_settings al abrir y aplica allow (permitir), invite (invitar con opción de omitir) o require (obligar el ingreso con Google). El cliente no puede modificar la tabla; solo set_anonymous_navigation, que exige administrador activo y deja registro en admin_actions.
+- **Punto de venta (RF-MAP-04, Importante; RNF-PRI-03):** es opcional y por defecto no hay coordenadas; la dueña lo borra dejándolo en null. La vista public_shops lo añade al final para no romper a los clientes existentes.
+- **Imagen de la feria:** image_url guarda una URL HTTPS; la subida usa el bucket association-images, cuyas escrituras ya exigen administrador activo.
