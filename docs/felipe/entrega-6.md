@@ -13,7 +13,7 @@ El backend de Supabase suma tres migraciones nuevas (009 a 011) que sostienen lo
 - **Pruebas.** Se añadió un bloque de 11 pruebas a `supabase/test/sql.test.js` (permisos por perfil, borradores ocultos, orden por distancia y por fecha, ubicación inválida, auditoría, navegación anónima y punto de venta).
 - **Documentación.** El modelo de datos (`docs/felipe/modelo-datos.md`) incluye la ampliación de esta entrega.
 
-Resultado de las pruebas SQL en GitHub Actions (check «Pruebas de seguridad Supabase / permisos-sql»): X aprobadas de X, 0 fallidas.
+Resultado de las pruebas SQL en GitHub Actions (check «Pruebas de seguridad Supabase / permisos-sql»): 52 aprobadas de 52, 0 fallidas. De ellas, 11 son las nuevas de esta entrega.
 
 ## Requisitos cubiertos (por ID)
 
