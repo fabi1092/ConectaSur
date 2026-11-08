@@ -55,11 +55,13 @@ class ProductEditorActivity : OwnerActivity() {
                 val item=rows.find{it.base.id==requested}?:throw IllegalArgumentException("No encontramos ese producto.")
                 draft=fromProduct(item)
             }else{
-                val defaults=workspace.configuration(shopId).getJSONObject("default_products")
-                draft=JSONObject().put("id",UUID.randomUUID().toString()).put("step",0).put("name","").put("description","")
-                    .put("category","Artesanías").put("price","").put("productType","artesania").put("attributes",JSONObject())
-                    .put("mode",defaults.getString("stockMode")).put("soldOut",defaults.getString("soldOut")).put("visible",defaults.getBoolean("visible"))
-                    .put("showPrice",defaults.getBoolean("showPrice")).put("quantity","1").put("photo","").put("variants",JSONArray())
+                val rawDefaults=workspace.configuration(shopId).getJSONObject("default_products")
+                val defaults=ProductDefaults.fromValues(rawDefaults.optString("stockMode"),rawDefaults.optString("soldOut"),rawDefaults.optBoolean("visible",true),rawDefaults.optBoolean("showPrice",true))
+                val initial=defaults.newCatalogProduct(UUID.randomUUID().toString(),shopId)
+                draft=JSONObject().put("id",initial.id).put("step",0).put("name","").put("description","")
+                    .put("category",initial.category).put("price","").put("productType",initial.productType).put("attributes",JSONObject())
+                    .put("mode",initial.stockMode.name).put("soldOut",initial.soldOut).put("visible",initial.visible)
+                    .put("showPrice",initial.showPrice).put("quantity",(initial.quantity?:1).toString()).put("photo","").put("variants",JSONArray())
             }
             val definitions=workspace.productTypes(shopId)
             for(i in 0 until definitions.length()) { val value=definitions.getJSONObject(i);val id=value.getString("id")
@@ -86,7 +88,7 @@ class ProductEditorActivity : OwnerActivity() {
         findViewById<CheckBox>(R.id.pe_show_price).apply{isChecked=draft.getBoolean("showPrice");setOnCheckedChangeListener{_,v->if(!binding){draft.put("showPrice",v);persist()}}}
         fun spinner(id:Int,callback:(Int)->Unit){findViewById<Spinner>(id).onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){};override fun onItemSelected(p:AdapterView<*>?,v:View?,i:Int,n:Long){if(!binding)callback(i)}}}
         spinner(R.id.pe_type){i->draft.put("productType",types[i]);renderAttributes();persist()}
-        spinner(R.id.pe_mode){i->draft.put("mode",modeValues[i].name);availability();persist()}
+        spinner(R.id.pe_mode){i->draft.put("mode",modeValues[i].name);renderVariants();availability();persist()}
         spinner(R.id.pe_soldout){i->draft.put("soldOut",soldOutValues[i]);persist()}
         click(R.id.pe_camera){photoTarget="main";takePhoto()};click(R.id.pe_gallery){photoTarget="main";gallery.launch("image/*")}
         click(R.id.pe_dictate){AlertDialog.Builder(this).setTitle("¿Qué deseas dictar?").setItems(arrayOf("Nombre","Descripción")){_,i->
@@ -95,6 +97,7 @@ class ProductEditorActivity : OwnerActivity() {
             catch(_:Exception){status("El dictado no está disponible en este teléfono. Puedes usar el micrófono del teclado o escribir.")}
         }.show()}
         click(R.id.pe_add_variant){
+            if(StockMode.valueOf(draft.getString("mode"))==StockMode.UNIQUE){status("Una pieza única no tiene variantes. Quita las variantes o elige Regular.");return@click}
             val rows=draft.getJSONArray("variants")
             if(rows.length()>=20){status("Puedes agregar hasta 20 variantes por producto.");return@click}
             rows.put(JSONObject().put("id",UUID.randomUUID().toString()).put("label","").put("quantity","1").put("priceClp","").put("photo",""));persist();renderVariants()
@@ -117,10 +120,13 @@ class ProductEditorActivity : OwnerActivity() {
     }
     private fun renderVariants(){
         val box=findViewById<LinearLayout>(R.id.pe_variants);box.removeAllViews();val rows=draft.getJSONArray("variants")
+        val tracked=StockMode.valueOf(draft.getString("mode")).countsUnits
         for(i in 0 until rows.length()){
             val data=rows.getJSONObject(i);val row=layoutInflater.inflate(R.layout.item_variant_editor,box,false)
             fun bind(id:Int,key:String){row.findViewById<EditText>(id).apply{setText(data.optString(key));doAfterTextChanged{data.put(key,it.toString());persist()}}}
             bind(R.id.pv_label,"label");bind(R.id.pv_price,"priceClp");bind(R.id.pv_quantity,"quantity")
+            row.findViewById<View>(R.id.pv_quantity).isVisible=tracked
+            row.findViewById<View>(R.id.pv_quantity_label)?.isVisible=tracked
             row.findViewById<TextView>(R.id.pv_photo_status).text=if(data.optString("photo").isBlank())"Usará la foto principal." else "Foto propia lista."
             row.findViewById<Button>(R.id.pv_photo).setOnClickListener{photoTarget=data.getString("id");gallery.launch("image/*")}
             row.findViewById<Button>(R.id.pv_remove).setOnClickListener{AlertDialog.Builder(this).setTitle("Quitar variante").setMessage("Se quitará esta opción del borrador.").setNegativeButton("Conservar",null).setPositiveButton("Quitar"){_,_->rows.remove(i);persist();renderVariants()}.show()}
@@ -128,9 +134,13 @@ class ProductEditorActivity : OwnerActivity() {
         }
     }
     private fun availability(){
-        val mode=StockMode.valueOf(draft.getString("mode"));val tracked=mode in listOf(StockMode.UNITS,StockMode.UNIQUE)
-        findViewById<View>(R.id.pe_quantity).isVisible=tracked && draft.getJSONArray("variants").length()==0
-        findViewById<View>(R.id.pe_quantity_label).isVisible=tracked && draft.getJSONArray("variants").length()==0
+        val mode=StockMode.valueOf(draft.getString("mode"));val tracked=mode.countsUnits
+        val hasVariants=draft.getJSONArray("variants").length()>0
+        if(mode==StockMode.UNIQUE && !hasVariants && (draft.optString("quantity").toIntOrNull()?:-1) !in 0..1){
+            draft.put("quantity","1");findViewById<EditText>(R.id.pe_quantity).setText("1")
+        }
+        findViewById<View>(R.id.pe_quantity).isVisible=tracked && !hasVariants
+        findViewById<View>(R.id.pe_quantity_label).isVisible=tracked && !hasVariants
         findViewById<View>(R.id.pe_soldout).isVisible=mode==StockMode.UNITS
         findViewById<View>(R.id.pe_soldout_label).isVisible=mode==StockMode.UNITS
     }
@@ -164,21 +174,15 @@ class ProductEditorActivity : OwnerActivity() {
         findViewById<TextView>(R.id.pe_photo_status).text=if(photo.isBlank())"Aún no eliges una foto." else "Foto lista. Revisa que el producto se vea completo."
     }
     private fun product():OwnerProduct{
-        val name=draft.optString("name").trim();require(name.length in 1..120){"Escribe un nombre de hasta 120 letras."}
-        val price=draft.optString("price").toLongOrNull();require(price!=null && price in 0..9007199254740991L){"Escribe un precio válido en pesos chilenos."}
-        require(draft.optString("description").length<=1000 && draft.optString("category").length<=120){"La descripción o categoría es demasiado larga."}
-        if(draft.optBoolean("visible"))require(draft.optString("photo").isNotBlank()){ "Elige una foto antes de publicar. Puedes conservar el borrador sin publicarlo." }
+        val price=draft.optString("price").toLongOrNull() ?: throw IllegalArgumentException("Escribe un precio válido en pesos chilenos.")
         val mode=StockMode.valueOf(draft.getString("mode"));val rows=draft.getJSONArray("variants")
-        require(mode!=StockMode.UNIQUE || rows.length()==0){"Una pieza única no tiene variantes. Quita las variantes o elige Regular."}
-        val variants=(0 until rows.length()).map{i->val v=rows.getJSONObject(i);val label=v.optString("label").trim();require(label.length in 1..120){"Escribe un nombre para cada variante."}
-            val amount=if(mode in listOf(StockMode.ON_REQUEST,StockMode.UNLIMITED))0 else v.optString("quantity").toIntOrNull();require(amount!=null && amount>=0){"Revisa las unidades de cada variante."}
-            val ownPrice=v.optString("priceClp").takeIf{it.isNotBlank()}?.let{it.toLongOrNull()?:throw IllegalArgumentException("Revisa el precio de cada variante.")};require(ownPrice==null||ownPrice in 0..9007199254740991L){"El precio de la variante no es válido."}
-            Variant(v.getString("id"),label,amount,ownPrice,v.optString("photo").takeIf{it.isNotBlank()})}
-        val quantity=when(mode){StockMode.ON_REQUEST,StockMode.UNLIMITED->null;else->if(variants.isNotEmpty()){val total=variants.sumOf{it.quantity.toLong()};require(total<=Int.MAX_VALUE){"Demasiadas unidades."};total.toInt()}else draft.optString("quantity").toIntOrNull()}
-        require(mode in listOf(StockMode.ON_REQUEST,StockMode.UNLIMITED) || (quantity!=null && quantity>=0)){"Revisa la cantidad disponible."}
-        require(mode!=StockMode.UNIQUE || quantity in 0..1){"Una pieza única puede tener cero o una unidad."}
+        val variants=(0 until rows.length()).map{i->val v=rows.getJSONObject(i)
+            val amount=if(!mode.countsUnits)0 else v.optString("quantity").toIntOrNull() ?: throw IllegalArgumentException("Revisa las unidades de cada variante.")
+            val ownPrice=v.optString("priceClp").takeIf{it.isNotBlank()}?.let{it.toLongOrNull()?:throw IllegalArgumentException("Revisa el precio de cada variante.")}
+            Variant(v.getString("id"),v.optString("label"),amount,ownPrice,v.optString("photo").takeIf{it.isNotBlank()})}
+        val quantity=if(!mode.countsUnits)null else if(variants.isNotEmpty())null else draft.optString("quantity").toIntOrNull()
         val attrs=draft.getJSONObject("attributes");val attributes=attrs.keys().asSequence().associateWith{attrs.getString(it)}
-        return OwnerProduct(CatalogProduct(draft.getString("id"),shopId,name,draft.optString("description"),draft.optString("category"),price,draft.getBoolean("showPrice"),mode,quantity,draft.getBoolean("visible"),draft.getString("photo"),draft.getString("productType"),attributes,draft.getString("soldOut")),variants)
+        return OwnerProduct(CatalogProduct(draft.getString("id"),shopId,draft.optString("name"),draft.optString("description"),draft.optString("category"),price,draft.getBoolean("showPrice"),mode,quantity,draft.getBoolean("visible"),draft.optString("photo"),draft.getString("productType"),attributes,draft.getString("soldOut")),variants).validatedForCatalog()
     }
     private fun save(){
         val item=try{product()}catch(e:Exception){status(e.message?:"Revisa los datos del producto.");return}

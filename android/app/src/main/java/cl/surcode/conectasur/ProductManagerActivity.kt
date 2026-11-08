@@ -51,20 +51,26 @@ class ProductManagerActivity : OwnerActivity() {
         if(defaults)return
         val list=findViewById<LinearLayout>(R.id.pm_items)?:return;list.removeAllViews()
         val query=text(R.id.pm_search)
-        val rows=products.filter { (it.base.name+" "+it.base.category).contains(query,true) }.filter { !preview || it.base.toPublicOrNull()!=null }
+        val rows=products.filter { (it.base.name+" "+it.base.category).contains(query,true) }.filter { !preview || it.toPublicOrNull(showPrices)!=null }
         findViewById<TextView>(R.id.pm_summary).text=if(preview)"Vista previa pública: ${rows.size} productos. No muestra cantidades privadas." else "${rows.size} productos · ${selected.size} seleccionados"
         findViewById<Button>(R.id.pm_add).text=if(workspace.draft(shopId)!=null)"Continuar borrador" else "Agregar producto"
         rows.forEach {item->
-            val row=layoutInflater.inflate(R.layout.item_owner_product,list,false);val p=item.base;val public=p.toPublicOrNull()
+            val row=layoutInflater.inflate(R.layout.item_owner_product,list,false);val p=item.base;val public=item.toPublicOrNull(showPrices)
             row.findViewById<TextView>(R.id.pm_name).text=p.name
             row.findViewById<CheckBox>(R.id.pm_select).apply{isVisible=!preview;text="Seleccionar ${p.name}";isChecked=p.id in selected;setOnCheckedChangeListener{_,value->if(value)selected.add(p.id)else selected.remove(p.id)}}
             val mode=modes[modeValues.indexOf(p.stockMode)]
             row.findViewById<TextView>(R.id.pm_details).text=if(preview){
                 val state=if(public?.soldOut==true)"Agotado" else if(public?.onRequest==true)"A pedido" else "Disponible"
-                "$state · ${priceLabel(p.priceClp.takeIf{p.showPrice && showPrices})}\n${p.description}\n"+item.variants.joinToString("\n"){it.label+" · "+priceLabel((it.priceClp?:p.priceClp).takeIf{p.showPrice&&showPrices})}
-            }else "${p.category} · ${priceLabel(p.priceClp)}\n$mode · ${if(p.visible)"Disponible" else "No disponible"}\n"+
-                (if(p.stockMode in listOf(StockMode.UNITS,StockMode.UNIQUE))"Stock: ${p.quantity?:0}" else "Sin conteo de unidades")+
+                "$state · ${priceLabel(public?.priceClp)}\n${p.description}\n"+public?.variants.orEmpty().joinToString("\n"){
+                    val variantState=if(public?.onRequest==true)"A pedido" else if(public?.soldOut==true || !it.available)"Agotado" else "Disponible"
+                    "${it.label} · ${priceLabel(it.priceClp)} · $variantState"
+                }
+            }else {
+                val soldOutInfo=if(p.stockMode==StockMode.UNITS)" · Al agotarse: ${soldOutLabels.getOrElse(soldOutValues.indexOf(p.soldOut)){p.soldOut}}" else ""
+                "${p.category} · ${priceLabel(p.priceClp)}\n$mode · ${if(p.visible)"Disponible" else "No disponible"}$soldOutInfo\n"+
+                (if(p.stockMode.countsUnits)"Stock: ${p.quantity?:0}" else "Sin conteo de unidades")+
                 if(item.variants.isEmpty())"" else "\n${item.variants.size} variantes con precio y stock propios"
+            }
             val image=row.findViewById<ImageView>(R.id.pm_photo)
             if(p.photo.startsWith("data:"))runCatching{val bytes=android.util.Base64.decode(p.photo.substringAfter(','),android.util.Base64.NO_WRAP);image.setImageBitmap(android.graphics.BitmapFactory.decodeByteArray(bytes,0,bytes.size))}
             else PublicImageLoader.load(lifecycleScope,image,p.photo,BuildConfig.SUPABASE_URL)
@@ -104,14 +110,17 @@ class ProductManagerActivity : OwnerActivity() {
         }.show()
     }
     private fun showDefaults(){action("Cargando preferencias…"){
-        val config=workspace.refreshConfiguration(shopId);val d=config.getJSONObject("default_products");defaults=true;screen(R.layout.screen_owner_defaults)
-        choices(R.id.pd_mode,modes,modeValues.indexOf(StockMode.valueOf(d.getString("stockMode"))))
-        choices(R.id.pd_soldout,soldOutLabels,soldOutValues.indexOf(d.getString("soldOut")))
-        findViewById<CheckBox>(R.id.pd_visible).isChecked=d.getBoolean("visible");findViewById<CheckBox>(R.id.pd_price).isChecked=d.getBoolean("showPrice")
+        val config=workspace.refreshConfiguration(shopId);val d=config.getJSONObject("default_products")
+        val currentDefaults=ProductDefaults.fromValues(d.optString("stockMode"),d.optString("soldOut"),d.optBoolean("visible",true),d.optBoolean("showPrice",true))
+        defaults=true;screen(R.layout.screen_owner_defaults)
+        choices(R.id.pd_mode,modes,modeValues.indexOf(currentDefaults.stockMode))
+        choices(R.id.pd_soldout,soldOutLabels,soldOutValues.indexOf(currentDefaults.soldOut))
+        findViewById<CheckBox>(R.id.pd_visible).isChecked=currentDefaults.visible;findViewById<CheckBox>(R.id.pd_price).isChecked=currentDefaults.showPrice
         findViewById<CheckBox>(R.id.pd_history).isChecked=config.optBoolean("history_enabled",true)
         click(R.id.pd_save){action("Guardando preferencias…"){
+            val chosen=ProductDefaults(modeValues[option(R.id.pd_mode)],soldOutValues[option(R.id.pd_soldout)],checked(R.id.pd_visible),checked(R.id.pd_price))
             val next=JSONObject().put("history_enabled",checked(R.id.pd_history)).put("default_products",JSONObject()
-                .put("stockMode",modeValues[option(R.id.pd_mode)].name).put("soldOut",soldOutValues[option(R.id.pd_soldout)]).put("visible",checked(R.id.pd_visible)).put("showPrice",checked(R.id.pd_price)))
+                .put("stockMode",chosen.stockMode.name).put("soldOut",chosen.soldOut).put("visible",chosen.visible).put("showPrice",chosen.showPrice))
             workspace.saveConfiguration(shopId,next);showList();status("Preferencias guardadas. Se aplican a los próximos productos.")
         }}
         status("Configura cómo nacen los productos nuevos y si deseas guardar historial.")
