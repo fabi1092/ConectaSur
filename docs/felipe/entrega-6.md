@@ -13,7 +13,7 @@ El backend de Supabase suma tres migraciones nuevas (009 a 011) que sostienen lo
 - **Pruebas.** Se añadió un bloque de 11 pruebas a `supabase/test/sql.test.js` (permisos por perfil, borradores ocultos, orden por distancia y por fecha, ubicación inválida, auditoría, navegación anónima y punto de venta).
 - **Documentación.** El modelo de datos (`docs/felipe/modelo-datos.md`) incluye la ampliación de esta entrega.
 
-Resultado de `npm --prefix supabase test` en mi equipo: **COMPLETAR (aprobadas / total)**.
+Las pruebas SQL se ejecutan automáticamente en GitHub Actions al abrir el Pull Request; su resultado está en la pestaña Checks del PR
 
 ## Requisitos cubiertos (por ID)
 
