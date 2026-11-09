@@ -1,3 +1,4 @@
+
 import { escapeHtml as escape, safeImageUrl, priceLabel } from './content.js';
 import { icon } from './visuals.js';
 
@@ -8,10 +9,15 @@ export function photo(url, alt, extra = '') {
 
 export function wirePhotos(root) {
   root.querySelectorAll('img[data-photo]').forEach(img => {
-    const ready = () => { img.parentElement.classList.add('photo-ready'); };
+    const ready = () => {
+      img.parentElement.classList.add('photo-ready');
+    };
     img.addEventListener('load', ready, { once: true });
     img.addEventListener('error', () => img.remove(), { once: true });
-    if (img.complete) { if (img.naturalWidth) ready(); else img.remove(); }
+    if (img.complete) {
+      if (img.naturalWidth) ready();
+      else img.remove();
+    }
   });
 }
 
@@ -24,22 +30,132 @@ export function productCard(product, shop) {
 
 export function wireProducts(root, products, shops) {
   wirePhotos(root);
+
   root.querySelectorAll('[data-product]').forEach(button => button.addEventListener('click', () => {
     const product = products.find(item => item.id === button.dataset.product);
     if (!product) return;
+
     const shop = shops.find(item => item.id === product.shopId);
     root.closest('#app').querySelector('.product-dialog')?.remove();
+
     const dialog = document.createElement('dialog');
     dialog.className = 'product-dialog public-site';
+
     const variants = (product.variants || []).filter(item => item.label);
-    dialog.innerHTML = `<button class="dialog-close" type="button">${icon('close')} Cerrar</button><div class="product-dialog-layout">${photo(product.photo, product.name, 'dialog-photo')}<div class="dialog-content"><p class="public-eyebrow">${escape(product.category || 'Producto local')}</p><h2>${escape(product.name)}</h2><p class="dialog-price">${escape(priceLabel(product))}</p><p class="public-description">${escape(product.description || 'Consulta los detalles directamente con la tienda.')}</p>${variants.length ? `<section class="dialog-options"><h3>Opciones de este producto</h3><ul>${variants.map(item => `<li>${escape(item.label)}${item.available === false ? ' · No disponible' : ''}</li>`).join('')}</ul></section>` : ''}<p class="dialog-shop">De ${escape(shop?.name || 'un emprendimiento local')}</p><a class="public-primary" href="#tienda/${escape(encodeURIComponent(product.shopId))}">Conocer la tienda ${icon('arrow')}</a><p class="dialog-note">Consulta directamente por disponibilidad y entrega.</p></div></div>`;
+    const selectedVariant = variants.find(item => item.available !== false) || null;
+
+    const displayedProduct = selectedVariant
+      ? {
+          ...product,
+          priceClp: selectedVariant.priceClp ?? product.priceClp,
+          variants: []
+        }
+      : product;
+
+    const initialPrice = priceLabel(displayedProduct);
+
+    const variantSelector = variants.length
+      ? `<section class="dialog-options">
+          <h3>Opciones de este producto</h3>
+          <label for="product-variant">Selecciona una opción</label>
+          <select id="product-variant" data-variant-select aria-label="Seleccionar variante" ${selectedVariant ? '' : 'disabled'}>
+            ${variants.map(item => `<option value="${escape(item.id)}" ${selectedVariant?.id === item.id ? 'selected' : ''} ${item.available === false ? 'disabled' : ''}>${escape(item.label)}${item.available === false ? ' · Agotado' : ''}</option>`).join('')}
+          </select>
+        </section>`
+      : '';
+
+    dialog.innerHTML = `
+      <button class="dialog-close" type="button">${icon('close')} Cerrar</button>
+      <div class="product-dialog-layout">
+        ${photo(selectedVariant?.photo || product.photo, product.name, 'dialog-photo')}
+        <div class="dialog-content">
+          <p class="public-eyebrow">${escape(product.category || 'Producto local')}</p>
+          <h2>${escape(product.name)}</h2>
+          <p class="dialog-price" aria-live="polite">${escape(initialPrice)}</p>
+          <p class="public-description">${escape(product.description || 'Consulta los detalles directamente con la tienda.')}</p>
+          ${variantSelector}
+          <p class="dialog-shop">De ${escape(shop?.name || 'un emprendimiento local')}</p>
+          <a class="public-primary" href="#tienda/${escape(encodeURIComponent(product.shopId))}">Conocer la tienda ${icon('arrow')}</a>
+          <p class="dialog-note">Consulta directamente por disponibilidad y entrega.</p>
+        </div>
+      </div>`;
+
     dialog.setAttribute('aria-label', product.name);
-    dialog.dataset.voiceGuide=`${product.name}. ${priceLabel(product)}. ${product.description || 'Consulta los detalles con la tienda.'} ${product.soldOut ? 'Agotado. Consulta a la tienda.' : product.onRequest ? 'Hecho por encargo.' : ''} ${variants.map(item=>`${item.label}${item.available === false ? ', no disponible' : ''}.`).join(' ')} De ${shop?.name || 'un emprendimiento local'}.`;
-    dialog.querySelector('.dialog-content').insertAdjacentHTML('beforeend',`<div class="assistance-actions"><button type="button" data-listen>${icon('volume')}Escuchar producto</button><button type="button" data-pause-reading hidden>Pausar lectura</button><button type="button" data-stop-reading hidden>Detener lectura</button></div><p data-reading-status role="status"></p>`);
+
+    const updateVoiceGuide = (variant = null) => {
+      const currentProduct = variant
+        ? {
+            ...product,
+            priceClp: variant.priceClp ?? product.priceClp,
+            variants: []
+          }
+        : displayedProduct;
+
+      dialog.dataset.voiceGuide =
+        `${product.name}. ${priceLabel(currentProduct)}. ` +
+        `${product.description || 'Consulta los detalles con la tienda.'} ` +
+        `${variant ? `Opción seleccionada: ${variant.label}. ` : ''}` +
+        `${product.soldOut ? 'Agotado. Consulta a la tienda.' : product.onRequest ? 'Hecho por encargo.' : ''} ` +
+        `De ${shop?.name || 'un emprendimiento local'}.`;
+    };
+
+    updateVoiceGuide(selectedVariant);
+
+    const selector = dialog.querySelector('[data-variant-select]');
+
+    if (selector) {
+      selector.addEventListener('change', () => {
+        const variant = variants.find(item =>
+          String(item.id) === selector.value && item.available !== false
+        );
+
+        if (!variant) return;
+
+        const currentProduct = {
+          ...product,
+          priceClp: variant.priceClp ?? product.priceClp,
+          variants: []
+        };
+
+        dialog.querySelector('.dialog-price').textContent =
+          priceLabel(currentProduct);
+
+        const currentPhoto = variant.photo || product.photo;
+        dialog.querySelector('.dialog-photo').outerHTML =
+          photo(currentPhoto, `${product.name} - ${variant.label}`, 'dialog-photo');
+
+        wirePhotos(dialog);
+        updateVoiceGuide(variant);
+      });
+    }
+
+    dialog.querySelector('.dialog-content').insertAdjacentHTML(
+      'beforeend',
+      `<div class="assistance-actions">
+        <button type="button" data-listen>${icon('volume')}Escuchar producto</button>
+        <button type="button" data-pause-reading hidden>Pausar lectura</button>
+        <button type="button" data-stop-reading hidden>Detener lectura</button>
+      </div>
+      <p data-reading-status role="status"></p>`
+    );
+
     root.closest('#app').append(dialog);
+
     dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
     dialog.querySelector('a').addEventListener('click', () => dialog.close());
-    dialog.addEventListener('click', event => { if (event.target === dialog) { const box = dialog.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close(); } });
+
+    dialog.addEventListener('click', event => {
+      if (event.target === dialog) {
+        const box = dialog.getBoundingClientRect();
+        if (
+          event.clientX < box.left ||
+          event.clientX > box.right ||
+          event.clientY < box.top ||
+          event.clientY > box.bottom
+        ) dialog.close();
+      }
+    });
+
     wirePhotos(dialog);
     dialog.showModal();
   }));
