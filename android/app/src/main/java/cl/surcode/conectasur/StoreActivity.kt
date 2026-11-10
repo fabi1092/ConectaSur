@@ -267,6 +267,12 @@ class StoreActivity : FragmentActivity() {
         }
         if (privateVisible) {
             val draft = model.draft ?: state.shop!!
+            val storeName = draft.name.ifBlank { state.shop?.name?.ifBlank { "Tu tienda" } ?: "Tu tienda" }
+            findViewById<TextView>(R.id.shop_owner_store_name)?.text = storeName
+            val sectorText = draft.sector.ifBlank { state.shop?.sector.orEmpty() }
+            findViewById<TextView>(R.id.shop_owner_store_sector)?.text =
+                if (sectorText.isNotBlank()) "Sector $sectorText · Administra tus productos, ventas y consultas."
+                else "Administra tus productos, registra ventas y revisa consultas de clientes."
             binding = true
             listOf(draft.name, draft.description, draft.contact, draft.whatsappNumber).forEachIndexed { index, value ->
                 findViewById<EditText>(fields[index]).let { if (it.text.toString() != value) it.setText(value) }
