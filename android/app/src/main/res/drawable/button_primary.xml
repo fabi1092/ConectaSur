@@ -11,7 +11,7 @@
         <shape>
             <solid android:color="?attr/appPrimary" />
             <corners android:radius="16dp" />
-            <stroke android:width="3dp" android:color="#A85D17" />
+            <stroke android:width="3dp" android:color="#FFFFFF" />
         </shape>
     </item>
     <item>

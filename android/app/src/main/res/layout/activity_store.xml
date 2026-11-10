@@ -246,11 +246,55 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
+                <!-- CABECERA DISTINTIVA DE MODO EMPRENDEDORA -->
+                <LinearLayout
+                    android:id="@+id/shop_owner_header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/card_surface_owner_header"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:id="@+id/shop_owner_mode_badge"
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/badge_pill_forest"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:text="Modo emprendedora · Panel de gestión"
+                        android:textColor="@color/conectasur_ink"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="10dp" />
+
+                    <TextView
+                        android:id="@+id/shop_owner_store_name"
+                        style="@style/ConectaSur.Title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:textSize="22sp"
+                        android:text="Tu espacio de trabajo" />
+
+                    <TextView
+                        android:id="@+id/shop_owner_store_sector"
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="0dp"
+                        android:text="Administra tus productos, registra ventas y revisa las consultas de tus clientes." />
+                </LinearLayout>
+
                 <!-- TARJETA 1: ACCIONES PRINCIPALES DE TU NEGOCIO -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/card_surface"
+                    android:background="@drawable/card_surface_owner_primary"
                     android:orientation="vertical"
                     android:padding="20dp"
                     android:layout_marginBottom="16dp">
@@ -305,7 +349,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/card_surface"
+                    android:background="@drawable/card_surface_owner"
                     android:orientation="vertical"
                     android:padding="20dp"
                     android:layout_marginBottom="16dp">
@@ -456,7 +500,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/card_surface"
+                    android:background="@drawable/card_surface_owner"
                     android:orientation="vertical"
                     android:padding="20dp"
                     android:layout_marginBottom="16dp">
@@ -547,7 +591,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/card_surface"
+                    android:background="@drawable/card_surface_owner"
                     android:orientation="vertical"
                     android:padding="20dp"
                     android:layout_marginBottom="16dp">
