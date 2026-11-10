@@ -46,6 +46,17 @@ class ShopContactActivity : ComponentActivity() {
         val name = input(R.id.contact_name, R.string.contact_name,100)
         val reply = input(R.id.contact_reply, R.string.contact_reply,240)
         val body = input(R.id.contact_body, R.string.contact_body,2000,true)
+        label(form, "O elige una consulta rápida con un toque:")
+        listOf(
+            "¿Tienes disponible este producto?",
+            "¿En qué feria entregas?",
+            "Llámame por favor"
+        ).forEach { template ->
+            button(form, "💬 $template").setOnClickListener {
+                body.setText(template)
+                body.setSelection(template.length)
+            }
+        }
         val send = button(form,getString(R.string.contact_send))
         applyAccessibility(layout, settings)
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
