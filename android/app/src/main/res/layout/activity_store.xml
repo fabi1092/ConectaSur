@@ -74,58 +74,135 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/card_surface"
                 android:orientation="vertical"
-                android:padding="20dp"
+                android:padding="22dp"
                 android:layout_marginBottom="16dp">
 
                 <TextView
-                    style="@style/ConectaSur.Section"
-                    android:layout_width="match_parent"
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="0dp"
-                    android:text="Ingresa a tu cuenta" />
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/badge_pill_forest"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="5dp"
+                    android:paddingBottom="5dp"
+                    android:text="Bienvenida a ConectaSur"
+                    android:textColor="@color/conectasur_ink"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     style="@style/ConectaSur.Body"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
                     android:text="@string/login_intro" />
+
+                <Button
+                    android:id="@+id/account_google_login"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="18dp"
+                    android:background="@drawable/button_google"
+                    android:drawableStart="@drawable/ic_google"
+                    android:drawablePadding="12dp"
+                    android:minHeight="60dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:text="@string/account_google"
+                    android:textColor="@color/conectasur_ink"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp">
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="#B8C8C1" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginEnd="12dp"
+                        android:layout_marginBottom="0dp"
+                        android:text="o ingresa con tu correo"
+                        android:textSize="14sp" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="#B8C8C1" />
+                </LinearLayout>
 
                 <TextView
                     style="@style/ConectaSur.Label"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
                     android:labelFor="@id/account_email"
-                    android:text="@string/login_email" />
+                    android:text="@string/login_email"
+                    android:textColor="@color/conectasur_ink"
+                    android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/account_email"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
                     android:autofillHints="emailAddress"
+                    android:background="@drawable/input_field"
+                    android:hint="nombre@correo.cl"
                     android:imeOptions="actionNext"
                     android:inputType="textEmailAddress"
                     android:maxLength="254"
                     android:maxLines="1"
                     android:minHeight="56dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="14dp"
+                    android:textColorHint="#6B7F78"
                     android:textSize="18sp" />
 
                 <TextView
                     style="@style/ConectaSur.Label"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
                     android:labelFor="@id/account_password"
-                    android:text="@string/login_password" />
+                    android:text="@string/login_password"
+                    android:textColor="@color/conectasur_ink"
+                    android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/account_password"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
                     android:autofillHints="password"
+                    android:background="@drawable/input_field"
+                    android:hint="Escribe tu contraseña"
                     android:imeOptions="actionDone"
                     android:inputType="textPassword"
                     android:maxLines="1"
                     android:minHeight="56dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="14dp"
                     android:saveEnabled="false"
+                    android:textColorHint="#6B7F78"
                     android:textSize="18sp" />
 
                 <CheckBox
@@ -133,26 +210,20 @@
                     style="@style/ConectaSur.Check"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="56dp"
+                    android:layout_marginBottom="14dp"
+                    android:minHeight="52dp"
                     android:saveEnabled="false"
                     android:text="@string/show_password"
-                    android:textSize="18sp" />
+                    android:textSize="17sp" />
 
                 <Button
                     android:id="@+id/account_login"
                     style="@style/ConectaSur.Button.Primary"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="0dp"
                     android:minHeight="60dp"
                     android:text="@string/login_button" />
-
-                <Button
-                    android:id="@+id/account_google_login"
-                    style="@style/ConectaSur.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="60dp"
-                    android:text="@string/account_google" />
             </LinearLayout>
 
             <!-- PERFIL DE COMPRADOR O ADMINISTRADOR -->
@@ -411,10 +482,16 @@
                         android:id="@+id/shop_edit_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="14dp"
+                        android:background="@drawable/input_field"
                         android:importantForAutofill="no"
                         android:inputType="textCapSentences"
                         android:maxLength="120"
                         android:minHeight="56dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp"
                         android:saveEnabled="false"
                         android:textSize="18sp" />
 
@@ -429,11 +506,17 @@
                         android:id="@+id/shop_edit_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="14dp"
+                        android:background="@drawable/input_field"
                         android:gravity="top"
                         android:importantForAutofill="no"
                         android:inputType="textCapSentences|textMultiLine"
                         android:maxLength="1000"
                         android:minHeight="112dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp"
                         android:saveEnabled="false"
                         android:textSize="18sp" />
 
@@ -529,10 +612,16 @@
                         android:id="@+id/shop_edit_contact"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="14dp"
+                        android:background="@drawable/input_field"
                         android:importantForAutofill="no"
                         android:inputType="text"
                         android:maxLength="240"
                         android:minHeight="56dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp"
                         android:saveEnabled="false"
                         android:textSize="18sp" />
 
@@ -569,10 +658,16 @@
                             android:id="@+id/shop_whatsapp"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="14dp"
+                            android:background="@drawable/input_field"
                             android:importantForAutofill="no"
                             android:inputType="phone"
                             android:maxLength="24"
                             android:minHeight="56dp"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingTop="14dp"
+                            android:paddingBottom="14dp"
                             android:saveEnabled="false"
                             android:textSize="18sp" />
                     </LinearLayout>
