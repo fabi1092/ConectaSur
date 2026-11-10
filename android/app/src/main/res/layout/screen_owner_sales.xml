@@ -1,2 +1,183 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent"><ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true"><LinearLayout android:id="@+id/screen_owner_sales_body" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp"><TextView android:id="@+id/sv_heading" style="@style/ConectaSur.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_owner_sales_1" /><TextView android:id="@+id/sv_product_label" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_owner_sales_2" /><Spinner android:id="@+id/sv_product" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:contentDescription="@string/e5_screen_owner_sales_3" /><TextView android:id="@+id/sv_variant_label" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_owner_sales_4" /><Spinner android:id="@+id/sv_variant" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:contentDescription="@string/e5_screen_owner_sales_5" /><TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_owner_sales_6" android:labelFor="@id/sv_quantity" /><EditText android:id="@+id/sv_quantity" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="number" android:maxLength="1000" android:saveEnabled="false" android:importantForAutofill="no" /><TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_owner_sales_7" android:labelFor="@id/sv_place" /><EditText android:id="@+id/sv_place" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="textCapSentences" android:maxLength="1000" android:saveEnabled="false" android:importantForAutofill="no" /><TextView android:id="@+id/sv_price" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_owner_sales_8" /><Button android:id="@+id/sv_register" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_owner_sales_9" /><TextView android:id="@+id/sv_note" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_owner_sales_10" /><Button android:id="@+id/sv_history" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_owner_sales_11" /></LinearLayout></ScrollView></FrameLayout>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/screen_owner_sales_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Banner de 10 segundos para Anular última venta (WCAG 3.3.4 Prevención de errores) -->
+            <LinearLayout
+                android:id="@+id/sv_undo_banner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="#FEF3C7"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/sv_undo_text"
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="¿Te equivocaste al anotar la venta? Puedes anularla y devolver las unidades."
+                    android:textColor="#0F172A"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/sv_undo_button"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="60dp"
+                    android:text="↩️ Anular última venta" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/sv_heading"
+                style="@style/ConectaSur.Section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/e5_screen_owner_sales_1" />
+
+            <TextView
+                android:id="@+id/sv_product_label"
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/e5_screen_owner_sales_2" />
+
+            <Spinner
+                android:id="@+id/sv_product"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/e5_screen_owner_sales_3"
+                android:minHeight="56dp" />
+
+            <TextView
+                android:id="@+id/sv_variant_label"
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/e5_screen_owner_sales_4" />
+
+            <Spinner
+                android:id="@+id/sv_variant"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/e5_screen_owner_sales_5"
+                android:minHeight="56dp" />
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:labelFor="@id/sv_quantity"
+                android:text="@string/e5_screen_owner_sales_6" />
+
+            <EditText
+                android:id="@+id/sv_quantity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFeatureSettings="tnum"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="1000"
+                android:minHeight="56dp"
+                android:saveEnabled="false"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/sv_quantity_controls"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="4dp"
+                android:paddingBottom="8dp">
+
+                <Button
+                    android:id="@+id/sv_qty_minus"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:minHeight="60dp"
+                    android:text="➖ 1 unidad" />
+
+                <Button
+                    android:id="@+id/sv_qty_plus"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="60dp"
+                    android:text="➕ 1 unidad" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:labelFor="@id/sv_place"
+                android:text="@string/e5_screen_owner_sales_7" />
+
+            <EditText
+                android:id="@+id/sv_place"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:importantForAutofill="no"
+                android:inputType="textCapSentences"
+                android:maxLength="1000"
+                android:minHeight="56dp"
+                android:saveEnabled="false"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/sv_price"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="polite"
+                android:fontFeatureSettings="tnum"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:text="@string/e5_screen_owner_sales_8" />
+
+            <Button
+                android:id="@+id/sv_register"
+                style="@style/ConectaSur.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="64dp"
+                android:text="@string/e5_screen_owner_sales_9" />
+
+            <TextView
+                android:id="@+id/sv_note"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/e5_screen_owner_sales_10" />
+
+            <Button
+                android:id="@+id/sv_history"
+                style="@style/ConectaSur.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/e5_screen_owner_sales_11" />
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>

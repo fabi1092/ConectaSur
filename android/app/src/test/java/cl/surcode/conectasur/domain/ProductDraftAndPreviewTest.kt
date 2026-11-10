@@ -90,4 +90,16 @@ class ProductDraftAndPreviewTest {
         assertEquals(listOf("Bufanda nueva", "Canasto grande"), merged.map { it.base.name })
         assertTrue(formatCatalogSyncStatus(offline = true, productCount = 2, pendingChanges = 3).contains("Sin conexión"))
     }
+
+    @Test
+    fun inclusivePriceInWordsAndQuickButtonsPreventZeroMistakes() {
+        assertEquals("tres mil quinientos", numberToSpanishWords(3500))
+        assertEquals("ocho mil", numberToSpanishWords(8000))
+        assertEquals("doce mil quinientos", numberToSpanishWords(12500))
+        assertTrue(formatPriceInWords("3500").contains("Tres mil quinientos pesos chilenos"))
+        assertEquals("1500", addQuickPriceAmount("1000", 500))
+        assertEquals("6500", addQuickPriceAmount("1500", 5000))
+        assertEquals(0, adjustQuickQuantity(0, -1))
+        assertEquals(4, adjustQuickQuantity(3, 1))
+    }
 }

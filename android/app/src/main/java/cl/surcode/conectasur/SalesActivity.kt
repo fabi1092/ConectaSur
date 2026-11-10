@@ -5,9 +5,14 @@ import android.content.Intent
 import android.view.View
 import android.widget.*
 import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.lifecycleScope
 import cl.surcode.conectasur.data.*
 import cl.surcode.conectasur.domain.*
 import cl.surcode.conectasur.ui.applyAccessibility
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.IOException
 import java.time.LocalDate
@@ -22,6 +27,8 @@ class SalesActivity : OwnerActivity() {
     private var initialized=false
     private var history=false
     private var pending:JSONObject?=null
+    private var lastSoldSnapshot:OwnerProduct?=null
+    private var undoTimerJob:Job?=null
     override fun onOwnerReady(){if(!initialized){initialized=true;history=intent.getBooleanExtra("history",false);if(history)showHistory()else saleScreen()}}
     private fun saleScreen(){action("Cargando tus productos…"){
         products=workspace.sync(shopId).products
@@ -38,20 +45,61 @@ class SalesActivity : OwnerActivity() {
         }
         findViewById<Spinner>(R.id.sv_product).onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){};override fun onItemSelected(p:AdapterView<*>?,v:View?,i:Int,id:Long){variants()}}
         findViewById<Spinner>(R.id.sv_variant).onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){};override fun onItemSelected(p:AdapterView<*>?,v:View?,i:Int,id:Long){updatePrice()}}
-        findViewById<EditText>(R.id.sv_quantity).setText(pending?.optString("quantity")?:"1")
+        findViewById<EditText>(R.id.sv_quantity).apply {
+            setText(pending?.optString("quantity")?:"1")
+            doAfterTextChanged { updatePrice() }
+        }
+        fun stepSaleQty(delta:Int){
+            val current=findViewById<EditText>(R.id.sv_quantity).text.toString().trim().toIntOrNull()?:1
+            val next=(current+delta).coerceAtLeast(1)
+            findViewById<EditText>(R.id.sv_quantity).setText(next.toString())
+        }
+        click(R.id.sv_qty_minus){stepSaleQty(-1)}
+        click(R.id.sv_qty_plus){stepSaleQty(1)}
+        click(R.id.sv_undo_button){undoLastSale()}
         findViewById<EditText>(R.id.sv_place).setText(pending?.optString("place")?:"")
         variants();lockPending()
         click(R.id.sv_register){confirmSale()}
         click(R.id.sv_history){history=true;showHistory()}
         status(if(pending!=null)"Hay una venta sin respuesta confirmada. Reintenta con los mismos datos para consultar su resultado sin duplicarla." else if(products.isEmpty())"Primero agrega un producto a tu catálogo." else "Elige producto, variante y cantidad. El stock se descuenta al confirmar.")
     }}
+    private fun showUndoBanner(previousProduct:OwnerProduct,soldQty:Int){
+        lastSoldSnapshot=previousProduct
+        undoTimerJob?.cancel()
+        val banner=findViewById<View>(R.id.sv_undo_banner)?:return
+        findViewById<TextView>(R.id.sv_undo_text)?.text="¿Te equivocaste al anotar $soldQty × ${previousProduct.base.name}? Tienes 10 segundos para devolver las unidades."
+        banner.isVisible=true
+        undoTimerJob=lifecycleScope.launch{
+            delay(10000L)
+            findViewById<View>(R.id.sv_undo_banner)?.isVisible=false
+            lastSoldSnapshot=null
+        }
+    }
+    private fun undoLastSale(){
+        val snapshot=lastSoldSnapshot?:return
+        undoTimerJob?.cancel()
+        findViewById<View>(R.id.sv_undo_banner)?.isVisible=false
+        lastSoldSnapshot=null
+        action("Devolviendo unidades al catálogo…"){
+            val result=workspace.save(shopId,snapshot)
+            products=result.products
+            updatePrice()
+            val msg="Venta anulada: se devolvieron las unidades de ${snapshot.base.name} a tu catálogo."
+            status(msg)
+            speakFeedback(msg)
+        }
+    }
     private fun updatePrice(){
         val p=products.getOrNull(option(R.id.sv_product))?:return;val v=p.variants.getOrNull(option(R.id.sv_variant))
+        val unitPrice=v?.priceClp?:p.base.priceClp
+        val qty=findViewById<EditText>(R.id.sv_quantity)?.text?.toString()?.trim()?.toIntOrNull()?.coerceAtLeast(1)?:1
+        val total=unitPrice*qty
+        val words=numberToSpanishWords(total).replaceFirstChar{it.uppercase()}
         val amount=if(p.base.stockMode in listOf(StockMode.ON_REQUEST,StockMode.UNLIMITED))"Sin conteo de unidades" else "Disponibles: ${v?.quantity?:p.base.quantity?:0}"
-        findViewById<TextView>(R.id.sv_price).text="Precio por unidad: ${priceLabel(v?.priceClp?:p.base.priceClp)}. $amount"
+        findViewById<TextView>(R.id.sv_price).text="Precio por unidad: ${priceLabel(unitPrice)}. $amount\nTotal a cobrar: ${priceLabel(total)} (✅ Escrito: $words pesos)"
     }
     private fun lockPending(){
-        listOf(R.id.sv_product,R.id.sv_variant,R.id.sv_quantity,R.id.sv_place).forEach{findViewById<View>(it).isEnabled=pending==null}
+        listOf(R.id.sv_product,R.id.sv_variant,R.id.sv_quantity,R.id.sv_place,R.id.sv_qty_minus,R.id.sv_qty_plus).forEach{findViewById<View>(it)?.isEnabled=pending==null}
         findViewById<Button>(R.id.sv_register).text=if(pending==null)"Revisar y registrar venta" else "Reintentar y confirmar esta venta"
     }
     private fun confirmSale(){
@@ -69,10 +117,14 @@ class SalesActivity : OwnerActivity() {
                     val data=pending?:JSONObject().put("productId",product.base.id).put("variantId",variant?.id?:JSONObject.NULL).put("quantity",amount).put("place",place)
                     pending=data;workspace.saveSaleDraft(shopId,data);lockPending()
                     try{
-                        RepositoryProvider.sales().registerSale(shopId,data.getString("productId"),data.nullableString("variantId"),data.getInt("quantity"),data.getString("place"))
+                        val soldQty=data.getInt("quantity")
+                        val unitClp=variant?.priceClp?:product.base.priceClp
+                        RepositoryProvider.sales().registerSale(shopId,data.getString("productId"),data.nullableString("variantId"),soldQty,data.getString("place"))
                         workspace.clearSaleDraft(shopId);pending=null
                         products=workspace.sync(shopId).products
                         lockPending();updatePrice();status("Venta registrada. El stock fue actualizado. Puedes registrar otra venta.")
+                        speakFeedback("Venta guardada por ${numberToSpanishWords(unitClp * soldQty)} pesos.")
+                        showUndoBanner(product,soldQty)
                         findViewById<EditText>(R.id.sv_quantity).setText("1")
                     }catch(e:BackendException){
                         if(e.status in 400..499 && e.status !in listOf(408,429)){workspace.clearSaleDraft(shopId);pending=null;lockPending()};throw e

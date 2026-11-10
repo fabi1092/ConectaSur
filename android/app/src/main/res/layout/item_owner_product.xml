@@ -1,2 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/card_surface" android:padding="16dp" android:layout_marginBottom="16dp"><CheckBox android:id="@+id/pm_select" style="@style/ConectaSur.Check" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_item_owner_product_1" /><TextView android:id="@+id/pm_name" style="@style/ConectaSur.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_item_owner_product_2" /><TextView android:id="@+id/pm_details" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_item_owner_product_3" /><ImageView android:id="@+id/pm_photo" android:layout_width="match_parent" android:layout_height="180dp" android:scaleType="centerCrop" android:contentDescription="@string/e5_item_owner_product_4"/><Button android:id="@+id/pm_edit" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_item_owner_product_5" /><Button android:id="@+id/pm_delete" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_item_owner_product_6" /></LinearLayout></FrameLayout>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:id="@+id/cardOwnerProduct"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/card_surface"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:screenReaderFocusable="true">
+
+        <CheckBox
+            android:id="@+id/pm_select"
+            style="@style/ConectaSur.Check"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/e5_item_owner_product_1" />
+
+        <TextView
+            android:id="@+id/pm_name"
+            style="@style/ConectaSur.Section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/e5_item_owner_product_2" />
+
+        <TextView
+            android:id="@+id/pm_details"
+            style="@style/ConectaSur.Body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/e5_item_owner_product_3" />
+
+        <ImageView
+            android:id="@+id/pm_photo"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:contentDescription="@string/e5_item_owner_product_4"
+            android:scaleType="centerCrop" />
+
+        <LinearLayout
+            android:id="@+id/pm_quick_stock_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="8dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/pm_stock_minus"
+                style="@style/ConectaSur.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:minHeight="60dp"
+                android:text="➖ 1 unidad" />
+
+            <Button
+                android:id="@+id/pm_stock_plus"
+                style="@style/ConectaSur.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="60dp"
+                android:text="➕ 1 unidad" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/pm_edit"
+            style="@style/ConectaSur.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="@string/e5_item_owner_product_5" />
+
+        <Button
+            android:id="@+id/pm_delete"
+            style="@style/ConectaSur.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="@string/e5_item_owner_product_6" />
+    </LinearLayout>
+</FrameLayout>

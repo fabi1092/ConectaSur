@@ -28,10 +28,13 @@ import cl.surcode.conectasur.domain.OwnerProduct
 import cl.surcode.conectasur.domain.ProductDefaults
 import cl.surcode.conectasur.domain.StockMode
 import cl.surcode.conectasur.domain.Variant
+import cl.surcode.conectasur.domain.addQuickPriceAmount
+import cl.surcode.conectasur.domain.adjustQuickQuantity
 import cl.surcode.conectasur.domain.coerceEditorStep
 import cl.surcode.conectasur.domain.countsUnits
 import cl.surcode.conectasur.domain.formatDraftReviewSummary
 import cl.surcode.conectasur.domain.formatEditorStepHeader
+import cl.surcode.conectasur.domain.formatPriceInWords
 import cl.surcode.conectasur.domain.nextEditorStep
 import cl.surcode.conectasur.domain.previousEditorStep
 import cl.surcode.conectasur.domain.shouldResumeDraft
@@ -230,6 +233,39 @@ class ProductEditorActivity : OwnerActivity() {
         bind(R.id.pe_price, "price")
         bind(R.id.pe_quantity, "quantity")
 
+        fun updatePriceWords() {
+            findViewById<TextView>(R.id.pe_price_words)?.text = formatPriceInWords(draft.optString("price"))
+        }
+        updatePriceWords()
+        findViewById<EditText>(R.id.pe_price).doAfterTextChanged {
+            if (!binding) {
+                draft.put("price", it.toString())
+                updatePriceWords()
+                persist()
+            }
+        }
+
+        fun addBill(deltaClp: Long) {
+            val nextPrice = addQuickPriceAmount(draft.optString("price"), deltaClp)
+            draft.put("price", nextPrice)
+            findViewById<EditText>(R.id.pe_price).setText(nextPrice)
+            updatePriceWords()
+            persist()
+        }
+        click(R.id.pe_add_500) { addBill(500L) }
+        click(R.id.pe_add_1000) { addBill(1000L) }
+        click(R.id.pe_add_5000) { addBill(5000L) }
+
+        fun adjustStock(delta: Int) {
+            val current = draft.optString("quantity").toIntOrNull()
+            val next = adjustQuickQuantity(current, delta)
+            draft.put("quantity", next.toString())
+            findViewById<EditText>(R.id.pe_quantity).setText(next.toString())
+            persist()
+        }
+        click(R.id.pe_qty_minus) { adjustStock(-1) }
+        click(R.id.pe_qty_plus) { adjustStock(1) }
+
         choices(R.id.pe_type, typeNames, types.indexOf(draft.optString("productType")))
         choices(R.id.pe_mode, modes, modeValues.indexOf(StockMode.valueOf(draft.getString("mode"))))
         choices(R.id.pe_soldout, soldOutLabels, soldOutValues.indexOf(draft.getString("soldOut")))
@@ -298,6 +334,7 @@ class ProductEditorActivity : OwnerActivity() {
                             Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-CL")
+                                .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
                         )
                     } catch (_: Exception) {
                         status("El dictado no está disponible en este teléfono. Puedes usar el micrófono del teclado o escribir.")
@@ -514,6 +551,7 @@ class ProductEditorActivity : OwnerActivity() {
         }
         findViewById<View>(R.id.pe_quantity).isVisible = tracked && !hasVariants
         findViewById<View>(R.id.pe_quantity_label).isVisible = tracked && !hasVariants
+        findViewById<View>(R.id.pe_quantity_controls)?.isVisible = mode == StockMode.UNITS && !hasVariants
         findViewById<View>(R.id.pe_soldout).isVisible = mode == StockMode.UNITS
         findViewById<View>(R.id.pe_soldout_label).isVisible = mode == StockMode.UNITS
     }
@@ -608,6 +646,7 @@ class ProductEditorActivity : OwnerActivity() {
             } else {
                 "Producto guardado en tu catálogo."
             }
+            speakFeedback(msg)
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
             finish()
         }

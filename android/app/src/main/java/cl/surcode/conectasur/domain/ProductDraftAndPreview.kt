@@ -29,8 +29,10 @@ fun formatEditorStepHeader(step: Int): String {
 }
 
 /** Resumen final en el paso de publicación antes de confirmar el guardado (A01). */
-fun formatDraftReviewSummary(name: String, priceText: String, variantCount: Int): String =
-    "$name\nPrecio: $priceText pesos chilenos\n$variantCount variantes.\nSolo se publicará cuando confirmes Guardar producto."
+fun formatDraftReviewSummary(name: String, priceText: String, variantCount: Int): String {
+    val written = priceText.trim().toLongOrNull()?.let { " (${numberToSpanishWords(it)} pesos)" } ?: ""
+    return "$name\nPrecio: $priceText pesos chilenos$written\n$variantCount variantes.\nSolo se publicará cuando confirmes Guardar producto."
+}
 
 /**
  * Determina si al abrir el editor corresponde recuperar el borrador guardado (A11 / RNF-USA-04).
@@ -105,3 +107,93 @@ fun formatCatalogSyncStatus(offline: Boolean, productCount: Int, pendingChanges:
     } else {
         "Catálogo actualizado. $productCount productos. $pendingChanges cambios pendientes."
     }
+
+// -----------------------------------------------------------------------------
+// Mejoras P1 de Diseño Inclusivo y Gerontecnología (W3C COGA / WCAG 2.2):
+// Conversión de precios a palabras, billetes rápidos y ajuste de stock en 1 toque
+// -----------------------------------------------------------------------------
+
+private val UNITS_WORDS = listOf(
+    "", "un", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve",
+    "diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve",
+    "veinte", "veintiún", "veintidós", "veintitrés", "veinticuatro", "veinticinco", "veintiséis", "veintisiete", "veintiocho", "veintinueve"
+)
+
+private val TENS_WORDS = listOf(
+    "", "", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa"
+)
+
+private val HUNDREDS_WORDS = listOf(
+    "", "ciento", "doscientos", "trescientos", "cuatrocientos",
+    "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"
+)
+
+private fun underOneThousandToWords(n: Int): String {
+    if (n == 0) return ""
+    if (n == 100) return "cien"
+    val h = n / 100
+    val rem = n % 100
+    val hundredPart = HUNDREDS_WORDS[h]
+    val tenUnitPart = when {
+        rem == 0 -> ""
+        rem < 30 -> UNITS_WORDS[rem]
+        else -> {
+            val t = rem / 10
+            val u = rem % 10
+            if (u == 0) TENS_WORDS[t] else "${TENS_WORDS[t]} y ${UNITS_WORDS[u]}"
+        }
+    }
+    return listOf(hundredPart, tenUnitPart).filter { it.isNotEmpty() }.joinToString(" ")
+}
+
+/** Convierte un número entero en pesos chilenos a su lectura en palabras (ej. 3500 -> "tres mil quinientos"). */
+fun numberToSpanishWords(amount: Long): String {
+    if (amount < 0) return "menos ${numberToSpanishWords(-amount)}"
+    if (amount == 0L) return "cero"
+    if (amount >= 1_000_000_000L) return amount.toString()
+
+    val millions = (amount / 1_000_000L).toInt()
+    val thousands = ((amount % 1_000_000L) / 1_000L).toInt()
+    val remainder = (amount % 1_000L).toInt()
+
+    val parts = mutableListOf<String>()
+    if (millions > 0) {
+        parts.add(if (millions == 1) "un millón" else "${underOneThousandToWords(millions)} millones")
+    }
+    if (thousands > 0) {
+        parts.add(if (thousands == 1) "mil" else "${underOneThousandToWords(thousands)} mil")
+    }
+    if (remainder > 0) {
+        parts.add(underOneThousandToWords(remainder))
+    }
+    return parts.joinToString(" ")
+}
+
+/**
+ * Devuelve la confirmación en palabras del precio escrito para evitar errores de ceros ($350 vs $3.500).
+ */
+fun formatPriceInWords(priceRaw: String): String {
+    val clean = priceRaw.trim()
+    if (clean.isEmpty()) {
+        return "Escribe el precio o usa los botones de billetes (+ $500, + $1.000, + $5.000)."
+    }
+    val value = clean.toLongOrNull()
+        ?: return "Usa solo números sin puntos ni signos (por ejemplo: 3500)."
+    if (value <= 0L) {
+        return "El precio debe ser mayor que cero."
+    }
+    val words = numberToSpanishWords(value).replaceFirstChar { it.uppercase() }
+    val currency = if (value == 1L) "peso chileno" else "pesos chilenos"
+    return "✅ Escrito: $words $currency (${priceLabel(value)})"
+}
+
+/** Suma un monto rápido de billete chileno (+500, +1000, +5000) al precio actual. */
+fun addQuickPriceAmount(currentText: String, deltaClp: Long): String {
+    val current = currentText.trim().toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+    val next = (current + deltaClp).coerceAtLeast(0L)
+    return if (next == 0L) "" else next.toString()
+}
+
+/** Ajusta en 1 toque las unidades de stock sin permitir valores negativos. */
+fun adjustQuickQuantity(currentQuantity: Int?, delta: Int): Int =
+    ((currentQuantity ?: 0) + delta).coerceAtLeast(0)

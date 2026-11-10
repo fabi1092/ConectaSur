@@ -1,5 +1,7 @@
 package cl.surcode.conectasur
 
+import android.content.Intent
+import android.net.Uri
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
@@ -7,6 +9,7 @@ import android.widget.TextView
 import androidx.core.view.isVisible
 import cl.surcode.conectasur.data.RepositoryProvider
 import cl.surcode.conectasur.domain.ShopMessage
+import cl.surcode.conectasur.domain.whatsappNumber
 import cl.surcode.conectasur.ui.applyAccessibility
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -41,6 +44,28 @@ class ShopInboxActivity : OwnerActivity() {
                 text = "${if (message.read) "Leído" else "Nuevo"} · $date\n${message.name}\nContacto: ${message.contact}\n\n${message.body}"
                 textSize = 18f; setTextIsSelectable(true)
             })
+            block.addView(Button(this).apply {
+                text = "🔊 Escuchar mensaje de ${message.name}"
+                setOnClickListener {
+                    speakFeedback("Mensaje de ${message.name}. Contacto: ${message.contact}. Dice: ${message.body}")
+                }
+            })
+            whatsappNumber(message.contact)?.let { phone ->
+                block.addView(Button(this).apply {
+                    text = "💬 Responder por WhatsApp"
+                    setOnClickListener {
+                        runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$phone"))) }
+                            .onFailure { status("No encontramos una aplicación para abrir WhatsApp.") }
+                    }
+                })
+                block.addView(Button(this).apply {
+                    text = "📞 Llamar a ${message.name}"
+                    setOnClickListener {
+                        runCatching { startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:+$phone"))) }
+                            .onFailure { status("No pudimos abrir el marcador telefónico.") }
+                    }
+                })
+            }
             if (!message.read) block.addView(Button(this).apply {
                 setText(R.string.contact_read)
                 setOnClickListener { action("Marcando mensaje…") {

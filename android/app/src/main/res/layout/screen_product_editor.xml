@@ -1,2 +1,409 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent"><ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true"><LinearLayout android:id="@+id/screen_product_editor_body" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp"><TextView android:id="@+id/pe_step" style="@style/ConectaSur.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_1" /><TextView android:id="@+id/pe_draft_status" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_2" /><LinearLayout android:id="@+id/pe_step_0" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" ><TextView android:id="@+id/pe_photo_help" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_3" /><ImageView android:id="@+id/pe_photo" android:layout_width="match_parent" android:layout_height="200dp" android:scaleType="centerInside" android:contentDescription="@string/e5_screen_product_editor_4"/><Button android:id="@+id/pe_camera" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_5" /><Button android:id="@+id/pe_gallery" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_6" /><TextView android:id="@+id/pe_photo_status" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_7" /></LinearLayout><LinearLayout android:id="@+id/pe_step_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" ><TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_8" android:labelFor="@id/pe_name" /><EditText android:id="@+id/pe_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="textCapSentences" android:maxLength="1000" android:saveEnabled="false" android:importantForAutofill="no" /><Button android:id="@+id/pe_dictate" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_9" /><TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_10" android:labelFor="@id/pe_description" /><EditText android:id="@+id/pe_description" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="textMultiLine|textCapSentences" android:maxLength="1000" android:saveEnabled="false" android:importantForAutofill="no" /><TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_11" android:labelFor="@id/pe_category" /><EditText android:id="@+id/pe_category" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="textCapSentences" android:maxLength="1000" android:saveEnabled="false" android:importantForAutofill="no" /><TextView android:id="@+id/pe_category_help" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_12" /><TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_13" android:labelFor="@id/pe_price" /><EditText android:id="@+id/pe_price" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="number" android:maxLength="1000" android:saveEnabled="false" android:importantForAutofill="no" /><TextView android:id="@+id/pe_type_label" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_14" /><Spinner android:id="@+id/pe_type" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:contentDescription="@string/e5_screen_product_editor_15" /><LinearLayout android:id="@+id/pe_attributes" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" ></LinearLayout></LinearLayout><LinearLayout android:id="@+id/pe_step_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" ><TextView android:id="@+id/pe_variant_help" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_16" /><Button android:id="@+id/pe_add_variant" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_17" /><LinearLayout android:id="@+id/pe_variants" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" ></LinearLayout></LinearLayout><LinearLayout android:id="@+id/pe_step_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" ><TextView android:id="@+id/pe_mode_label" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_18" /><Spinner android:id="@+id/pe_mode" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:contentDescription="@string/e5_screen_product_editor_19" /><TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_20" android:id="@+id/pe_quantity_label" android:labelFor="@id/pe_quantity" /><EditText android:id="@+id/pe_quantity" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="number" android:maxLength="1000" android:saveEnabled="false" android:importantForAutofill="no" /><TextView android:id="@+id/pe_soldout_label" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_21" /><Spinner android:id="@+id/pe_soldout" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:contentDescription="@string/e5_screen_product_editor_22" /><CheckBox android:id="@+id/pe_visible" style="@style/ConectaSur.Check" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_23" /><CheckBox android:id="@+id/pe_show_price" style="@style/ConectaSur.Check" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_24" /><TextView android:id="@+id/pe_review" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_25" /></LinearLayout><Button android:id="@+id/pe_previous" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_26" /><Button android:id="@+id/pe_next" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_27" /><Button android:id="@+id/pe_save" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_28" /><Button android:id="@+id/pe_discard" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_screen_product_editor_29" /></LinearLayout></ScrollView></FrameLayout>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/screen_product_editor_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/pe_step"
+                style="@style/ConectaSur.Section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/e5_screen_product_editor_1" />
+
+            <TextView
+                android:id="@+id/pe_draft_status"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/e5_screen_product_editor_2" />
+
+            <!-- PASO 1: FOTO -->
+            <LinearLayout
+                android:id="@+id/pe_step_0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/pe_photo_help"
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/e5_screen_product_editor_3" />
+
+                <ImageView
+                    android:id="@+id/pe_photo"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:contentDescription="@string/e5_screen_product_editor_4"
+                    android:scaleType="centerInside" />
+
+                <Button
+                    android:id="@+id/pe_camera"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="60dp"
+                    android:text="@string/e5_screen_product_editor_5" />
+
+                <Button
+                    android:id="@+id/pe_gallery"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="60dp"
+                    android:text="@string/e5_screen_product_editor_6" />
+
+                <TextView
+                    android:id="@+id/pe_photo_status"
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/e5_screen_product_editor_7" />
+            </LinearLayout>
+
+            <!-- PASO 2: DATOS Y PRECIO CON LECTURA EN PALABRAS Y BILLETES RÁPIDOS -->
+            <LinearLayout
+                android:id="@+id/pe_step_1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@id/pe_name"
+                    android:text="@string/e5_screen_product_editor_8" />
+
+                <EditText
+                    android:id="@+id/pe_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="textCapSentences"
+                    android:maxLength="1000"
+                    android:minHeight="56dp"
+                    android:saveEnabled="false"
+                    android:textSize="18sp" />
+
+                <Button
+                    android:id="@+id/pe_dictate"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="56dp"
+                    android:text="@string/e5_screen_product_editor_9" />
+
+                <TextView
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@id/pe_description"
+                    android:text="@string/e5_screen_product_editor_10" />
+
+                <EditText
+                    android:id="@+id/pe_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:maxLength="1000"
+                    android:minHeight="56dp"
+                    android:saveEnabled="false"
+                    android:textSize="18sp" />
+
+                <TextView
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@id/pe_category"
+                    android:text="@string/e5_screen_product_editor_11" />
+
+                <EditText
+                    android:id="@+id/pe_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="textCapSentences"
+                    android:maxLength="1000"
+                    android:minHeight="56dp"
+                    android:saveEnabled="false"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:id="@+id/pe_category_help"
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/e5_screen_product_editor_12" />
+
+                <TextView
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@id/pe_price"
+                    android:text="@string/e5_screen_product_editor_13" />
+
+                <EditText
+                    android:id="@+id/pe_price"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFeatureSettings="tnum"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:maxLength="1000"
+                    android:minHeight="56dp"
+                    android:saveEnabled="false"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/pe_price_words"
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:accessibilityLiveRegion="polite"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    android:text="Escribe el precio o usa los botones de billetes (+ $500, + $1.000, + $5.000)." />
+
+                <LinearLayout
+                    android:id="@+id/pe_quick_bills"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingBottom="8dp">
+
+                    <Button
+                        android:id="@+id/pe_add_500"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:minHeight="56dp"
+                        android:text="+ $500" />
+
+                    <Button
+                        android:id="@+id/pe_add_1000"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:minHeight="56dp"
+                        android:text="+ $1.000" />
+
+                    <Button
+                        android:id="@+id/pe_add_5000"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minHeight="56dp"
+                        android:text="+ $5.000" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/pe_type_label"
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/e5_screen_product_editor_14" />
+
+                <Spinner
+                    android:id="@+id/pe_type"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/e5_screen_product_editor_15"
+                    android:minHeight="56dp" />
+
+                <LinearLayout
+                    android:id="@+id/pe_attributes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </LinearLayout>
+
+            <!-- PASO 3: VARIANTES OPCIONALES -->
+            <LinearLayout
+                android:id="@+id/pe_step_2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/pe_variant_help"
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/e5_screen_product_editor_16" />
+
+                <Button
+                    android:id="@+id/pe_add_variant"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="56dp"
+                    android:text="@string/e5_screen_product_editor_17" />
+
+                <LinearLayout
+                    android:id="@+id/pe_variants"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </LinearLayout>
+
+            <!-- PASO 4: DISPONIBILIDAD, STOCK CON BOTONES +/- Y PUBLICACIÓN -->
+            <LinearLayout
+                android:id="@+id/pe_step_3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/pe_mode_label"
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/e5_screen_product_editor_18" />
+
+                <Spinner
+                    android:id="@+id/pe_mode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/e5_screen_product_editor_19"
+                    android:minHeight="56dp" />
+
+                <TextView
+                    android:id="@+id/pe_quantity_label"
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@id/pe_quantity"
+                    android:text="@string/e5_screen_product_editor_20" />
+
+                <EditText
+                    android:id="@+id/pe_quantity"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFeatureSettings="tnum"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:maxLength="1000"
+                    android:minHeight="56dp"
+                    android:saveEnabled="false"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/pe_quantity_controls"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp">
+
+                    <Button
+                        android:id="@+id/pe_qty_minus"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:minHeight="60dp"
+                        android:text="➖ 1 unidad" />
+
+                    <Button
+                        android:id="@+id/pe_qty_plus"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minHeight="60dp"
+                        android:text="➕ 1 unidad" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/pe_soldout_label"
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/e5_screen_product_editor_21" />
+
+                <Spinner
+                    android:id="@+id/pe_soldout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/e5_screen_product_editor_22"
+                    android:minHeight="56dp" />
+
+                <CheckBox
+                    android:id="@+id/pe_visible"
+                    style="@style/ConectaSur.Check"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/e5_screen_product_editor_23" />
+
+                <CheckBox
+                    android:id="@+id/pe_show_price"
+                    style="@style/ConectaSur.Check"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/e5_screen_product_editor_24" />
+
+                <TextView
+                    android:id="@+id/pe_review"
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/e5_screen_product_editor_25" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/pe_previous"
+                style="@style/ConectaSur.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/e5_screen_product_editor_26" />
+
+            <Button
+                android:id="@+id/pe_next"
+                style="@style/ConectaSur.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/e5_screen_product_editor_27" />
+
+            <Button
+                android:id="@+id/pe_save"
+                style="@style/ConectaSur.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/e5_screen_product_editor_28" />
+
+            <Button
+                android:id="@+id/pe_discard"
+                style="@style/ConectaSur.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/e5_screen_product_editor_29" />
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>

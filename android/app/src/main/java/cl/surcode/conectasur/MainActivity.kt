@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.speech.RecognizerIntent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -58,6 +59,14 @@ class MainActivity : ComponentActivity() {
         if (result.resultCode == RESULT_OK && result.data?.getBooleanExtra(OPEN_CATALOG, false) == true) {
             shopFilter = null
             navigate(Destination("catalog"))
+        }
+    }
+    private val voiceSearchLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val phrase = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        if (!phrase.isNullOrBlank() && ::page.isInitialized && current.screen == "catalog") {
+            query = phrase
+            page.findViewById<EditText>(R.id.search_input)?.setText(phrase)
+            renderProducts()
         }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -309,6 +318,18 @@ class MainActivity : ComponentActivity() {
                 (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
                 view.clearFocus(); true
             } else false
+        }
+        page.findViewById<Button>(R.id.voice_search)?.setOnClickListener {
+            try {
+                voiceSearchLauncher.launch(
+                    Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                        .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                        .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-CL")
+                        .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
+                )
+            } catch (_: Exception) {
+                Toast.makeText(this, "El buscador por voz no está disponible en este teléfono.", Toast.LENGTH_LONG).show()
+            }
         }
         page.findViewById<Button>(R.id.clear_search).setOnClickListener { search.text.clear() }
         renderProducts()
