@@ -46,6 +46,16 @@ class ShopContactActivity : ComponentActivity() {
         val name = input(R.id.contact_name, R.string.contact_name,100)
         val reply = input(R.id.contact_reply, R.string.contact_reply,240)
         val body = input(R.id.contact_body, R.string.contact_body,2000,true)
+        val buyerPrefs = getSharedPreferences("buyer_profile", MODE_PRIVATE)
+        val savedBuyerName = buyerPrefs.getString("name", "").orEmpty()
+        val savedBuyerPhone = buyerPrefs.getString("phone", "").orEmpty()
+        val savedBuyerSector = buyerPrefs.getString("sector", "").orEmpty()
+        if (savedBuyerName.isNotBlank() && name.text.isNullOrBlank()) {
+            name.setText(if (savedBuyerSector.isNotBlank()) "$savedBuyerName ($savedBuyerSector)" else savedBuyerName)
+        }
+        if (savedBuyerPhone.isNotBlank() && reply.text.isNullOrBlank()) {
+            reply.setText(savedBuyerPhone)
+        }
         label(form, "O elige una consulta rápida con un toque:")
         listOf(
             "¿Tienes disponible este producto?",

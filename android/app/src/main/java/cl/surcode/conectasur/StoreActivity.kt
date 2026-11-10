@@ -142,6 +142,55 @@ class StoreActivity : FragmentActivity() {
             setResult(RESULT_OK, Intent().putExtra(MainActivity.OPEN_CATALOG, true))
             finish()
         }
+        val buyerPrefs = getSharedPreferences("buyer_profile", MODE_PRIVATE)
+        val buyerNameInput = findViewById<EditText>(R.id.buyer_profile_name)
+        val buyerPhoneInput = findViewById<EditText>(R.id.buyer_profile_phone)
+        val buyerSectorButton = findViewById<Button>(R.id.buyer_profile_sector)
+        val buyerStatus = findViewById<TextView>(R.id.buyer_profile_status)
+        buyerNameInput?.setText(buyerPrefs.getString("name", "").orEmpty())
+        buyerPhoneInput?.setText(buyerPrefs.getString("phone", "").orEmpty())
+        val savedSector = buyerPrefs.getString("sector", "").orEmpty()
+        if (savedSector.isNotBlank()) buyerSectorButton?.text = "Sector: $savedSector"
+        val defaultSectors = listOf(
+            "Alerce Histórico",
+            "Alerce Norte",
+            "Alerce Sur",
+            "Mirasol",
+            "Puerto Montt Centro",
+            "Valle Volcanes",
+            "Angelmó",
+            "Pelluco",
+            "Chinquihue",
+            "Otro sector de Puerto Montt"
+        )
+        buyerSectorButton?.setOnClickListener {
+            val currentSector = buyerPrefs.getString("sector", "").orEmpty()
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("Elige tu sector en Puerto Montt")
+                .setSingleChoiceItems(defaultSectors.toTypedArray(), defaultSectors.indexOf(currentSector)) { dlg, which ->
+                    val chosen = defaultSectors[which]
+                    buyerPrefs.edit().putString("sector", chosen).apply()
+                    buyerSectorButton.text = "Sector: $chosen"
+                    dlg.dismiss()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .create()
+            dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, presentation) }
+            dialog.show()
+        }
+        findViewById<Button>(R.id.buyer_profile_save)?.setOnClickListener {
+            hideKeyboard()
+            val nameVal = buyerNameInput?.text?.toString()?.trim().orEmpty()
+            val phoneVal = buyerPhoneInput?.text?.toString()?.trim().orEmpty()
+            buyerPrefs.edit()
+                .putString("name", nameVal)
+                .putString("phone", phoneVal)
+                .apply()
+            buyerStatus?.apply {
+                text = "Tus datos de comprador quedaron guardados en este teléfono."
+                isVisible = true
+            }
+        }
         findViewById<Button>(R.id.account_admin_web).setOnClickListener {
             try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://conectasur-dev.web.app/#ingresar"))) }
             catch (_: android.content.ActivityNotFoundException) { model.message("No encontramos un navegador para abrir el panel web.", true) }
@@ -248,6 +297,9 @@ class StoreActivity : FragmentActivity() {
         findViewById<View>(R.id.account_locked).isVisible = state.locked
         findViewById<View>(R.id.shop_form).isVisible = privateVisible
         findViewById<View>(R.id.account_profile).isVisible = profileVisible
+        findViewById<View>(R.id.buyer_profile_card)?.isVisible = profileVisible && !admin
+        findViewById<TextView>(R.id.account_profile_badge)?.text =
+            if (admin) "Modo administrador · Panel web" else "Modo comprador · Comunidad ConectaSur"
         findViewById<TextView>(R.id.account_profile_email).text = getString(R.string.store_account, state.session?.email.orEmpty())
         findViewById<TextView>(R.id.account_profile_intro).setText(if (admin) R.string.account_admin_intro else R.string.account_buyer_intro)
         findViewById<View>(R.id.account_admin_web).isVisible = profileVisible && admin
