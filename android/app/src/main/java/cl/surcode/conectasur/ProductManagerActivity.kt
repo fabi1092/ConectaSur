@@ -19,6 +19,8 @@ import cl.surcode.conectasur.ui.PublicImageLoader
 import cl.surcode.conectasur.data.RepositoryProvider
 import cl.surcode.conectasur.domain.OwnerProduct
 import cl.surcode.conectasur.domain.ProductDefaults
+import cl.surcode.conectasur.domain.StockMode
+import cl.surcode.conectasur.domain.adjustQuickQuantity
 import cl.surcode.conectasur.domain.formatCatalogSyncStatus
 import cl.surcode.conectasur.domain.formatPrivateCatalogDetails
 import cl.surcode.conectasur.domain.formatPublicPreviewDetails
@@ -145,6 +147,29 @@ class ProductManagerActivity : OwnerActivity() {
                 }
             } else {
                 PublicImageLoader.load(lifecycleScope, image, p.photo, BuildConfig.SUPABASE_URL)
+            }
+
+            // Ajuste rápido de stock en 1 toque (P1 Gerontecnología): botones [ - 1 ] y [ + 1 ]
+            val quickRow = row.findViewById<android.view.View>(R.id.pm_quick_stock_row)
+            if (quickRow != null) {
+                val canQuickAdjust = !preview && p.stockMode == StockMode.UNITS && item.variants.isEmpty()
+                quickRow.isVisible = canQuickAdjust
+                if (canQuickAdjust) {
+                    fun changeStock(delta: Int) {
+                        val nextQty = adjustQuickQuantity(p.quantity, delta)
+                        action("Actualizando unidades de ${p.name}…") {
+                            val updated = item.copy(base = p.copy(quantity = nextQty))
+                            val result = workspace.save(shopId, updated)
+                            products = result.products
+                            render()
+                            val msg = "Quedan $nextQty unidades de ${p.name}."
+                            status(if (result.offline) "$msg Guardado sin conexión." else msg)
+                            speakFeedback(msg)
+                        }
+                    }
+                    row.findViewById<Button>(R.id.pm_stock_minus)?.setOnClickListener { changeStock(-1) }
+                    row.findViewById<Button>(R.id.pm_stock_plus)?.setOnClickListener { changeStock(1) }
+                }
             }
 
             // A12 y A13: Edición y eliminación persistente de productos

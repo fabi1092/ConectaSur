@@ -1,2 +1,92 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources><string name="e5_activity_owner_1">Volver a Mi tienda</string><string name="e5_activity_owner_2">Mi catálogo</string><string name="e5_activity_owner_3">Comprobando tu sesión…</string><string name="e5_activity_owner_4">Escuchar esta pantalla</string><string name="e5_activity_owner_5">Desbloquear con huella</string><string name="e5_item_owner_product_1">Seleccionar producto</string><string name="e5_item_owner_product_2">Producto</string><string name="e5_item_owner_product_3">Datos del producto</string><string name="e5_item_owner_product_4">Foto del producto</string><string name="e5_item_owner_product_5">Editar producto</string><string name="e5_item_owner_product_6">Eliminar producto</string><string name="e5_item_variant_editor_1">Nombre de la variante: talla, color o tamaño</string><string name="e5_item_variant_editor_2">Precio propio en pesos chilenos (opcional)</string><string name="e5_item_variant_editor_3">Unidades de esta variante</string><string name="e5_item_variant_editor_4">Usa la foto del producto si no eliges otra</string><string name="e5_item_variant_editor_5">Elegir foto de esta variante</string><string name="e5_item_variant_editor_6">Quitar esta variante</string><string name="e5_screen_owner_defaults_1">Modalidad de los productos nuevos</string><string name="e5_screen_owner_defaults_2">Modalidad de los productos nuevos</string><string name="e5_screen_owner_defaults_3">Al agotarse los productos nuevos</string><string name="e5_screen_owner_defaults_4">Al agotarse los productos nuevos</string><string name="e5_screen_owner_defaults_5">Publicar los productos nuevos al guardarlos</string><string name="e5_screen_owner_defaults_6">Mostrar precio en productos nuevos</string><string name="e5_screen_owner_defaults_7">Guardar historial de ventas</string><string name="e5_screen_owner_defaults_8">Si desactivas el historial, las ventas siguen descontando stock y las ventas futuras no guardan su detalle. Las ventas anteriores se conservan.</string><string name="e5_screen_owner_defaults_9">Guardar preferencias</string><string name="e5_screen_owner_history_1">Historial de ventas</string><string name="e5_screen_owner_history_2">Desde (AAAA-MM-DD)</string><string name="e5_screen_owner_history_3">Hasta (AAAA-MM-DD)</string><string name="e5_screen_owner_history_4">Filtrar por lugar o feria</string><string name="e5_screen_owner_history_5">Filtrar por nombre del producto</string><string name="e5_screen_owner_history_6">Aplicar filtros</string><string name="e5_screen_owner_history_7">Ventas guardadas</string><string name="e5_screen_owner_products_1">Agregar producto</string><string name="e5_screen_owner_products_2">Registrar una venta</string><string name="e5_screen_owner_products_3">Ver historial de ventas</string><string name="e5_screen_owner_products_4">Vista previa pública</string><string name="e5_screen_owner_products_5">Preferencias de productos e historial</string><string name="e5_screen_owner_products_6">Actualizar y sincronizar</string><string name="e5_screen_owner_products_7">Buscar por nombre o categoría</string><string name="e5_screen_owner_products_8">Cambiar disponibilidad en grupo</string><string name="e5_screen_owner_products_9">Tu catálogo</string><string name="e5_screen_owner_sales_1">Registrar venta</string><string name="e5_screen_owner_sales_2">Producto vendido</string><string name="e5_screen_owner_sales_3">Producto vendido</string><string name="e5_screen_owner_sales_4">Variante vendida</string><string name="e5_screen_owner_sales_5">Variante vendida</string><string name="e5_screen_owner_sales_6">Cantidad</string><string name="e5_screen_owner_sales_7">Lugar o nombre de la feria</string><string name="e5_screen_owner_sales_8">El precio se toma del producto o variante.</string><string name="e5_screen_owner_sales_9">Revisar y registrar venta</string><string name="e5_screen_owner_sales_10">La venta necesita conexión. Solo se confirma cuando el servidor la acepta.</string><string name="e5_screen_owner_sales_11">Consultar historial</string><string name="e5_screen_product_editor_1">Paso 1 de 4: Foto</string><string name="e5_screen_product_editor_2">Lo ingresado se guarda como borrador privado.</string><string name="e5_screen_product_editor_3">Pon el producto sobre una mesa, cerca de una ventana. Comprueba que se vea completo y enfocado.</string><string name="e5_screen_product_editor_4">Foto elegida del producto</string><string name="e5_screen_product_editor_5">Tomar foto con cámara</string><string name="e5_screen_product_editor_6">Elegir foto de galería</string><string name="e5_screen_product_editor_7">Aún no eliges una foto</string><string name="e5_screen_product_editor_8">Nombre del producto</string><string name="e5_screen_product_editor_9">Dictar nombre o descripción</string><string name="e5_screen_product_editor_10">Descripción</string><string name="e5_screen_product_editor_11">Categoría</string><string name="e5_screen_product_editor_12">Ejemplos: Artesanías, Ropa, Alimentos, Hogar, Plantas. Los tejidos, flores tejidas y artesanías hechas con plantas van en Artesanías; Plantas se usa para plantas vivas.</string><string name="e5_screen_product_editor_13">Precio en pesos chilenos</string><string name="e5_screen_product_editor_14">Tipo de producto</string><string name="e5_screen_product_editor_15">Tipo de producto</string><string name="e5_screen_product_editor_16">Si vendes tallas, colores o tamaños distintos, agrega una opción por combinación. Cada opción puede tener su foto, precio y cantidad.</string><string name="e5_screen_product_editor_17">Agregar una variante</string><string name="e5_screen_product_editor_18">Modalidad y manejo de stock</string><string name="e5_screen_product_editor_19">Modalidad y manejo de stock</string><string name="e5_screen_product_editor_20">Unidades disponibles</string><string name="e5_screen_product_editor_21">Cuando se agote</string><string name="e5_screen_product_editor_22">Cuando se agote</string><string name="e5_screen_product_editor_23">Disponible en el catálogo público</string><string name="e5_screen_product_editor_24">Mostrar precio</string><string name="e5_screen_product_editor_25">Revisa los datos antes de guardar</string><string name="e5_screen_product_editor_26">Paso anterior</string><string name="e5_screen_product_editor_27">Siguiente</string><string name="e5_screen_product_editor_28">Guardar producto</string><string name="e5_screen_product_editor_29">Descartar este borrador</string></resources>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="e5_activity_owner_1">⬅ Volver a Mi tienda</string>
+    <string name="e5_activity_owner_2">📦 Mis Productos (Cuántos me quedan)</string>
+    <string name="e5_activity_owner_3">Comprobando tu sesión…</string>
+    <string name="e5_activity_owner_4">🔊 Escuchar esta pantalla</string>
+    <string name="e5_activity_owner_5">👆 Desbloquear con huella</string>
+
+    <string name="e5_item_owner_product_1">Seleccionar producto</string>
+    <string name="e5_item_owner_product_2">Producto</string>
+    <string name="e5_item_owner_product_3">Datos del producto</string>
+    <string name="e5_item_owner_product_4">Foto del producto</string>
+    <string name="e5_item_owner_product_5">✏️ Editar producto</string>
+    <string name="e5_item_owner_product_6">🗑️ Eliminar producto</string>
+
+    <string name="e5_item_variant_editor_1">Nombre de la opción: talla, color o tamaño</string>
+    <string name="e5_item_variant_editor_2">Precio propio en pesos chilenos (opcional)</string>
+    <string name="e5_item_variant_editor_3">Unidades disponibles de esta opción</string>
+    <string name="e5_item_variant_editor_4">Usa la foto principal si no eliges otra</string>
+    <string name="e5_item_variant_editor_5">🖼️ Elegir foto de esta opción</string>
+    <string name="e5_item_variant_editor_6">Quitar esta opción</string>
+
+    <string name="e5_screen_owner_defaults_1">📦 ¿Cómo sueles ofrecer tus productos nuevos?</string>
+    <string name="e5_screen_owner_defaults_2">Modalidad de los productos nuevos</string>
+    <string name="e5_screen_owner_defaults_3">¿Qué hacer cuando se agoten las unidades?</string>
+    <string name="e5_screen_owner_defaults_4">Al agotarse los productos nuevos</string>
+    <string name="e5_screen_owner_defaults_5">🟢 Mostrar los productos nuevos en mi tienda al guardarlos</string>
+    <string name="e5_screen_owner_defaults_6">Mostrar precio en productos nuevos</string>
+    <string name="e5_screen_owner_defaults_7">Guardar historial de mis ventas</string>
+    <string name="e5_screen_owner_defaults_8">Si desactivas el historial, las ventas siguen descontando unidades y las ventas futuras no guardan su detalle. Las ventas anteriores se conservan.</string>
+    <string name="e5_screen_owner_defaults_9">✅ Guardar mis preferencias</string>
+
+    <string name="e5_screen_owner_history_1">📋 Historial de mis ventas</string>
+    <string name="e5_screen_owner_history_2">Desde la fecha (AAAA-MM-DD)</string>
+    <string name="e5_screen_owner_history_3">Hasta la fecha (AAAA-MM-DD)</string>
+    <string name="e5_screen_owner_history_4">Filtrar por lugar o nombre de la feria</string>
+    <string name="e5_screen_owner_history_5">Filtrar por nombre del producto</string>
+    <string name="e5_screen_owner_history_6">🔍 Buscar en mi historial</string>
+    <string name="e5_screen_owner_history_7">Ventas guardadas</string>
+
+    <string name="e5_screen_owner_products_1">➕ Agregar producto</string>
+    <string name="e5_screen_owner_products_2">💵 Anotar una venta</string>
+    <string name="e5_screen_owner_products_3">📋 Ver historial de ventas</string>
+    <string name="e5_screen_owner_products_4">👁️ Vista previa pública</string>
+    <string name="e5_screen_owner_products_5">⚙️ Preferencias de productos e historial</string>
+    <string name="e5_screen_owner_products_6">🔄 Actualizar y sincronizar</string>
+    <string name="e5_screen_owner_products_7">Buscar por nombre o categoría</string>
+    <string name="e5_screen_owner_products_8">Cambiar varios productos a la vez</string>
+    <string name="e5_screen_owner_products_9">📦 Mis Productos (Cuántos me quedan)</string>
+
+    <string name="e5_screen_owner_sales_1">💵 Anotar una venta</string>
+    <string name="e5_screen_owner_sales_2">¿Qué producto vendiste?</string>
+    <string name="e5_screen_owner_sales_3">Producto vendido</string>
+    <string name="e5_screen_owner_sales_4">¿Qué talla, color o tamaño vendiste?</string>
+    <string name="e5_screen_owner_sales_5">Variante vendida</string>
+    <string name="e5_screen_owner_sales_6">¿Cuántas unidades vendiste?</string>
+    <string name="e5_screen_owner_sales_7">Lugar o nombre de la feria</string>
+    <string name="e5_screen_owner_sales_8">El precio se calcula automáticamente según el producto u opción elegida.</string>
+    <string name="e5_screen_owner_sales_9">✅ Revisar y anotar venta</string>
+    <string name="e5_screen_owner_sales_10">La venta necesita conexión. Solo se confirma cuando el servidor la acepta.</string>
+    <string name="e5_screen_owner_sales_11">📋 Consultar mi historial</string>
+
+    <string name="e5_screen_product_editor_1">Paso 1 de 4: Foto</string>
+    <string name="e5_screen_product_editor_2">📝 Tu avance se guarda solo para terminar después (aún no se verá en la tienda).</string>
+    <string name="e5_screen_product_editor_3">Pon el producto sobre una mesa con buena luz. Comprueba que se vea completo y claro.</string>
+    <string name="e5_screen_product_editor_4">Foto elegida del producto</string>
+    <string name="e5_screen_product_editor_5">📷 Tomar foto ahora con la cámara</string>
+    <string name="e5_screen_product_editor_6">🖼️ Elegir foto guardada en el celular</string>
+    <string name="e5_screen_product_editor_7">Aún no eliges una foto</string>
+    <string name="e5_screen_product_editor_8">Nombre de tu producto</string>
+    <string name="e5_screen_product_editor_9">🎤 Toca aquí para decir el nombre o descripción con tu voz</string>
+    <string name="e5_screen_product_editor_10">Descripción (cuenta cómo está hecho o para qué sirve)</string>
+    <string name="e5_screen_product_editor_11">Categoría o rubro</string>
+    <string name="e5_screen_product_editor_12">Ejemplos: Artesanías, Ropa, Alimentos, Hogar, Plantas. Los tejidos y flores tejidas van en Artesanías; Plantas se usa para plantas vivas.</string>
+    <string name="e5_screen_product_editor_13">Precio en pesos chilenos</string>
+    <string name="e5_screen_product_editor_14">Tipo de producto</string>
+    <string name="e5_screen_product_editor_15">Tipo de producto</string>
+    <string name="e5_screen_product_editor_16">📏 ¿Vendes distintos tamaños, tallas o colores de este producto? (Opcional). Si todas las unidades son iguales, pulsa Siguiente sin agregar opciones.</string>
+    <string name="e5_screen_product_editor_17">📏 Agregar tamaño, talla o color (Opcional)</string>
+    <string name="e5_screen_product_editor_18">📦 ¿Cómo ofreces este producto?</string>
+    <string name="e5_screen_product_editor_19">Modalidad y manejo de stock</string>
+    <string name="e5_screen_product_editor_20">📦 ¿Cuántas unidades tienes listas para vender?</string>
+    <string name="e5_screen_product_editor_21">¿Qué hacer cuando se agoten las unidades?</string>
+    <string name="e5_screen_product_editor_22">Cuando se agote</string>
+    <string name="e5_screen_product_editor_23">🟢 Visible en tu tienda pública</string>
+    <string name="e5_screen_product_editor_24">Mostrar el precio a los visitantes</string>
+    <string name="e5_screen_product_editor_25">Revisa los datos antes de guardar</string>
+    <string name="e5_screen_product_editor_26">⬅ Paso anterior</string>
+    <string name="e5_screen_product_editor_27">Siguiente paso ➡</string>
+    <string name="e5_screen_product_editor_28">✅ Ver cómo queda y guardar en mi tienda</string>
+    <string name="e5_screen_product_editor_29">🗑️ Descartar este borrador</string>
+</resources>
