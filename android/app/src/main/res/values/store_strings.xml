@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="login_title">Ingresa a tu cuenta</string>
-    <string name="login_intro">Escribe tu correo y contraseña. Abriremos tu cuenta de comprador, tu tienda o el acceso al panel web según tu perfil.</string>
+    <string name="login_title">Ingresa tu e-mail o teléfono para iniciar sesión</string>
+    <string name="login_intro">Escribe tu correo o teléfono. Abriremos tu cuenta de comprador, tu tienda o el acceso al panel web según tu perfil.</string>
     <string name="account_entry">Ingresar</string>
     <string name="buyer_public_mode">Modo comprador · Explora sin iniciar sesión</string>
     <string name="public_catalog_mode">Catálogo público</string>
@@ -11,13 +11,13 @@
     <string name="account_buyer_intro">Tu sesión está iniciada. Explora productos y conoce los emprendimientos de nuestra comunidad.</string>
     <string name="account_admin_intro">Tu sesión está iniciada. La administración de la plataforma se realiza en el panel web.</string>
     <string name="account_admin_web">Abrir panel web</string>
-    <string name="account_google">Continuar con Google</string>
+    <string name="account_google">Iniciar sesión con Google</string>
     <string name="account_role_owner">Sesión de emprendedora: %1$s</string>
     <string name="account_role_admin">Sesión de administrador: %1$s</string>
-    <string name="login_email">Correo electrónico</string>
+    <string name="login_email">E-mail o teléfono</string>
     <string name="login_password">Contraseña</string>
     <string name="show_password">Mostrar contraseña</string>
-    <string name="login_button">Ingresar</string>
+    <string name="login_button">Continuar</string>
     <string name="logout_button">Cerrar sesión en este teléfono</string>
     <string name="store_account">Cuenta conectada: %1$s</string>
     <string name="shop_associations_label">Asociaciones asignadas: %1$s</string>

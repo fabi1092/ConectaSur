@@ -138,6 +138,49 @@ class StoreActivity : FragmentActivity() {
                 }
             }
         }
+        findViewById<View>(R.id.account_create_link)?.setOnClickListener {
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("Crear cuenta en ConectaSur")
+                .setMessage(
+                    "• Modo Comprador (Vecinos):\n" +
+                    "Inicia sesión directamente con el botón «Iniciar sesión con Google». Es rápido, seguro y no necesitas crear contraseñas.\n\n" +
+                    "• Modo Emprendedora (Dueñas):\n" +
+                    "El alta de nuevas tiendas es gestionado por la administración junto a tu asociación en Alerce o Puerto Montt para entregarte tus credenciales de acceso."
+                )
+                .setPositiveButton("Iniciar con Google") { _, _ ->
+                    findViewById<View>(R.id.account_google_login)?.performClick()
+                }
+                .setNegativeButton("Entendido", null)
+                .create()
+            dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, presentation) }
+            dialog.show()
+        }
+        findViewById<View>(R.id.account_security_help)?.setOnClickListener {
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("Seguridad y acceso")
+                .setMessage(
+                    "• Si olvidaste tu contraseña de emprendedora, solicítala a la administración de la plataforma o a tu asociación.\n\n" +
+                    "• Si inicias sesión con Google, tu acceso está protegido por la seguridad de tu propia cuenta de Google.\n\n" +
+                    "• Recuerda que en tu tienda puedes activar el acceso rápido con huella digital."
+                )
+                .setPositiveButton("Entendido", null)
+                .create()
+            dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, presentation) }
+            dialog.show()
+        }
+        findViewById<View>(R.id.account_privacy_link)?.setOnClickListener {
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("Cómo cuidamos tu privacidad")
+                .setMessage(
+                    "En ConectaSur tus datos solo se utilizan para conectar vecinos con emprendimientos locales de Puerto Montt y Alerce.\n\n" +
+                    "• No compartimos información personal con terceros.\n" +
+                    "• Tus datos de contacto solo se envían a la tienda que decides contactar."
+                )
+                .setPositiveButton("Cerrar", null)
+                .create()
+            dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, presentation) }
+            dialog.show()
+        }
         findViewById<Button>(R.id.account_catalog).setOnClickListener {
             setResult(RESULT_OK, Intent().putExtra(MainActivity.OPEN_CATALOG, true))
             finish()
