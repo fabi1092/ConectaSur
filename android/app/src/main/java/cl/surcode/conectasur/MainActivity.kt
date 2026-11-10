@@ -228,7 +228,19 @@ class MainActivity : ComponentActivity() {
         }
         when (current.screen) {
             "home" -> {
-                page.findViewById<Button>(R.id.open_catalog).setOnClickListener { shopFilter = null; navigate(Destination("catalog")) }
+                page.findViewById<Button>(R.id.open_catalog).setOnClickListener { shopFilter = null; query = ""; navigate(Destination("catalog")) }
+                listOf(
+                    R.id.home_cat_tejidos to "Tejido",
+                    R.id.home_cat_madera to "Madera",
+                    R.id.home_cat_reposteria to "Repostería",
+                    R.id.home_cat_conservas to "Conserva"
+                ).forEach { (id, categoryQuery) ->
+                    page.findViewById<Button>(id)?.setOnClickListener {
+                        shopFilter = null
+                        query = categoryQuery
+                        navigate(Destination("catalog"))
+                    }
+                }
                 page.findViewById<Button>(R.id.open_store).setOnClickListener { openAccount() }
                 page.findViewById<Button>(R.id.open_settings).setOnClickListener { navigate(Destination("settings")) }
                 bindHomeBuyerAccess()
