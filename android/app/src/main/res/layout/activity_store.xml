@@ -67,7 +67,7 @@
                 android:layout_marginBottom="16dp"
                 android:visibility="gone" />
 
-            <!-- FORMULARIO DE ACCESO (CUANDO NO HAY SESIÓN) -->
+            <!-- FORMULARIO DE ACCESO (MERCADO LIBRE STYLE) -->
             <LinearLayout
                 android:id="@+id/login_form"
                 android:layout_width="match_parent"
@@ -77,115 +77,6 @@
                 android:padding="22dp"
                 android:layout_marginBottom="16dp">
 
-                <!-- SECCIÓN 1: MODO COMPRADOR (GOOGLE - RF-ACC-03, RN-07) -->
-                <TextView
-                    style="@style/ConectaSur.Label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/badge_pill_forest"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:paddingTop="5dp"
-                    android:paddingBottom="5dp"
-                    android:text="Modo comprador · Vecinos y clientes"
-                    android:textColor="@color/conectasur_ink"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    style="@style/ConectaSur.Section"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="0dp"
-                    android:layout_marginBottom="6dp"
-                    android:text="Ingresa como comprador" />
-
-                <TextView
-                    style="@style/ConectaSur.Label"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="14dp"
-                    android:text="Conéctate en un toque con tu cuenta de Google para personalizar tu nombre y sector en Puerto Montt, contactar tiendas locales y recibir avisos de ferias." />
-
-                <Button
-                    android:id="@+id/account_google_login"
-                    style="@style/ConectaSur.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="20dp"
-                    android:background="@drawable/button_google"
-                    android:drawableStart="@drawable/ic_google"
-                    android:drawablePadding="12dp"
-                    android:minHeight="60dp"
-                    android:paddingStart="20dp"
-                    android:paddingEnd="20dp"
-                    android:text="@string/account_google"
-                    android:textColor="@color/conectasur_ink"
-                    android:textStyle="bold" />
-
-                <!-- SEPARADOR ENTRE MODO COMPRADOR Y MODO EMPRENDEDORA -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="18dp">
-
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="1dp"
-                        android:layout_weight="1"
-                        android:background="#B8C8C1" />
-
-                    <TextView
-                        style="@style/ConectaSur.Label"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_marginEnd="12dp"
-                        android:layout_marginBottom="0dp"
-                        android:text="Acceso para emprendedoras"
-                        android:textSize="14sp" />
-
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="1dp"
-                        android:layout_weight="1"
-                        android:background="#B8C8C1" />
-                </LinearLayout>
-
-                <!-- SECCIÓN 2: MODO EMPRENDEDORA (CREDENCIALES - RF-ACC-01, RN-01) -->
-                <TextView
-                    style="@style/ConectaSur.Label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/badge_pill_forest"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:paddingTop="5dp"
-                    android:paddingBottom="5dp"
-                    android:text="Modo emprendedora · Dueñas de tienda"
-                    android:textColor="@color/conectasur_ink"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    style="@style/ConectaSur.Section"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="0dp"
-                    android:layout_marginBottom="6dp"
-                    android:text="Ingresa a tu tienda" />
-
-                <TextView
-                    style="@style/ConectaSur.Body"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="14dp"
-                    android:text="@string/login_intro" />
-
                 <TextView
                     style="@style/ConectaSur.Label"
                     android:layout_width="match_parent"
@@ -194,16 +85,17 @@
                     android:labelFor="@id/account_email"
                     android:text="@string/login_email"
                     android:textColor="@color/conectasur_ink"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:textSize="15sp" />
 
                 <EditText
                     android:id="@+id/account_email"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="14dp"
+                    android:layout_marginBottom="16dp"
                     android:autofillHints="emailAddress"
                     android:background="@drawable/input_field"
-                    android:hint="nombre@correo.cl"
+                    android:hint="nombre@correo.cl o +56 9..."
                     android:imeOptions="actionNext"
                     android:inputType="textEmailAddress"
                     android:maxLength="254"
@@ -224,7 +116,8 @@
                     android:labelFor="@id/account_password"
                     android:text="@string/login_password"
                     android:textColor="@color/conectasur_ink"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:textSize="15sp" />
 
                 <EditText
                     android:id="@+id/account_password"
@@ -251,27 +144,142 @@
                     style="@style/ConectaSur.Check"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="14dp"
-                    android:minHeight="52dp"
+                    android:layout_marginBottom="16dp"
+                    android:minHeight="50dp"
                     android:saveEnabled="false"
                     android:text="@string/show_password"
-                    android:textSize="17sp" />
+                    android:textSize="16sp" />
 
+                <!-- BOTÓN PRINCIPAL "CONTINUAR" -->
                 <Button
                     android:id="@+id/account_login"
                     style="@style/ConectaSur.Button.Primary"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    android:minHeight="60dp"
+                    android:minHeight="58dp"
                     android:text="@string/login_button" />
 
-                <TextView
-                    style="@style/ConectaSur.Label"
+                <!-- ENLACE CENTRADO "CREAR CUENTA" -->
+                <Button
+                    android:id="@+id/account_create_link"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="@android:color/transparent"
+                    android:minHeight="48dp"
+                    android:text="Crear cuenta"
+                    android:textColor="?attr/appPrimary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <!-- SEPARADOR "O" -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="18dp">
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="#D1DDD8" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_marginEnd="14dp"
+                        android:layout_marginBottom="0dp"
+                        android:text="o"
+                        android:textColor="#6B7F78"
+                        android:textSize="15sp" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="#D1DDD8" />
+                </LinearLayout>
+
+                <!-- BOTÓN OFICIAL DE GOOGLE -->
+                <Button
+                    android:id="@+id/account_google_login"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:background="@drawable/button_google"
+                    android:drawableStart="@drawable/ic_google"
+                    android:drawablePadding="12dp"
+                    android:minHeight="58dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:text="@string/account_google"
+                    android:textColor="@color/conectasur_ink"
+                    android:textStyle="bold" />
+
+                <!-- TARJETA INFERIOR: TENGO UN PROBLEMA DE SEGURIDAD -->
+                <LinearLayout
+                    android:id="@+id/account_security_help"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/input_field"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="56dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp"
+                    android:layout_marginBottom="12dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginEnd="12dp"
+                        android:src="@drawable/ic_help"
+                        android:contentDescription="@null" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginBottom="0dp"
+                        android:text="Tengo un problema de seguridad"
+                        android:textColor="@color/conectasur_ink"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="0dp"
+                        android:text="›"
+                        android:textColor="#6B7F78"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- ENLACE DE PRIVACIDAD INFERIOR -->
+                <Button
+                    android:id="@+id/account_privacy_link"
+                    style="@style/ConectaSur.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="0dp"
-                    android:text="Nota: El registro de nuevas tiendas lo realiza la administración junto a cada asociación de Alerce y Puerto Montt."
+                    android:background="@android:color/transparent"
+                    android:minHeight="44dp"
+                    android:text="Cómo cuidamos tu privacidad"
+                    android:textColor="#1A7B6E"
                     android:textSize="14sp" />
             </LinearLayout>
 
