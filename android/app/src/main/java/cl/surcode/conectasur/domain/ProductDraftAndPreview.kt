@@ -184,7 +184,7 @@ fun formatPriceInWords(priceRaw: String): String {
     }
     val words = numberToSpanishWords(value).replaceFirstChar { it.uppercase() }
     val currency = if (value == 1L) "peso chileno" else "pesos chilenos"
-    return "✅ Escrito: $words $currency (${priceLabel(value)})"
+    return "Escrito: $words $currency (${priceLabel(value)})"
 }
 
 /** Suma un monto rápido de billete chileno (+500, +1000, +5000) al precio actual. */

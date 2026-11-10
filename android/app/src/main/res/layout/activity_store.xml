@@ -1,71 +1,625 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/account_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
-    <ScrollView android:id="@+id/account_scroll" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
-            <Button android:id="@+id/account_back" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/go_home"/>
-            <TextView android:id="@+id/account_title" style="@style/ConectaSur.Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/login_title"/>
-            <TextView android:id="@+id/account_status" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:accessibilityLiveRegion="polite"/>
-            <ProgressBar android:id="@+id/account_progress" android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="center_horizontal" android:visibility="gone"/>
-            <LinearLayout android:id="@+id/login_form" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-                <TextView style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/login_intro"/>
-                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/login_email" android:labelFor="@id/account_email"/>
-                <EditText android:id="@+id/account_email" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="textEmailAddress" android:autofillHints="emailAddress" android:maxLines="1" android:maxLength="254" android:imeOptions="actionNext"/>
-                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/login_password" android:labelFor="@id/account_password"/>
-                <EditText android:id="@+id/account_password" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="textPassword" android:autofillHints="password" android:saveEnabled="false" android:maxLines="1" android:imeOptions="actionDone"/>
-                <CheckBox android:id="@+id/account_show_password" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:text="@string/show_password" android:saveEnabled="false"/>
-                <Button android:id="@+id/account_login" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/login_button"/>
-                <Button android:id="@+id/account_google_login" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/account_google"/>
-            </LinearLayout>
-            <LinearLayout android:id="@+id/account_profile" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
-                <TextView android:id="@+id/account_profile_email" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                <TextView android:id="@+id/account_profile_intro" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                <Button android:id="@+id/account_catalog" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/see_products"/>
-                <Button android:id="@+id/account_admin_web" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/account_admin_web" android:visibility="gone"/>
-            </LinearLayout>
-            <LinearLayout android:id="@+id/account_locked" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
-                <Button android:id="@+id/account_unlock" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/bio_unlock"/>
-                <Button android:id="@+id/account_use_password" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/bio_password"/>
-            </LinearLayout>
-            <LinearLayout android:id="@+id/shop_form" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone"><Button android:id="@+id/shop_products" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Mis productos"/>
-<Button android:id="@+id/shop_register_sale" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Registrar una venta"/>
-<Button android:id="@+id/shop_history" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Historial de ventas"/>
+    android:id="@+id/account_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
-                <TextView android:id="@+id/shop_account" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                <TextView android:id="@+id/shop_associations" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:accessibilityLiveRegion="polite"/>
-                <Button android:id="@+id/shop_associations_retry" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_associations_retry" android:visibility="gone"/>
-                <ImageView android:id="@+id/shop_edit_logo" android:layout_width="104dp" android:layout_height="104dp" android:layout_gravity="center_horizontal" android:layout_marginBottom="12dp" android:scaleType="fitCenter" android:src="@drawable/ic_shop_logo" android:contentDescription="@string/store_logo"/>
-                <Button android:id="@+id/shop_choose_logo" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/change_logo"/>
-                <Button android:id="@+id/shop_remove_logo" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/remove_logo"/>
-                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/logo_save_note"/>
-                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_name_label" android:labelFor="@id/shop_edit_name"/>
-                <EditText android:id="@+id/shop_edit_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="textCapSentences" android:maxLength="120" android:saveEnabled="false" android:importantForAutofill="no"/>
-                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_description_label" android:labelFor="@id/shop_edit_description"/>
-                <EditText android:id="@+id/shop_edit_description" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="112dp" android:gravity="top" android:textSize="18sp" android:inputType="textCapSentences|textMultiLine" android:maxLength="1000" android:saveEnabled="false" android:importantForAutofill="no"/>
-                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_type_label" android:labelFor="@id/shop_edit_type"/>
-                <Button android:id="@+id/shop_edit_type" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_choose_type" android:saveEnabled="false"/>
-                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_sector_label" android:labelFor="@id/shop_edit_sector"/>
-                <Button android:id="@+id/shop_edit_sector" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_choose_sector" android:saveEnabled="false"/>
-                <TextView android:id="@+id/shop_choices_status" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:accessibilityLiveRegion="polite"/>
-                <Button android:id="@+id/shop_choices_retry" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_choices_retry" android:visibility="gone"/>
-                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/shop_contact_label" android:labelFor="@id/shop_edit_contact"/>
-                <EditText android:id="@+id/shop_edit_contact" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="text" android:maxLength="240" android:saveEnabled="false" android:importantForAutofill="no"/>
-                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/contact_mode_title" android:labelFor="@id/shop_contact_mode"/>
-                <Button android:id="@+id/shop_contact_mode" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/contact_form"/>
-                <LinearLayout android:id="@+id/shop_whatsapp_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
-                    <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/contact_whatsapp_number" android:labelFor="@id/shop_whatsapp"/>
-                    <EditText android:id="@+id/shop_whatsapp" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:inputType="phone" android:maxLength="24" android:saveEnabled="false" android:importantForAutofill="no"/>
-                </LinearLayout>
-                <Button android:id="@+id/shop_messages" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/contact_inbox"/>
-                <CheckBox android:id="@+id/shop_show_prices" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:textSize="18sp" android:text="@string/shop_prices_label" android:saveEnabled="false"/>
-                <Button android:id="@+id/shop_save" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save_shop"/>
-                <TextView style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/bio_intro"/>
-                <TextView android:id="@+id/shop_bio_status" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                <Button android:id="@+id/shop_bio_toggle" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/bio_enable"/>
+    <ScrollView
+        android:id="@+id/account_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Cabecera estándar de navegación accesible -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <Button
+                    android:id="@+id/account_back"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:minHeight="56dp"
+                    android:text="@string/go_home" />
+
+                <Button
+                    android:id="@+id/account_read"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="56dp"
+                    android:text="@string/store_read" />
             </LinearLayout>
-            <Button android:id="@+id/shop_reload" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/reload_shop" android:visibility="gone"/>
-            <Button android:id="@+id/account_logout" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/logout_button" android:visibility="gone"/>
-            <Button android:id="@+id/account_read" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/store_read"/>
+
+            <TextView
+                android:id="@+id/account_title"
+                style="@style/ConectaSur.Title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/login_title" />
+
+            <TextView
+                android:id="@+id/account_status"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="polite" />
+
+            <ProgressBar
+                android:id="@+id/account_progress"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone" />
+
+            <!-- FORMULARIO DE ACCESO (CUANDO NO HAY SESIÓN) -->
+            <LinearLayout
+                android:id="@+id/login_form"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_surface"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    style="@style/ConectaSur.Section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="0dp"
+                    android:text="Ingresa a tu cuenta" />
+
+                <TextView
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/login_intro" />
+
+                <TextView
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@id/account_email"
+                    android:text="@string/login_email" />
+
+                <EditText
+                    android:id="@+id/account_email"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:autofillHints="emailAddress"
+                    android:imeOptions="actionNext"
+                    android:inputType="textEmailAddress"
+                    android:maxLength="254"
+                    android:maxLines="1"
+                    android:minHeight="56dp"
+                    android:textSize="18sp" />
+
+                <TextView
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@id/account_password"
+                    android:text="@string/login_password" />
+
+                <EditText
+                    android:id="@+id/account_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:autofillHints="password"
+                    android:imeOptions="actionDone"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:minHeight="56dp"
+                    android:saveEnabled="false"
+                    android:textSize="18sp" />
+
+                <CheckBox
+                    android:id="@+id/account_show_password"
+                    style="@style/ConectaSur.Check"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="56dp"
+                    android:saveEnabled="false"
+                    android:text="@string/show_password"
+                    android:textSize="18sp" />
+
+                <Button
+                    android:id="@+id/account_login"
+                    style="@style/ConectaSur.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="60dp"
+                    android:text="@string/login_button" />
+
+                <Button
+                    android:id="@+id/account_google_login"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="60dp"
+                    android:text="@string/account_google" />
+            </LinearLayout>
+
+            <!-- PERFIL DE COMPRADOR O ADMINISTRADOR -->
+            <LinearLayout
+                android:id="@+id/account_profile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_surface"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/account_profile_email"
+                    style="@style/ConectaSur.Section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="0dp" />
+
+                <TextView
+                    android:id="@+id/account_profile_intro"
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <Button
+                    android:id="@+id/account_catalog"
+                    style="@style/ConectaSur.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="56dp"
+                    android:text="@string/see_products" />
+
+                <Button
+                    android:id="@+id/account_admin_web"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="56dp"
+                    android:text="@string/account_admin_web"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- PANTALLA DE TIENDA BLOQUEADA CON HUELLA -->
+            <LinearLayout
+                android:id="@+id/account_locked"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_surface"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/ConectaSur.Section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="0dp"
+                    android:text="Tienda protegida" />
+
+                <TextView
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Usa tu huella digital para acceder o ingresa con tu contraseña." />
+
+                <Button
+                    android:id="@+id/account_unlock"
+                    style="@style/ConectaSur.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="60dp"
+                    android:text="@string/bio_unlock" />
+
+                <Button
+                    android:id="@+id/account_use_password"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="56dp"
+                    android:text="@string/bio_password" />
+            </LinearLayout>
+
+            <!-- MODO EMPRENDEDORA (MI TIENDA): ESTRUCTURADO EN TARJETAS LIMPIAS -->
+            <LinearLayout
+                android:id="@+id/shop_form"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- TARJETA 1: ACCIONES PRINCIPALES DE TU NEGOCIO -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/card_surface"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        style="@style/ConectaSur.Section"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="0dp"
+                        android:text="Tu negocio y catálogo" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Accede a tus productos, anota ventas rápidamente o revisa las consultas de tus clientes." />
+
+                    <Button
+                        android:id="@+id/shop_products"
+                        style="@style/ConectaSur.Button.Primary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="60dp"
+                        android:text="Mis productos y catálogo" />
+
+                    <Button
+                        android:id="@+id/shop_register_sale"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="60dp"
+                        android:text="Anotar una venta" />
+
+                    <Button
+                        android:id="@+id/shop_history"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="60dp"
+                        android:text="Historial de ventas" />
+
+                    <Button
+                        android:id="@+id/shop_messages"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="60dp"
+                        android:text="Mensajes recibidos" />
+                </LinearLayout>
+
+                <!-- TARJETA 2: FICHA Y DATOS DE TU TIENDA -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/card_surface"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        style="@style/ConectaSur.Section"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="0dp"
+                        android:text="Ficha de tu tienda" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Esta información aparece publicada para los visitantes en el catálogo público." />
+
+                    <ImageView
+                        android:id="@+id/shop_edit_logo"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="12dp"
+                        android:contentDescription="@string/store_logo"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_shop_logo" />
+
+                    <Button
+                        android:id="@+id/shop_choose_logo"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:text="Elegir logo" />
+
+                    <Button
+                        android:id="@+id/shop_remove_logo"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:text="Quitar logo" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/logo_save_note" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/shop_edit_name"
+                        android:text="@string/shop_name_label" />
+
+                    <EditText
+                        android:id="@+id/shop_edit_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:importantForAutofill="no"
+                        android:inputType="textCapSentences"
+                        android:maxLength="120"
+                        android:minHeight="56dp"
+                        android:saveEnabled="false"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/shop_edit_description"
+                        android:text="@string/shop_description_label" />
+
+                    <EditText
+                        android:id="@+id/shop_edit_description"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="top"
+                        android:importantForAutofill="no"
+                        android:inputType="textCapSentences|textMultiLine"
+                        android:maxLength="1000"
+                        android:minHeight="112dp"
+                        android:saveEnabled="false"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/shop_edit_type"
+                        android:text="@string/shop_type_label" />
+
+                    <Button
+                        android:id="@+id/shop_edit_type"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:saveEnabled="false"
+                        android:text="@string/shop_choose_type" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/shop_edit_sector"
+                        android:text="@string/shop_sector_label" />
+
+                    <Button
+                        android:id="@+id/shop_edit_sector"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:saveEnabled="false"
+                        android:text="@string/shop_choose_sector" />
+
+                    <TextView
+                        android:id="@+id/shop_choices_status"
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:accessibilityLiveRegion="polite" />
+
+                    <Button
+                        android:id="@+id/shop_choices_retry"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:text="@string/shop_choices_retry"
+                        android:visibility="gone" />
+
+                    <CheckBox
+                        android:id="@+id/shop_show_prices"
+                        style="@style/ConectaSur.Check"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:saveEnabled="false"
+                        android:text="@string/shop_prices_label"
+                        android:textSize="18sp" />
+                </LinearLayout>
+
+                <!-- TARJETA 3: FORMAS DE CONTACTO -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/card_surface"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        style="@style/ConectaSur.Section"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="0dp"
+                        android:text="Información de contacto" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Elige cómo prefieres que las personas se comuniquen con tu tienda." />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/shop_edit_contact"
+                        android:text="@string/shop_contact_label" />
+
+                    <EditText
+                        android:id="@+id/shop_edit_contact"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:importantForAutofill="no"
+                        android:inputType="text"
+                        android:maxLength="240"
+                        android:minHeight="56dp"
+                        android:saveEnabled="false"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/shop_contact_mode"
+                        android:text="@string/contact_mode_title" />
+
+                    <Button
+                        android:id="@+id/shop_contact_mode"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:text="@string/contact_form" />
+
+                    <LinearLayout
+                        android:id="@+id/shop_whatsapp_group"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            style="@style/ConectaSur.Label"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:labelFor="@id/shop_whatsapp"
+                            android:text="@string/contact_whatsapp_number" />
+
+                        <EditText
+                            android:id="@+id/shop_whatsapp"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:importantForAutofill="no"
+                            android:inputType="phone"
+                            android:maxLength="24"
+                            android:minHeight="56dp"
+                            android:saveEnabled="false"
+                            android:textSize="18sp" />
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/shop_save"
+                        style="@style/ConectaSur.Button.Primary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:minHeight="64dp"
+                        android:text="@string/save_shop" />
+                </LinearLayout>
+
+                <!-- TARJETA 4: CUENTA Y SEGURIDAD -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/card_surface"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        style="@style/ConectaSur.Section"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="0dp"
+                        android:text="Cuenta y seguridad" />
+
+                    <TextView
+                        android:id="@+id/shop_account"
+                        style="@style/ConectaSur.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/shop_associations"
+                        style="@style/ConectaSur.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:accessibilityLiveRegion="polite" />
+
+                    <Button
+                        android:id="@+id/shop_associations_retry"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:text="@string/shop_associations_retry"
+                        android:visibility="gone" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/bio_intro" />
+
+                    <TextView
+                        android:id="@+id/shop_bio_status"
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+
+                    <Button
+                        android:id="@+id/shop_bio_toggle"
+                        style="@style/ConectaSur.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:text="@string/bio_enable" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/shop_reload"
+                style="@style/ConectaSur.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/reload_shop"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/account_logout"
+                style="@style/ConectaSur.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/logout_button"
+                android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

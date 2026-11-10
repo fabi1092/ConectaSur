@@ -96,7 +96,7 @@ class SalesActivity : OwnerActivity() {
         val total=unitPrice*qty
         val words=numberToSpanishWords(total).replaceFirstChar{it.uppercase()}
         val amount=if(p.base.stockMode in listOf(StockMode.ON_REQUEST,StockMode.UNLIMITED))"Sin conteo de unidades" else "Disponibles: ${v?.quantity?:p.base.quantity?:0}"
-        findViewById<TextView>(R.id.sv_price).text="Precio por unidad: ${priceLabel(unitPrice)}. $amount\nTotal a cobrar: ${priceLabel(total)} (✅ Escrito: $words pesos)"
+        findViewById<TextView>(R.id.sv_price).text="Precio por unidad: ${priceLabel(unitPrice)}. $amount\nTotal a cobrar: ${priceLabel(total)} (Escrito: $words pesos)"
     }
     private fun lockPending(){
         listOf(R.id.sv_product,R.id.sv_variant,R.id.sv_quantity,R.id.sv_place,R.id.sv_qty_minus,R.id.sv_qty_plus).forEach{findViewById<View>(it)?.isEnabled=pending==null}
