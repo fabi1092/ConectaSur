@@ -56,9 +56,11 @@ class SupabaseClient(val url: String, private val anonKey: String, val store: Se
         store.write("auth", result.toString())
         return try { loadProfile() } catch (e: Exception) { clearSession(); throw e }
     }
-    suspend fun isGoogleOAuthEnabled(): Boolean {
+    suspend fun isGoogleOAuthEnabled(): Boolean = try {
         val settings = request("/auth/v1/settings") as JSONObject
-        return settings.optJSONObject("external")?.optBoolean("google", false) == true
+        settings.optJSONObject("external")?.optBoolean("google", false) == true
+    } catch (_: Exception) {
+        false
     }
     @Synchronized fun beginGoogleSignIn(): String {
         check(uid() == null) { "Cierra la sesión actual antes de ingresar con Google." }
