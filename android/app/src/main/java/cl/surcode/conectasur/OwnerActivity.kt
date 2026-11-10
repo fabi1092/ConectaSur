@@ -83,6 +83,7 @@ abstract class OwnerActivity : FragmentActivity() {
         }catch(_:Exception){prompting=false;status("La huella no está disponible. Vuelve a Mi tienda e ingresa con contraseña.")}
     }
     protected fun status(message: String){findViewById<TextView>(R.id.owner_status).text=message}
+    protected fun speakFeedback(message: String){if(::reader.isInitialized)reader.read(message,settings.slowVoice)}
     protected fun screen(layout:Int){content.removeAllViews();layoutInflater.inflate(layout,content,true);applyAccessibility(content,settings)}
     protected fun action(message:String,block:suspend ()->Unit){
         if(busy || !authorized)return
@@ -98,7 +99,7 @@ abstract class OwnerActivity : FragmentActivity() {
     protected fun text(id:Int)=findViewById<EditText>(id).text.toString().trim()
     protected fun checked(id:Int)=findViewById<CheckBox>(id).isChecked
     protected fun option(id:Int)=findViewById<Spinner>(id).selectedItemPosition
-    protected fun click(id:Int,block:()->Unit){findViewById<Button>(id).setOnClickListener{block()}}
+    protected fun click(id:Int,block:()->Unit){findViewById<Button>(id).setDebouncedClickListener(500L){block()}}
     companion object {
         val modes=listOf("Regular: contar unidades","Pieza única: una sola unidad","A pedido: sin stock","Regular: sin contar unidades")
         val modeValues=listOf(StockMode.UNITS,StockMode.UNIQUE,StockMode.ON_REQUEST,StockMode.UNLIMITED)
