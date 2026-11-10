@@ -52,7 +52,7 @@ class ShopContactActivity : ComponentActivity() {
             "¿En qué feria entregas?",
             "Llámame por favor"
         ).forEach { template ->
-            button(form, "💬 $template").setOnClickListener {
+            button(form, template).setOnClickListener {
                 body.setText(template)
                 body.setSelection(template.length)
             }

@@ -115,7 +115,7 @@
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
                     android:minHeight="60dp"
-                    android:text="➖ 1 unidad" />
+                    android:text="- 1 unidad" />
 
                 <Button
                     android:id="@+id/sv_qty_plus"
@@ -124,7 +124,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:minHeight="60dp"
-                    android:text="➕ 1 unidad" />
+                    android:text="+ 1 unidad" />
             </LinearLayout>
 
             <TextView

@@ -45,21 +45,21 @@ class ShopInboxActivity : OwnerActivity() {
                 textSize = 18f; setTextIsSelectable(true)
             })
             block.addView(Button(this).apply {
-                text = "🔊 Escuchar mensaje de ${message.name}"
+                text = "Escuchar mensaje de ${message.name}"
                 setOnClickListener {
                     speakFeedback("Mensaje de ${message.name}. Contacto: ${message.contact}. Dice: ${message.body}")
                 }
             })
             whatsappNumber(message.contact)?.let { phone ->
                 block.addView(Button(this).apply {
-                    text = "💬 Responder por WhatsApp"
+                    text = "Responder por WhatsApp"
                     setOnClickListener {
                         runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$phone"))) }
                             .onFailure { status("No encontramos una aplicación para abrir WhatsApp.") }
                     }
                 })
                 block.addView(Button(this).apply {
-                    text = "📞 Llamar a ${message.name}"
+                    text = "Llamar a ${message.name}"
                     setOnClickListener {
                         runCatching { startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:+$phone"))) }
                             .onFailure { status("No pudimos abrir el marcador telefónico.") }
