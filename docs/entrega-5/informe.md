@@ -32,7 +32,7 @@ El cierre incluye pruebas reales de API/RLS/Storage/web, pruebas de dominio, pru
 |---|---|
 | Benjamín Tampier | Base Android y accesibilidad, migración Supabase, integración y cierre de productos/ventas, publicación, pruebas y documentación de esta entrega. |
 | Fabián Barroso | Acceso, edición de tienda y huella; rama fabian-acceso-tienda integrada preservando su commit. |
-| Dan Velazques | Espacio inicial de productos, commit 500fd16; integrado y conectado con XML/repositorios en el cierre. |
+| Dan Velásquez | A02–A05: cámara y galería del producto, datos base y campos por tipo en el editor. La implementación se conserva en `ProductEditorActivity.kt`, `ProductDraftAndPreview.kt`, los layouts XML y la capa de productos; el informe previo registra además su espacio inicial de productos (commit 500fd16). Véase [detalle del aporte](dan-velasquez-a02-a05.md). |
 | Alonso Nuñez | Documentación de ventas/inventario en f55908b; el cierre añadió la pantalla y conexión real. |
 | Felipe Gallardo | Base de datos/reglas Firebase iniciales; el cierre migró el backend vigente a Supabase. |
 | Kisho | Panel web como responsabilidad asignada del equipo; el código del panel se conserva desde c5ceb55. La atribución individual se verifica con los autores del historial, sin generar commits en su nombre. |
