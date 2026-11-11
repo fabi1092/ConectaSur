@@ -57,7 +57,7 @@ export function wireProducts(root, products, shops) {
     dialog.className = 'product-dialog public-site';
 
     const variants = (product.variants || []).filter(item => item.label);
-    const selectedVariant = variants.find(item => item.available !== false) || null;
+    const selectedVariant = variants.find(item => item.available !== false) || variants[0] || null;
 
     const displayedProduct = selectedVariant
       ? {
@@ -75,8 +75,8 @@ export function wireProducts(root, products, shops) {
       ? `<section class="dialog-options">
           <h3>Opciones de este producto</h3>
           <label for="product-variant">Selecciona una opción</label>
-          <select id="product-variant" data-variant-select aria-label="Seleccionar variante" ${selectedVariant ? '' : 'disabled'}>
-            ${variants.map(item => `<option value="${escape(item.id)}" ${selectedVariant?.id === item.id ? 'selected' : ''} ${item.available === false ? 'disabled' : ''}>${escape(item.label)}${item.available === false ? unavailableVariantSuffix : ''}</option>`).join('')}
+          <select id="product-variant" data-variant-select aria-label="Seleccionar variante">
+            ${variants.map(item => `<option value="${escape(item.id)}" ${selectedVariant?.id === item.id ? 'selected' : ''}>${escape(item.label)}${item.available === false ? unavailableVariantSuffix : ''}</option>`).join('')}
           </select>
         </section>`
       : '';
@@ -124,7 +124,7 @@ export function wireProducts(root, products, shops) {
     if (selector) {
       selector.addEventListener('change', () => {
         const variant = variants.find(item =>
-          String(item.id) === selector.value && item.available !== false
+          String(item.id) === selector.value
         );
 
         if (!variant) return;
