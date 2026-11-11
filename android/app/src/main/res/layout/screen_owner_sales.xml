@@ -41,7 +41,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="60dp"
-                    android:text="↩️ Anular última venta" />
+                    android:text="Anular última venta" />
             </LinearLayout>
 
             <TextView
@@ -126,6 +126,19 @@
                     android:minHeight="60dp"
                     android:text="+ 1 unidad" />
             </LinearLayout>
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Feria de la plataforma u otro lugar" />
+
+            <Spinner
+                android:id="@+id/sv_fair_selector"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="Elegir feria de la plataforma u otro lugar"
+                android:minHeight="56dp" />
 
             <TextView
                 style="@style/ConectaSur.Label"

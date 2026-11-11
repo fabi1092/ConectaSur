@@ -29,6 +29,12 @@ class SalesActivity : OwnerActivity() {
     private var pending:JSONObject?=null
     private var lastSoldSnapshot:OwnerProduct?=null
     private var undoTimerJob:Job?=null
+    private val platformFairs=listOf(
+        "Feria Artesanal de Alerce",
+        "Feria Costanera Puerto Montt",
+        "Feria Municipal Presidente Ibáñez",
+        "Feria Parque La Paloma"
+    )
     override fun onOwnerReady(){if(!initialized){initialized=true;history=intent.getBooleanExtra("history",false);if(history)showHistory()else saleScreen()}}
     private fun saleScreen(){action("Cargando tus productos…"){
         products=workspace.sync(shopId).products
@@ -57,7 +63,19 @@ class SalesActivity : OwnerActivity() {
         click(R.id.sv_qty_minus){stepSaleQty(-1)}
         click(R.id.sv_qty_plus){stepSaleQty(1)}
         click(R.id.sv_undo_button){undoLastSale()}
-        findViewById<EditText>(R.id.sv_place).setText(pending?.optString("place")?:"")
+        val initialPlace=pending?.optString("place")?:""
+        val saleFairOptions=listOf("Otro lugar (escribir abajo)")+platformFairs
+        val initialFairIndex=saleFairOptions.indexOf(initialPlace).coerceAtLeast(0)
+        choices(R.id.sv_fair_selector,saleFairOptions,initialFairIndex)
+        findViewById<EditText>(R.id.sv_place).setText(initialPlace)
+        findViewById<Spinner>(R.id.sv_fair_selector)?.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(p:AdapterView<*>?){}
+            override fun onItemSelected(p:AdapterView<*>?,v:View?,i:Int,id:Long){
+                if(i>0 && pending==null){
+                    findViewById<EditText>(R.id.sv_place)?.setText(saleFairOptions[i])
+                }
+            }
+        }
         variants();lockPending()
         click(R.id.sv_register){confirmSale()}
         click(R.id.sv_history){history=true;showHistory()}
@@ -99,7 +117,7 @@ class SalesActivity : OwnerActivity() {
         findViewById<TextView>(R.id.sv_price).text="Precio por unidad: ${priceLabel(unitPrice)}. $amount\nTotal a cobrar: ${priceLabel(total)} (Escrito: $words pesos)"
     }
     private fun lockPending(){
-        listOf(R.id.sv_product,R.id.sv_variant,R.id.sv_quantity,R.id.sv_place,R.id.sv_qty_minus,R.id.sv_qty_plus).forEach{findViewById<View>(it)?.isEnabled=pending==null}
+        listOf(R.id.sv_product,R.id.sv_variant,R.id.sv_quantity,R.id.sv_place,R.id.sv_fair_selector,R.id.sv_qty_minus,R.id.sv_qty_plus).forEach{findViewById<View>(it)?.isEnabled=pending==null}
         findViewById<Button>(R.id.sv_register).text=if(pending==null)"Revisar y registrar venta" else "Reintentar y confirmar esta venta"
     }
     private fun confirmSale(){
@@ -134,6 +152,22 @@ class SalesActivity : OwnerActivity() {
     }
     private fun showHistory(){action("Cargando historial…"){
         sales=workspace.sales(shopId);products=workspace.sync(shopId).products;screen(R.layout.screen_owner_history)
+        val recordedPlaces=sales.map{it.place.trim()}.filter{it.isNotBlank()}
+        val historyFairOptions=listOf("Todas las ferias y lugares")+(platformFairs+recordedPlaces).distinct()
+        choices(R.id.sh_fair_selector,historyFairOptions,0)
+        findViewById<Spinner>(R.id.sh_fair_selector)?.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(p:AdapterView<*>?){}
+            override fun onItemSelected(p:AdapterView<*>?,v:View?,i:Int,id:Long){
+                val placeInput=findViewById<EditText>(R.id.sh_place)?:return
+                if(i>0){
+                    placeInput.setText(historyFairOptions[i])
+                    renderHistory()
+                }else if(placeInput.text.toString().trim() in historyFairOptions){
+                    placeInput.setText("")
+                    renderHistory()
+                }
+            }
+        }
         click(R.id.sh_filter){renderHistory()};renderHistory()
         val config=workspace.refreshConfiguration(shopId)
         status(if(config.optBoolean("history_enabled",true))"Historial de tu tienda. Puedes filtrar por fechas, lugar o feria y producto." else "Historial desactivado: las nuevas ventas no guardan detalle. Aquí puedes consultar las anteriores.")
