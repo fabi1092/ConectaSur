@@ -103,7 +103,15 @@ class MainActivity : ComponentActivity() {
         findViewById<Button>(R.id.large_menu).setOnClickListener { openLargeMenu() }
         findViewById<Button>(R.id.main_account).setOnClickListener { openAccount() }
         findViewById<Button>(R.id.nav_home).setOnClickListener { navigate(Destination("home"), clear = true) }
-        findViewById<Button>(R.id.nav_catalog).setOnClickListener { shopFilter = null; navigate(Destination("catalog")); if (current.screen == "catalog") renderProducts() }
+        findViewById<Button>(R.id.nav_catalog).setOnClickListener {
+            if (buyerModel.state.value.session?.role == Role.EMPRENDEDORA) {
+                startActivity(Intent(this, ProductManagerActivity::class.java))
+            } else {
+                shopFilter = null
+                navigate(Destination("catalog"))
+                if (current.screen == "catalog") renderProducts()
+            }
+        }
         findViewById<Button>(R.id.nav_help).setOnClickListener { navigate(Destination("help")) }
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = goBack()
@@ -294,6 +302,21 @@ class MainActivity : ComponentActivity() {
     private fun renderHomeBuyerState(state: BuyerState) {
         val account = page.findViewById<Button>(R.id.open_store) ?: return
         val buyer = state.session?.role == Role.COMPRADOR
+        val isOwner = state.session?.role == Role.EMPRENDEDORA
+        page.findViewById<View>(R.id.home_owner_actions)?.apply {
+            isVisible = isOwner
+            if (isOwner) {
+                page.findViewById<Button>(R.id.home_owner_manage_products)?.setOnClickListener {
+                    startActivity(Intent(this@MainActivity, ProductManagerActivity::class.java))
+                }
+                page.findViewById<Button>(R.id.home_owner_sales)?.setOnClickListener {
+                    startActivity(Intent(this@MainActivity, SalesActivity::class.java))
+                }
+                page.findViewById<Button>(R.id.home_owner_history)?.setOnClickListener {
+                    startActivity(Intent(this@MainActivity, SalesActivity::class.java).putExtra("history", true))
+                }
+            }
+        }
         account.setText(when {
             state.session == null -> R.string.account_entry
             state.session.role == Role.EMPRENDEDORA -> R.string.my_store
@@ -321,6 +344,13 @@ class MainActivity : ComponentActivity() {
     }
     private fun bindCatalog() {
         bindCatalogStatus()
+        val isOwner = buyerModel.state.value.session?.role == Role.EMPRENDEDORA
+        page.findViewById<View>(R.id.catalog_owner_banner)?.apply {
+            isVisible = isOwner
+            page.findViewById<Button>(R.id.catalog_go_to_manager)?.setOnClickListener {
+                startActivity(Intent(this@MainActivity, ProductManagerActivity::class.java))
+            }
+        }
         val search = page.findViewById<EditText>(R.id.search_input)
         search.setText(query)
         search.setSelection(query.length)

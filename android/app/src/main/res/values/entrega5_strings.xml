@@ -19,6 +19,8 @@
     <string name="e5_item_variant_editor_4">Usa la foto principal si no eliges otra</string>
     <string name="e5_item_variant_editor_5">Elegir foto de esta opción</string>
     <string name="e5_item_variant_editor_6">Quitar esta opción</string>
+    <string name="e5_item_variant_editor_camera">Tomar foto con cámara</string>
+    <string name="e5_item_variant_editor_gallery">Elegir de galería</string>
 
     <string name="e5_screen_owner_defaults_1">¿Cómo sueles ofrecer tus productos nuevos?</string>
     <string name="e5_screen_owner_defaults_2">Modalidad de los productos nuevos</string>
@@ -60,8 +62,8 @@
     <string name="e5_screen_owner_sales_10">La venta necesita conexión. Solo se confirma cuando el servidor la acepta.</string>
     <string name="e5_screen_owner_sales_11">Consultar mi historial</string>
 
-    <string name="e5_screen_product_editor_1">Paso 1 de 4: Foto</string>
-    <string name="e5_screen_product_editor_2">Tu avance se guarda como borrador para terminar después (aún no se verá en la tienda).</string>
+    <string name="e5_screen_product_editor_1">Paso 1 de 5: Foto principal</string>
+    <string name="e5_screen_product_editor_2">Tu avance se guarda automáticamente como borrador para continuar después.</string>
     <string name="e5_screen_product_editor_3">Pon el producto sobre una mesa con buena luz. Comprueba que se vea completo y claro.</string>
     <string name="e5_screen_product_editor_4">Foto elegida del producto</string>
     <string name="e5_screen_product_editor_5">Tomar foto ahora con la cámara</string>
@@ -70,13 +72,13 @@
     <string name="e5_screen_product_editor_8">Nombre de tu producto</string>
     <string name="e5_screen_product_editor_9">Decir el nombre o descripción con la voz</string>
     <string name="e5_screen_product_editor_10">Descripción (cuenta cómo está hecho o para qué sirve)</string>
-    <string name="e5_screen_product_editor_11">Categoría o rubro</string>
-    <string name="e5_screen_product_editor_12">Ejemplos: Artesanías, Ropa, Alimentos, Hogar, Plantas. Los tejidos y flores tejidas van en Artesanías; Plantas se usa para plantas vivas.</string>
+    <string name="e5_screen_product_editor_11">Rubro o tipo de producto</string>
+    <string name="e5_screen_product_editor_12">Ejemplos: Artesanías, Ropa y tejidos, Alimentos, Hogar, Plantas vivas.</string>
     <string name="e5_screen_product_editor_13">Precio en pesos chilenos</string>
     <string name="e5_screen_product_editor_14">Tipo de producto</string>
     <string name="e5_screen_product_editor_15">Tipo de producto</string>
     <string name="e5_screen_product_editor_16">¿Vendes distintos tamaños, tallas o colores de este producto? (Opcional). Si todas las unidades son iguales, pulsa Siguiente sin agregar opciones.</string>
-    <string name="e5_screen_product_editor_17">Agregar tamaño, talla o color (Opcional)</string>
+    <string name="e5_screen_product_editor_17">+ Agregar opción: talla, color o tamaño</string>
     <string name="e5_screen_product_editor_18">¿Cómo ofreces este producto?</string>
     <string name="e5_screen_product_editor_19">Modalidad y manejo de stock</string>
     <string name="e5_screen_product_editor_20">¿Cuántas unidades tienes listas para vender?</string>
@@ -84,9 +86,9 @@
     <string name="e5_screen_product_editor_22">Cuando se agote</string>
     <string name="e5_screen_product_editor_23">Visible en tu tienda pública</string>
     <string name="e5_screen_product_editor_24">Mostrar el precio a los visitantes</string>
-    <string name="e5_screen_product_editor_25">Revisa los datos antes de guardar</string>
-    <string name="e5_screen_product_editor_26">Paso anterior</string>
+    <string name="e5_screen_product_editor_25">Paso 5 de 5: Resumen y confirmación</string>
+    <string name="e5_screen_product_editor_26">Volver al paso anterior</string>
     <string name="e5_screen_product_editor_27">Siguiente paso</string>
-    <string name="e5_screen_product_editor_28">Guardar producto en mi tienda</string>
+    <string name="e5_screen_product_editor_28">Publicar producto en mi tienda</string>
     <string name="e5_screen_product_editor_29">Descartar este borrador</string>
 </resources>

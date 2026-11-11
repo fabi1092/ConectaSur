@@ -5,13 +5,14 @@ package cl.surcode.conectasur.domain
  * Responsable: Benjamín Tampier.
  */
 val PRODUCT_EDITOR_STEPS: List<String> = listOf(
-    "Foto",
+    "Foto principal",
     "Datos del producto",
     "Variantes",
-    "Disponibilidad y publicación"
+    "Disponibilidad y stock",
+    "Resumen y publicación"
 )
 
-/** Normaliza el paso del borrador dentro del rango válido de los 4 pasos guiados (A01, A11). */
+/** Normaliza el paso del borrador dentro del rango válido de los 5 pasos guiados (A01, A11). */
 fun coerceEditorStep(step: Int): Int =
     step.coerceIn(0, PRODUCT_EDITOR_STEPS.lastIndex)
 

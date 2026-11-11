@@ -247,7 +247,11 @@ class ProductManagerActivity : OwnerActivity() {
             .setItems(scopes) { _, scope ->
                 fun choose(category: String?) {
                     if (scope == 0 && selected.isEmpty()) {
-                        status("Primero marca al menos un producto.")
+                        AlertDialog.Builder(this)
+                            .setTitle("Sin productos seleccionados")
+                            .setMessage("Primero marca la casilla de cada producto que deseas modificar en la lista, o elige 'Una categoría' o 'Todo mi catálogo'.")
+                            .setPositiveButton("Entendido", null)
+                            .show()
                         return
                     }
                     val labels = arrayOf(

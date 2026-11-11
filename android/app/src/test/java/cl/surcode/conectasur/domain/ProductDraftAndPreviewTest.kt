@@ -10,12 +10,13 @@ import org.junit.Test
 class ProductDraftAndPreviewTest {
 
     @Test
-    fun guidedFlowNavigatesThroughAllFourStepsInOrder() {
-        assertEquals("Paso 1 de 4: Foto", formatEditorStepHeader(0))
-        assertEquals("Paso 2 de 4: Datos del producto", formatEditorStepHeader(nextEditorStep(0)))
-        assertEquals("Paso 3 de 4: Variantes", formatEditorStepHeader(nextEditorStep(1)))
-        assertEquals("Paso 4 de 4: Disponibilidad y publicación", formatEditorStepHeader(nextEditorStep(2)))
-        assertEquals(3, nextEditorStep(3))
+    fun guidedFlowNavigatesThroughAllFiveStepsInOrder() {
+        assertEquals("Paso 1 de 5: Foto principal", formatEditorStepHeader(0))
+        assertEquals("Paso 2 de 5: Datos del producto", formatEditorStepHeader(nextEditorStep(0)))
+        assertEquals("Paso 3 de 5: Variantes", formatEditorStepHeader(nextEditorStep(1)))
+        assertEquals("Paso 4 de 5: Disponibilidad y stock", formatEditorStepHeader(nextEditorStep(2)))
+        assertEquals("Paso 5 de 5: Resumen y publicación", formatEditorStepHeader(nextEditorStep(3)))
+        assertEquals(4, nextEditorStep(4))
         assertEquals(0, previousEditorStep(0))
     }
 

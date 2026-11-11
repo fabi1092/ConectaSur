@@ -1,6 +1,7 @@
 package cl.surcode.conectasur
 
 import android.app.AlertDialog
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.view.View
 import android.widget.*
@@ -104,7 +105,6 @@ class SalesActivity : OwnerActivity() {
             updatePrice()
             val msg="Venta anulada: se devolvieron las unidades de ${snapshot.base.name} a tu catálogo."
             status(msg)
-            speakFeedback(msg)
         }
     }
     private fun updatePrice(){
@@ -141,7 +141,6 @@ class SalesActivity : OwnerActivity() {
                         workspace.clearSaleDraft(shopId);pending=null
                         products=workspace.sync(shopId).products
                         lockPending();updatePrice();status("Venta registrada. El stock fue actualizado. Puedes registrar otra venta.")
-                        speakFeedback("Venta guardada por ${numberToSpanishWords(unitClp * soldQty)} pesos.")
                         showUndoBanner(product,soldQty)
                         findViewById<EditText>(R.id.sv_quantity).setText("1")
                     }catch(e:BackendException){
@@ -168,6 +167,32 @@ class SalesActivity : OwnerActivity() {
                 }
             }
         }
+        fun attachDatePicker(id: Int) {
+            val input = findViewById<EditText>(id) ?: return
+            input.isFocusable = false
+            input.isClickable = true
+            input.setOnClickListener {
+                val now = LocalDate.now()
+                val currentText = input.text.toString().trim()
+                val initialDate = runCatching { LocalDate.parse(currentText) }
+                    .recoverCatching { LocalDate.parse(currentText, DateTimeFormatter.ofPattern("dd-MM-yyyy")) }
+                    .recoverCatching { LocalDate.parse(currentText, DateTimeFormatter.ofPattern("dd/MM/yyyy")) }
+                    .getOrNull() ?: now
+
+                DatePickerDialog(
+                    this,
+                    { _, y, m, d ->
+                        input.setText(String.format(java.util.Locale.ROOT, "%02d-%02d-%04d", d, m + 1, y))
+                        renderHistory()
+                    },
+                    initialDate.year,
+                    initialDate.monthValue - 1,
+                    initialDate.dayOfMonth
+                ).show()
+            }
+        }
+        attachDatePicker(R.id.sh_from)
+        attachDatePicker(R.id.sh_to)
         click(R.id.sh_filter){renderHistory()};renderHistory()
         val config=workspace.refreshConfiguration(shopId)
         status(if(config.optBoolean("history_enabled",true))"Historial de tu tienda. Puedes filtrar por fechas, lugar o feria y producto." else "Historial desactivado: las nuevas ventas no guardan detalle. Aquí puedes consultar las anteriores.")

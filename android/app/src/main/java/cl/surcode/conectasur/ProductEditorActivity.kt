@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.util.Base64
+import android.view.Gravity
 import android.view.View
 import android.widget.AdapterView
 import android.widget.Button
@@ -18,6 +19,7 @@ import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
@@ -36,6 +38,7 @@ import cl.surcode.conectasur.domain.formatDraftReviewSummary
 import cl.surcode.conectasur.domain.formatEditorStepHeader
 import cl.surcode.conectasur.domain.formatPriceInWords
 import cl.surcode.conectasur.domain.nextEditorStep
+import cl.surcode.conectasur.domain.priceLabel
 import cl.surcode.conectasur.domain.previousEditorStep
 import cl.surcode.conectasur.domain.shouldResumeDraft
 import cl.surcode.conectasur.domain.validatedForCatalog
@@ -79,6 +82,21 @@ class ProductEditorActivity : OwnerActivity() {
         "otro" to listOf("Características")
     )
 
+    private val modes = listOf(
+        "Venta regular (control de unidades)",
+        "Hecho a pedido (por encargo)",
+        "Pieza única (artesanía exclusiva de 1 unidad)",
+        "Stock continuo (sin conteo de unidades)"
+    )
+    private val modeValues = listOf(StockMode.UNITS, StockMode.ON_REQUEST, StockMode.UNIQUE, StockMode.UNLIMITED)
+
+    private val soldOutLabels = listOf(
+        "Mostrar como Agotado en la tienda",
+        "Ocultar de la tienda",
+        "Permitir compras a pedido"
+    )
+    private val soldOutValues = listOf("SHOW", "HIDE", "ORDER")
+
     private val gallery = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) encodePhoto(uri)
     }
@@ -102,12 +120,22 @@ class ProductEditorActivity : OwnerActivity() {
         photoTarget = savedInstanceState?.getString("photoTarget") ?: "main"
         cameraUri = savedInstanceState?.getString("cameraUri")?.let(Uri::parse)
         dictationField = savedInstanceState?.getString("dictationField") ?: "description"
+
+        // Issue 8: Interceptar botón atrás del sistema para retroceder de paso
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                handleBackPress()
+            }
+        })
     }
 
     // -------------------------------------------------------------------------
     // A01 y A11: Inicialización del flujo paso a paso y recuperación de borrador
     // -------------------------------------------------------------------------
     override fun onOwnerReady() {
+        // Redirigir el botón superior "Volver" para que use la navegación paso a paso
+        findViewById<Button>(R.id.owner_back)?.setOnClickListener { handleBackPress() }
+
         if (initialized) return
         action("Recuperando tu borrador…") {
             val existing = workspace.draft(shopId)
@@ -177,6 +205,21 @@ class ProductEditorActivity : OwnerActivity() {
                 encodePhoto(it)
             }
             status("Borrador recuperable. Puedes avanzar o volver sin perder los datos.")
+        }
+    }
+
+    private fun handleBackPress() {
+        if (step > 0) {
+            step = previousEditorStep(step)
+            persist(markEdited = false)
+            showStep()
+        } else {
+            AlertDialog.Builder(this)
+                .setTitle("Borrador guardado")
+                .setMessage("Tu avance está guardado en este teléfono. Puedes volver más tarde a terminar de publicar tu producto.")
+                .setPositiveButton("Seguir editando", null)
+                .setNegativeButton("Salir") { _, _ -> finish() }
+                .show()
         }
     }
 
@@ -273,9 +316,9 @@ class ProductEditorActivity : OwnerActivity() {
         click(R.id.pe_qty_minus) { adjustStock(-1) }
         click(R.id.pe_qty_plus) { adjustStock(1) }
 
-        choices(R.id.pe_type, typeNames, types.indexOf(draft.optString("productType")))
-        choices(R.id.pe_mode, modes, modeValues.indexOf(StockMode.valueOf(draft.getString("mode"))))
-        choices(R.id.pe_soldout, soldOutLabels, soldOutValues.indexOf(draft.getString("soldOut")))
+        choices(R.id.pe_type, typeNames, types.indexOf(draft.optString("productType")).coerceAtLeast(0))
+        choices(R.id.pe_mode, modes, modeValues.indexOf(StockMode.valueOf(draft.getString("mode"))).coerceAtLeast(0))
+        choices(R.id.pe_soldout, soldOutLabels, soldOutValues.indexOf(draft.getString("soldOut")).coerceAtLeast(0))
 
         // A10: Marcar producto disponible o no disponible
         findViewById<CheckBox>(R.id.pe_visible).apply {
@@ -306,21 +349,52 @@ class ProductEditorActivity : OwnerActivity() {
             }
         }
 
+        // Issue 4: Sincronización automática de Rubro y Categoría
         spinner(R.id.pe_type) { i ->
-            if (draft.optString("productType") != types[i]) {
-                draft.put("productType", types[i])
+            val chosenType = types[i]
+            val typeName = typeNames[i]
+            if (draft.optString("productType") != chosenType) {
+                draft.put("productType", chosenType)
+                val currentCategory = draft.optString("category")
+                if (currentCategory.isBlank() || currentCategory in typeNames) {
+                    draft.put("category", typeName)
+                    findViewById<EditText>(R.id.pe_category)?.setText(typeName)
+                }
                 renderAttributes()
                 persist()
             }
         }
+
+        // Issue 6: Alerta clara si elige Pieza única teniendo variantes
         spinner(R.id.pe_mode) { i ->
-            if (draft.optString("mode") != modeValues[i].name) {
-                draft.put("mode", modeValues[i].name)
-                renderVariants()
-                availability()
-                persist()
+            val selectedMode = modeValues[i]
+            val variants = draft.getJSONArray("variants")
+            if (selectedMode == StockMode.UNIQUE && variants.length() > 0) {
+                AlertDialog.Builder(this)
+                    .setTitle("Pieza única no admite opciones")
+                    .setMessage("Una pieza única es un producto exclusivo de 1 sola unidad sin tallas ni colores. Este producto tiene ${variants.length()} variantes configuradas.\n\n¿Deseas mantener la modalidad 'Venta regular' o quitar las variantes?")
+                    .setPositiveButton("Mantener Venta regular") { _, _ ->
+                        findViewById<Spinner>(R.id.pe_mode).setSelection(modeValues.indexOf(StockMode.UNITS))
+                    }
+                    .setNegativeButton("Quitar variantes") { _, _ ->
+                        draft.put("variants", JSONArray())
+                        draft.put("mode", StockMode.UNIQUE.name)
+                        renderVariants()
+                        availability()
+                        persist()
+                    }
+                    .setCancelable(false)
+                    .show()
+            } else {
+                if (draft.optString("mode") != selectedMode.name) {
+                    draft.put("mode", selectedMode.name)
+                    renderVariants()
+                    availability()
+                    persist()
+                }
             }
         }
+
         spinner(R.id.pe_soldout) { i ->
             if (draft.optString("soldOut") != soldOutValues[i]) {
                 draft.put("soldOut", soldOutValues[i])
@@ -358,7 +432,17 @@ class ProductEditorActivity : OwnerActivity() {
 
         click(R.id.pe_add_variant) {
             if (StockMode.valueOf(draft.getString("mode")) == StockMode.UNIQUE) {
-                status("Una pieza única no tiene variantes. Quita las variantes o elige Regular.")
+                AlertDialog.Builder(this)
+                    .setTitle("Pieza única no admite opciones")
+                    .setMessage("Una pieza única es un producto irrepetible de 1 unidad. Para agregar variantes como tallas o colores, cambia la modalidad a 'Venta regular'.")
+                    .setPositiveButton("Cambiar a Venta regular") { _, _ ->
+                        draft.put("mode", StockMode.UNITS.name)
+                        findViewById<Spinner>(R.id.pe_mode).setSelection(modeValues.indexOf(StockMode.UNITS))
+                        availability()
+                        persist()
+                    }
+                    .setNegativeButton("Entendido", null)
+                    .show()
                 return@click
             }
             val rows = draft.getJSONArray("variants")
@@ -378,7 +462,7 @@ class ProductEditorActivity : OwnerActivity() {
             renderVariants()
         }
 
-        // A01: Navegación paso a paso del flujo guiado
+        // A01: Navegación paso a paso del flujo guiado (Issue 7: siguiente arriba, volver abajo)
         click(R.id.pe_previous) {
             step = previousEditorStep(step)
             persist(markEdited = false)
@@ -413,7 +497,7 @@ class ProductEditorActivity : OwnerActivity() {
     }
 
     private fun renderAttributes() {
-        val box = findViewById<LinearLayout>(R.id.pe_attributes)
+        val box = findViewById<LinearLayout>(R.id.pe_attributes) ?: return
         box.removeAllViews()
         val attrs = draft.getJSONObject("attributes")
         val fields = specific[draft.optString("productType")].orEmpty()
@@ -496,19 +580,22 @@ class ProductEditorActivity : OwnerActivity() {
 
     private fun renderPhoto() {
         val photo = draft.optString("photo")
-        val image = findViewById<ImageView>(R.id.pe_photo)
+        val image = findViewById<ImageView>(R.id.pe_photo) ?: return
         if (photo.startsWith("data:")) {
             val bytes = Base64.decode(photo.substringAfter(','), Base64.NO_WRAP)
             image.setImageBitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.size))
-        } else {
+        } else if (photo.isNotBlank()) {
             PublicImageLoader.load(lifecycleScope, image, photo, BuildConfig.SUPABASE_URL)
+        } else {
+            image.setImageResource(R.drawable.ic_products)
         }
-        findViewById<TextView>(R.id.pe_photo_status).text =
+        findViewById<TextView>(R.id.pe_photo_status)?.text =
             if (photo.isBlank()) "Aún no eliges una foto." else "Foto lista. Revisa que el producto se vea completo."
     }
 
+    // Issues 5 & 9: Variantes con vista previa de foto visible y botones de Cámara y Galería (A06)
     private fun renderVariants() {
-        val box = findViewById<LinearLayout>(R.id.pe_variants)
+        val box = findViewById<LinearLayout>(R.id.pe_variants) ?: return
         box.removeAllViews()
         val rows = draft.getJSONArray("variants")
         val tracked = StockMode.valueOf(draft.getString("mode")).countsUnits
@@ -531,15 +618,48 @@ class ProductEditorActivity : OwnerActivity() {
             bind(R.id.pv_quantity, "quantity")
             row.findViewById<View>(R.id.pv_quantity).isVisible = tracked
             row.findViewById<View>(R.id.pv_quantity_label)?.isVisible = tracked
-            row.findViewById<TextView>(R.id.pv_photo_status).text =
-                if (data.optString("photo").isBlank()) "Usará la foto principal." else "Foto propia lista."
-            row.findViewById<Button>(R.id.pv_photo).setOnClickListener {
+
+            val photoStr = data.optString("photo")
+            val previewImg = row.findViewById<ImageView>(R.id.pv_photo_preview)
+            val statusText = row.findViewById<TextView>(R.id.pv_photo_status)
+
+            if (photoStr.isNotBlank()) {
+                if (photoStr.startsWith("data:")) {
+                    val b = Base64.decode(photoStr.substringAfter(','), Base64.NO_WRAP)
+                    previewImg.setImageBitmap(BitmapFactory.decodeByteArray(b, 0, b.size))
+                } else {
+                    PublicImageLoader.load(lifecycleScope, previewImg, photoStr, BuildConfig.SUPABASE_URL)
+                }
+                statusText.text = "Foto propia lista."
+            } else {
+                val mainPhoto = draft.optString("photo")
+                if (mainPhoto.isNotBlank()) {
+                    if (mainPhoto.startsWith("data:")) {
+                        val b = Base64.decode(mainPhoto.substringAfter(','), Base64.NO_WRAP)
+                        previewImg.setImageBitmap(BitmapFactory.decodeByteArray(b, 0, b.size))
+                    } else {
+                        PublicImageLoader.load(lifecycleScope, previewImg, mainPhoto, BuildConfig.SUPABASE_URL)
+                    }
+                    statusText.text = "Usará la foto principal."
+                } else {
+                    previewImg.setImageResource(R.drawable.ic_products)
+                    statusText.text = "Sin foto (usará la principal)."
+                }
+            }
+
+            // Issue 9 y A06: Botón de cámara para variantes
+            row.findViewById<Button>(R.id.pv_photo_camera).setOnClickListener {
+                photoTarget = data.getString("id")
+                takePhoto()
+            }
+            row.findViewById<Button>(R.id.pv_photo_gallery).setOnClickListener {
                 photoTarget = data.getString("id")
                 gallery.launch("image/*")
             }
+
             row.findViewById<Button>(R.id.pv_remove).setOnClickListener {
                 AlertDialog.Builder(this)
-                    .setTitle("Quitar variante")
+                    .setTitle("Quitar opción")
                     .setMessage("Se quitará esta opción del borrador.")
                     .setNegativeButton("Conservar", null)
                     .setPositiveButton("Quitar") { _, _ ->
@@ -560,34 +680,132 @@ class ProductEditorActivity : OwnerActivity() {
         val hasVariants = draft.getJSONArray("variants").length() > 0
         if (mode == StockMode.UNIQUE && !hasVariants && (draft.optString("quantity").toIntOrNull() ?: -1) !in 0..1) {
             draft.put("quantity", "1")
-            findViewById<EditText>(R.id.pe_quantity).setText("1")
+            findViewById<EditText>(R.id.pe_quantity)?.setText("1")
         }
-        findViewById<View>(R.id.pe_quantity).isVisible = tracked && !hasVariants
-        findViewById<View>(R.id.pe_quantity_label).isVisible = tracked && !hasVariants
+        findViewById<View>(R.id.pe_quantity)?.isVisible = tracked && !hasVariants
+        findViewById<View>(R.id.pe_quantity_label)?.isVisible = tracked && !hasVariants
         findViewById<View>(R.id.pe_quantity_controls)?.isVisible = mode == StockMode.UNITS && !hasVariants
-        findViewById<View>(R.id.pe_soldout).isVisible = mode == StockMode.UNITS
-        findViewById<View>(R.id.pe_soldout_label).isVisible = mode == StockMode.UNITS
+        findViewById<View>(R.id.pe_soldout)?.isVisible = mode == StockMode.UNITS
+        findViewById<View>(R.id.pe_soldout_label)?.isVisible = mode == StockMode.UNITS
     }
 
     // -------------------------------------------------------------------------
-    // A01: Control de pasos del flujo guiado y resumen previo a publicar
+    // A01: Control de los 5 pasos del flujo guiado y resumen previo a publicar
     // -------------------------------------------------------------------------
     private fun showStep() {
-        val stepViews = listOf(R.id.pe_step_0, R.id.pe_step_1, R.id.pe_step_2, R.id.pe_step_3)
+        val stepViews = listOf(R.id.pe_step_0, R.id.pe_step_1, R.id.pe_step_2, R.id.pe_step_3, R.id.pe_step_4)
         for (i in stepViews.indices) {
-            findViewById<View>(stepViews[i]).isVisible = (i == step)
+            findViewById<View>(stepViews[i])?.isVisible = (i == step)
         }
-        findViewById<TextView>(R.id.pe_step).text = formatEditorStepHeader(step)
-        findViewById<View>(R.id.pe_previous).isVisible = step > 0
-        findViewById<View>(R.id.pe_next).isVisible = step < 3
-        findViewById<View>(R.id.pe_save).isVisible = step == 3
-        findViewById<TextView>(R.id.pe_review).text = formatDraftReviewSummary(
-            name = draft.optString("name"),
-            priceText = draft.optString("price"),
-            variantCount = draft.getJSONArray("variants").length()
-        )
-        (findViewById<View>(R.id.pe_step).parent?.parent as? ScrollView)?.scrollTo(0, 0)
+        findViewById<TextView>(R.id.pe_step)?.text = formatEditorStepHeader(step)
+
+        // Jerarquía de botones (Issue 7)
+        findViewById<View>(R.id.pe_previous)?.isVisible = step > 0
+        findViewById<View>(R.id.pe_next)?.isVisible = step < 4
+        findViewById<View>(R.id.pe_save)?.isVisible = step == 4
+
+        if (step == 4) {
+            renderReviewSummary()
+        }
+
+        (findViewById<ScrollView>(R.id.pe_scroll))?.scrollTo(0, 0)
         availability()
+    }
+
+    // Issue 10: Resumen interactivo y visual del producto y sus variantes
+    private fun renderReviewSummary() {
+        val name = draft.optString("name").ifBlank { "Sin nombre" }
+        val price = draft.optString("price").toLongOrNull() ?: 0L
+        val cat = draft.optString("category").ifBlank { draft.optString("productType") }
+        val desc = draft.optString("description").ifBlank { "Sin descripción" }
+        val mode = StockMode.valueOf(draft.getString("mode"))
+        val visible = draft.getBoolean("visible")
+
+        findViewById<TextView>(R.id.pe_summary_name)?.text = name
+        findViewById<TextView>(R.id.pe_summary_category_price)?.text = "$cat · ${priceLabel(price)}"
+        findViewById<TextView>(R.id.pe_summary_description)?.text = desc
+
+        val modeText = when (mode) {
+            StockMode.UNITS -> "Venta regular (${draft.optString("quantity")} unidades)"
+            StockMode.ON_REQUEST -> "Hecho a pedido"
+            StockMode.UNIQUE -> "Pieza única"
+            StockMode.UNLIMITED -> "Stock continuo"
+        }
+        val visText = if (visible) "Visible en la tienda" else "Oculto de la tienda"
+        findViewById<TextView>(R.id.pe_summary_mode)?.text = "$modeText · $visText"
+
+        val photo = draft.optString("photo")
+        val summaryImg = findViewById<ImageView>(R.id.pe_summary_photo)
+        if (summaryImg != null) {
+            if (photo.startsWith("data:")) {
+                val bytes = Base64.decode(photo.substringAfter(','), Base64.NO_WRAP)
+                summaryImg.setImageBitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.size))
+            } else if (photo.isNotBlank()) {
+                PublicImageLoader.load(lifecycleScope, summaryImg, photo, BuildConfig.SUPABASE_URL)
+            } else {
+                summaryImg.setImageResource(R.drawable.ic_products)
+            }
+        }
+
+        val variantsBox = findViewById<LinearLayout>(R.id.pe_summary_variants_box)
+        val variantsTitle = findViewById<TextView>(R.id.pe_summary_variants_title)
+        variantsBox?.removeAllViews()
+        val rows = draft.getJSONArray("variants")
+
+        if (rows.length() == 0) {
+            variantsTitle?.isVisible = false
+            variantsBox?.isVisible = false
+        } else {
+            variantsTitle?.isVisible = true
+            variantsBox?.isVisible = true
+            val density = resources.displayMetrics.density
+            for (i in 0 until rows.length()) {
+                val v = rows.getJSONObject(i)
+                val rowView = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                        setMargins(0, (4 * density).toInt(), 0, (8 * density).toInt())
+                    }
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+
+                val thumb = ImageView(this).apply {
+                    layoutParams = LinearLayout.LayoutParams((44 * density).toInt(), (44 * density).toInt()).apply {
+                        setMargins(0, 0, (12 * density).toInt(), 0)
+                    }
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    setBackgroundResource(R.drawable.card_surface)
+                    contentDescription = "Foto opción"
+                }
+
+                val vPhoto = v.optString("photo").ifBlank { photo }
+                if (vPhoto.startsWith("data:")) {
+                    val b = Base64.decode(vPhoto.substringAfter(','), Base64.NO_WRAP)
+                    thumb.setImageBitmap(BitmapFactory.decodeByteArray(b, 0, b.size))
+                } else if (vPhoto.isNotBlank()) {
+                    PublicImageLoader.load(lifecycleScope, thumb, vPhoto, BuildConfig.SUPABASE_URL)
+                } else {
+                    thumb.setImageResource(R.drawable.ic_products)
+                }
+                rowView.addView(thumb)
+
+                val label = v.optString("label").ifBlank { "Opción ${i + 1}" }
+                val vPrice = v.optString("priceClp").toLongOrNull()?.let { priceLabel(it) } ?: priceLabel(price)
+                val vQty = if (mode.countsUnits) " · ${v.optString("quantity")} unidades" else ""
+                val text = TextView(this).apply {
+                    this.text = "$label · $vPrice$vQty"
+                    textSize = 15f
+                }
+                rowView.addView(text)
+                variantsBox?.addView(rowView)
+            }
+        }
+
+        findViewById<TextView>(R.id.pe_review)?.text = formatDraftReviewSummary(
+            name = name,
+            priceText = draft.optString("price"),
+            variantCount = rows.length()
+        )
     }
 
     private fun product(): OwnerProduct {
@@ -659,7 +877,7 @@ class ProductEditorActivity : OwnerActivity() {
             } else {
                 "Producto guardado en tu catálogo."
             }
-            speakFeedback(msg)
+            // Issue 11: Se eliminó speakFeedback para no interrumpir con voz inesperada en altavoz
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
             finish()
         }

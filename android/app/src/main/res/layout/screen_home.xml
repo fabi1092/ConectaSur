@@ -272,9 +272,45 @@
                 style="@style/ConectaSur.Button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="0dp"
+                android:layout_marginBottom="8dp"
                 android:drawableStart="@drawable/ic_store"
                 android:text="@string/account_entry" />
+
+            <LinearLayout
+                android:id="@+id/home_owner_actions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <Button
+                    android:id="@+id/home_owner_manage_products"
+                    style="@style/ConectaSur.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:drawableStart="@drawable/ic_products"
+                    android:minHeight="52dp"
+                    android:text="Mis productos (editar y crear)" />
+
+                <Button
+                    android:id="@+id/home_owner_sales"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:minHeight="48dp"
+                    android:text="Anotar una venta" />
+
+                <Button
+                    android:id="@+id/home_owner_history"
+                    style="@style/ConectaSur.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="0dp"
+                    android:minHeight="48dp"
+                    android:text="Historial de ventas" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- BLOQUE 3: ACCESIBILIDAD Y LECTURA FÁCIL (RNF-USA-01 a 03) -->
