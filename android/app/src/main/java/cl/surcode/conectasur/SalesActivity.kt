@@ -141,7 +141,10 @@ class SalesActivity : OwnerActivity() {
     private fun renderHistory(){
         fun date(id:Int,end:Boolean):Long?{
             val value=text(id);if(value.isBlank())return null
-            val d=try{LocalDate.parse(value)}catch(_:Exception){throw IllegalArgumentException("Usa fechas como 2026-11-02.")}
+            val d=runCatching{LocalDate.parse(value)}
+                .recoverCatching{LocalDate.parse(value,DateTimeFormatter.ofPattern("dd-MM-yyyy"))}
+                .recoverCatching{LocalDate.parse(value,DateTimeFormatter.ofPattern("dd/MM/yyyy"))}
+                .getOrElse{throw IllegalArgumentException("Usa fechas como 02-11-2026 o 2026-11-02.")}
             return (if(end)d.plusDays(1)else d).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         }
         val from:Long?;val until:Long?

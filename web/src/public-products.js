@@ -21,10 +21,25 @@ export function wirePhotos(root) {
   });
 }
 
+export function availabilityText(product) {
+  if (product?.soldOut) return 'Agotado · consulta a la tienda';
+  if (product?.onRequest) return 'A pedido · hecho por encargo';
+  return '';
+}
+
+export function isPublicProductVisible(product) {
+  if (!product || product.visible === false) return false;
+  if (product.stockMode === 'UNIQUE' && product.quantity === 0) return false;
+  if (product.stockMode === 'UNITS' && product.quantity === 0 && !product.soldOut && !product.onRequest) return false;
+  return true;
+}
+
 export function productCard(product, shop) {
+  if (!isPublicProductVisible(product)) return '';
+  const statusText = availabilityText(product);
   return `<article class="catalog-card"><button type="button" class="catalog-open" data-product="${escape(product.id)}" aria-label="Ver producto: ${escape(product.name)}">
     ${photo(product.photo, product.name)}
-    <span class="catalog-content"><span class="catalog-category">${escape(product.category || 'Producto local')}</span><strong class="catalog-name">${escape(product.name)}</strong><span class="catalog-shop">${escape(shop?.name || 'Emprendimiento local')}</span><span class="catalog-bottom"><strong>${escape(priceLabel(product))}</strong><span class="catalog-arrow">${icon('arrow')}</span></span>${product.soldOut ? '<span class="catalog-availability">Agotado · consulta a la tienda</span>' : product.onRequest ? '<span class="catalog-availability">Hecho por encargo</span>' : ''}</span>
+    <span class="catalog-content"><span class="catalog-category">${escape(product.category || 'Producto local')}</span><strong class="catalog-name">${escape(product.name)}</strong><span class="catalog-shop">${escape(shop?.name || 'Emprendimiento local')}</span><span class="catalog-bottom"><strong>${escape(priceLabel(product))}</strong><span class="catalog-arrow">${icon('arrow')}</span></span>${statusText ? `<span class="catalog-availability">${escape(statusText)}</span>` : ''}</span>
   </button></article>`;
 }
 
@@ -53,13 +68,15 @@ export function wireProducts(root, products, shops) {
       : product;
 
     const initialPrice = priceLabel(displayedProduct);
+    const statusText = availabilityText(product);
+    const unavailableVariantSuffix = product.onRequest ? ' · A pedido' : ' · Agotado';
 
     const variantSelector = variants.length
       ? `<section class="dialog-options">
           <h3>Opciones de este producto</h3>
           <label for="product-variant">Selecciona una opción</label>
           <select id="product-variant" data-variant-select aria-label="Seleccionar variante" ${selectedVariant ? '' : 'disabled'}>
-            ${variants.map(item => `<option value="${escape(item.id)}" ${selectedVariant?.id === item.id ? 'selected' : ''} ${item.available === false ? 'disabled' : ''}>${escape(item.label)}${item.available === false ? ' · Agotado' : ''}</option>`).join('')}
+            ${variants.map(item => `<option value="${escape(item.id)}" ${selectedVariant?.id === item.id ? 'selected' : ''} ${item.available === false ? 'disabled' : ''}>${escape(item.label)}${item.available === false ? unavailableVariantSuffix : ''}</option>`).join('')}
           </select>
         </section>`
       : '';
@@ -72,6 +89,7 @@ export function wireProducts(root, products, shops) {
           <p class="public-eyebrow">${escape(product.category || 'Producto local')}</p>
           <h2>${escape(product.name)}</h2>
           <p class="dialog-price" aria-live="polite">${escape(initialPrice)}</p>
+          ${statusText ? `<p class="catalog-availability" data-availability-status>${escape(statusText)}</p>` : ''}
           <p class="public-description">${escape(product.description || 'Consulta los detalles directamente con la tienda.')}</p>
           ${variantSelector}
           <p class="dialog-shop">De ${escape(shop?.name || 'un emprendimiento local')}</p>
@@ -95,7 +113,7 @@ export function wireProducts(root, products, shops) {
         `${product.name}. ${priceLabel(currentProduct)}. ` +
         `${product.description || 'Consulta los detalles con la tienda.'} ` +
         `${variant ? `Opción seleccionada: ${variant.label}. ` : ''}` +
-        `${product.soldOut ? 'Agotado. Consulta a la tienda.' : product.onRequest ? 'Hecho por encargo.' : ''} ` +
+        `${product.soldOut ? 'Agotado. Consulta a la tienda.' : product.onRequest ? 'A pedido. Hecho por encargo.' : ''} ` +
         `De ${shop?.name || 'un emprendimiento local'}.`;
     };
 
