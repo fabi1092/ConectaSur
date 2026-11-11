@@ -2,7 +2,7 @@
 import { escapeHtml as escape, safeImageUrl as imageUrl } from './content.js';
 import { icon, brand } from './visuals.js';
 import { accountDestination } from './account-navigation.js';
-import { photo, wirePhotos, productCard, wireProducts } from './public-products.js';
+import { photo, wirePhotos, productCard, wireProducts, isPublicProductVisible } from './public-products.js';
 import { contactMarkup, wireContact } from './shop-contact.js';
 
 const shopLink = id => '#tienda/' + encodeURIComponent(id);
@@ -121,7 +121,7 @@ export async function showPublicShops(app, db, isCurrent = () => true) {
     const catalog = app.querySelector('#catalog-results');
     const filters = app.querySelector('#catalog-filters');
     try {
-      products = (await db.listPublicProducts()).filter(product => shops.some(shop => shop.id === product.shopId));
+      products = (await db.listPublicProducts()).filter(product => isPublicProductVisible(product) && shops.some(shop => shop.id === product.shopId));
       if (!isCurrent()) return;
       const categories = [...new Set(products.map(product => product.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
       filters.innerHTML = [{ label: 'Todos', value: '' }, ...categories.map(value => ({ label: value, value }))].map((category, index) => `<button type="button" data-category="${escape(category.value)}" aria-pressed="${index === 0}">${icon(category.value === 'Artesanías' ? 'yarn' : category.value === 'Alimentos' ? 'food' : category.value === 'Plantas' ? 'leaf' : 'grid')}${escape(category.label)}</button>`).join('');
@@ -183,7 +183,7 @@ export async function showPublicShop(app, db, id, isCurrent = () => true) {
     app.querySelector('#shop-title').focus({ preventScroll: true });
     window.scrollTo(0, 0);
     try {
-      const products = await db.listPublicProducts(shop.id);
+      const products = (await db.listPublicProducts(shop.id)).filter(isPublicProductVisible);
       if (!isCurrent()) return;
       const gallery = app.querySelector('#shop-catalog-results');
       gallery.setAttribute('aria-busy', 'false');

@@ -53,6 +53,7 @@ class ProductEditorActivity : OwnerActivity() {
 
     private var initialized = false
     private var binding = false
+    private var shouldPersistDraft = true
     private lateinit var draft: JSONObject
     private var step = 0
     private var photoTarget = "main"
@@ -115,12 +116,15 @@ class ProductEditorActivity : OwnerActivity() {
             if (existing != null && shouldResumeDraft(existing.optString("id"), requested)) {
                 // A11: Retoma el borrador guardado si se cerró la app a mitad del flujo
                 draft = existing
+                shouldPersistDraft = true
             } else if (requested != null) {
                 val rows = workspace.cached(shopId).ifEmpty { workspace.sync(shopId).products }
                 val item = rows.find { it.base.id == requested }
                     ?: throw IllegalArgumentException("No encontramos ese producto.")
                 draft = fromProduct(item)
+                shouldPersistDraft = false
             } else {
+                shouldPersistDraft = true
                 val rawDefaults = workspace.configuration(shopId).getJSONObject("default_products")
                 val defaults = ProductDefaults.fromValues(
                     rawDefaults.optString("stockMode"),
@@ -167,7 +171,7 @@ class ProductEditorActivity : OwnerActivity() {
             initialized = true
             step = coerceEditorStep(draft.optInt("step", 0))
             build()
-            persist()
+            persist(markEdited = false)
             deferredPhoto?.let {
                 deferredPhoto = null
                 encodePhoto(it)
@@ -178,7 +182,7 @@ class ProductEditorActivity : OwnerActivity() {
 
     private fun fromProduct(p: OwnerProduct) = JSONObject()
         .put("id", p.base.id)
-        .put("step", 1)
+        .put("step", 0)
         .put("name", p.base.name)
         .put("description", p.base.description)
         .put("category", p.base.category)
@@ -205,10 +209,13 @@ class ProductEditorActivity : OwnerActivity() {
         })
 
     /** A11: Guarda automáticamente el borrador cifrado en cada cambio y al salir de la pantalla. */
-    private fun persist() {
+    private fun persist(markEdited: Boolean = true) {
         if (initialized && !binding) {
-            draft.put("step", step)
-            workspace.saveDraft(shopId, draft)
+            if (markEdited) shouldPersistDraft = true
+            if (shouldPersistDraft) {
+                draft.put("step", step)
+                workspace.saveDraft(shopId, draft)
+            }
         }
     }
 
@@ -300,19 +307,25 @@ class ProductEditorActivity : OwnerActivity() {
         }
 
         spinner(R.id.pe_type) { i ->
-            draft.put("productType", types[i])
-            renderAttributes()
-            persist()
+            if (draft.optString("productType") != types[i]) {
+                draft.put("productType", types[i])
+                renderAttributes()
+                persist()
+            }
         }
         spinner(R.id.pe_mode) { i ->
-            draft.put("mode", modeValues[i].name)
-            renderVariants()
-            availability()
-            persist()
+            if (draft.optString("mode") != modeValues[i].name) {
+                draft.put("mode", modeValues[i].name)
+                renderVariants()
+                availability()
+                persist()
+            }
         }
         spinner(R.id.pe_soldout) { i ->
-            draft.put("soldOut", soldOutValues[i])
-            persist()
+            if (draft.optString("soldOut") != soldOutValues[i]) {
+                draft.put("soldOut", soldOutValues[i])
+                persist()
+            }
         }
 
         click(R.id.pe_camera) {
@@ -368,12 +381,12 @@ class ProductEditorActivity : OwnerActivity() {
         // A01: Navegación paso a paso del flujo guiado
         click(R.id.pe_previous) {
             step = previousEditorStep(step)
-            persist()
+            persist(markEdited = false)
             showStep()
         }
         click(R.id.pe_next) {
             step = nextEditorStep(step)
-            persist()
+            persist(markEdited = false)
             showStep()
         }
         click(R.id.pe_save) { save() }
@@ -653,7 +666,7 @@ class ProductEditorActivity : OwnerActivity() {
     }
 
     override fun onStop() {
-        persist()
+        persist(markEdited = false)
         super.onStop()
     }
 
