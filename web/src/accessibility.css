@@ -59,7 +59,7 @@ html[data-contrast='high'] body { background: #fff; color: #000; }
 html[data-contrast='high'] :where(.public-site,.accessibility-tools,.accessibility-options > div,.assistance-dialog,.public-hero,.community-values,.public-shop-banner,.public-shop-card,.catalog-card,.owner-login-card,.owner-summary,.owner-help,.owner-bottom section,.editor-card,.editor-save-bar,.owner-catalog-tools,.owner-product-card,.owner-empty,.step-guidance,.product-stock-summary,.admin-site,.content,#section-content,.admin-welcome,.admin-stat) { background: #fff !important; color: #000 !important; border-color: #000 !important; }
 html[data-contrast='high'] :where(p,h1,h2,h3,label,strong,small,summary,span,legend,dt,dd,a) { color: inherit !important; }
 html[data-contrast='high'] :where(input,textarea,select,button,.editor-file-label) { color: #000 !important; background: #fff !important; border-color: #000 !important; }
-html[data-contrast='high'] :where(button[aria-pressed='true'],.public-primary,.product-steps li[aria-current],.sidebar,.community-strip,.public-footer) { background: #000 !important; color: #fff !important; border-color: #000 !important; }
+html[data-contrast='high'] :where(button[aria-pressed='true'],button[aria-checked='true'],.public-primary,.product-steps li[aria-current],.sidebar,.community-strip,.public-footer) { background: #000 !important; color: #fff !important; border-color: #000 !important; }
 html[data-contrast='high'] a { text-decoration: underline; }
 html[data-contrast='high'] :where(a,button,input,textarea,select,summary):focus-visible { outline: 3px solid #0052cc; }
 html[data-contrast='high'] .owner-error { border-left: 4px solid #000; padding-left: 12px; }

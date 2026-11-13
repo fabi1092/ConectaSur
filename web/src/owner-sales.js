@@ -1,4 +1,5 @@
-import { publicShell, escapeHtml as esc } from './public-shops.js';
+import { escapeHtml as esc } from './public-shops.js';
+import { ownerShell, wireOwnerShell } from './owner-shell.js';
 import { icon } from './visuals.js';
 import { safeImageUrl } from './content.js';
 import { saleCommand, saleSelection, saleMode, pesos, saleTotal, filterSales } from '../sales-model.js';
@@ -8,7 +9,7 @@ import './owner-sales.css';
 const dateFormat=new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',dateStyle:'medium',timeStyle:'short'});
 const listen=`<button type="button" class="dictation-action" data-listen>${icon('volume')}Escuchar</button><button type="button" class="dictation-action" data-pause-reading hidden>Pausar lectura</button><button type="button" class="dictation-action" data-stop-reading hidden>Detener lectura</button><p data-reading-status role="status"></p>`;
 const initialForm=()=>({productId:'',variantId:null,quantity:'1',place:''});
-export function showOwnerSales(app,db,home,{isCurrent,onBack}) {
+export function showOwnerSales(app,db,home,{isCurrent,onBack,onNavigate,onLogout}) {
   const shopId=home.shop.id,events=new AbortController(),key=`conectasur-sale-pending-v1:${home.user.uid}:${shopId}`;
   let disposed=false,busy=false,version=0,data=null,view='sale',form=initialForm(),pending=null,pendingRead=false,lastSuccess='';
   let records=[],filters={from:'',to:'',product:'',place:''},page=0;
@@ -22,7 +23,11 @@ export function showOwnerSales(app,db,home,{isCurrent,onBack}) {
   }
   function shell(content,title){
     document.title=`${title} | ConectaSur`;
-    app.innerHTML=publicShell(`<section class="owner-sales-page"><div class="editor-heading"><div><p class="public-eyebrow">${esc(home.shop.name)} · Mis ventas</p><h1 tabindex="-1">${title}</h1><p>Solo tú puedes consultar las ventas de tu tienda.</p></div><button type="button" class="owner-secondary" data-sale-action="back">Volver a Mi tienda</button></div>${lastSuccess ? `<p class="owner-save-success" role="status">${esc(lastSuccess)}</p>` : ''}<nav class="sales-tabs" aria-label="Mis ventas"><button type="button" class="owner-secondary" data-sale-action="sale" aria-pressed="${view==='sale'}">${icon('receipt')}Registrar una venta</button><button type="button" class="owner-secondary" data-sale-action="history" aria-pressed="${view==='history'}">${icon('clock')}Historial de ventas</button></nav>${content}<p id="sales-status" class="owner-status" role="status"></p></section>`);
+    app.innerHTML=ownerShell(home.shop,'sales',`<section class="owner-sales-page"><div class="editor-heading"><div><p class="public-eyebrow">${esc(home.shop.name)} · Mis ventas</p><h1 tabindex="-1">${title}</h1><p>Solo tú puedes consultar las ventas de tu tienda.</p></div><button type="button" class="owner-secondary" data-sale-action="back">Volver a Resumen</button></div>${lastSuccess ? `<p class="owner-save-success" role="status">${esc(lastSuccess)}</p>` : ''}<nav class="sales-tabs" aria-label="Mis ventas"><button type="button" class="owner-secondary" data-sale-action="sale" aria-pressed="${view==='sale'}">${icon('receipt')}Registrar una venta</button><button type="button" class="owner-secondary" data-sale-action="history" aria-pressed="${view==='history'}">${icon('clock')}Historial de ventas</button></nav>${content}<p id="sales-status" class="owner-status" role="status"></p></section>`);
+    wireOwnerShell(app,{
+      onNavigate:target=>{if(requestLeave())(onNavigate ? onNavigate(target) : onBack());},
+      onLogout:()=>{if(requestLeave())onLogout?.();}
+    });
     app.querySelector('h1').focus({preventScroll:true});window.scrollTo(0,0);
   }
   function lock(){busy=true;app.querySelectorAll('button,input,select,fieldset').forEach(node=>{node.disabled=true;});}
@@ -54,17 +59,30 @@ export function showOwnerSales(app,db,home,{isCurrent,onBack}) {
     view='sale';const frozen=!!pending,command=pending?.command || form;
     const options=data.products.map(product=>`<option value="${esc(product.id)}" ${product.id===command.productId ? 'selected' : ''}>${esc(product.name)}</option>`).join('');
     const missing=frozen && !data.products.some(product=>product.id===command.productId);
-    shell(`<div class="sales-layout"><section class="editor-card" data-voice-guide="${esc(frozen ? 'Hay una venta sin respuesta confirmada. Conservamos sus datos en esta pestaña. Pulsa Reintentar confirmación para conocer el resultado sin duplicarla. Puedes consultar el historial antes de continuar.' : 'Elige el producto que vendiste, su talla o color si corresponde, la cantidad y el lugar. Revisa el resumen antes de confirmar. El servidor actualiza las unidades disponibles.')}" aria-labelledby="sale-form-title"><h2 id="sale-form-title">${frozen ? 'Venta por confirmar' : '¿Qué vendiste?'}</h2>${listen}${frozen ? '<p class="sales-notice" role="alert">No tenemos respuesta confirmada. Conservamos los datos: reintenta esta misma venta. Mantén abierta esta pestaña hasta resolverla.</p>' : ''}<form id="sale-form" novalidate><fieldset id="sale-fields" ${frozen ? 'disabled' : ''}><legend class="visually-hidden">Datos de la venta</legend><label for="sale-product">Producto vendido</label><select id="sale-product" required><option value="">Elige un producto</option>${missing ? `<option selected value="${esc(command.productId)}">${esc(pending.summary.productName)} · venta por confirmar</option>` : ''}${options}</select><div id="sale-variant-group" hidden><label for="sale-variant">Talla, color u otra opción</label><select id="sale-variant"></select></div><label for="sale-quantity">Cantidad vendida</label><input id="sale-quantity" type="text" inputmode="numeric" pattern="[0-9]+" value="${esc(command.quantity)}" required aria-describedby="sale-availability"><p id="sale-availability" class="editor-hint"></p><label for="sale-place">Lugar de la venta (opcional)</label><input id="sale-place" maxlength="240" value="${esc(command.place)}" placeholder="Ejemplo: feria de Alerce"><p class="editor-hint">Puedes escribir la feria, tu tienda u otro lugar.</p></fieldset><button type="submit" class="public-primary">${frozen ? 'Reintentar confirmación' : 'Revisar venta'}</button></form><button type="button" class="owner-secondary" data-sale-action="refresh">Actualizar productos</button></section><aside><div id="sale-product-info" class="editor-card sales-product-info"></div><div class="editor-card sales-private"><h2>${icon('user')}Tu información es privada</h2><p>El comprador y el administrador no pueden consultar tu historial.</p><p id="sale-history-state">${data.shop.historyEnabled ? 'El historial está activado: las nuevas ventas guardan su detalle.' : 'El historial está desactivado: las ventas actualizan las unidades, pero no guardan un detalle nuevo.'}</p></div></aside></div>`, 'Registra lo que vendiste.');
+    shell(`<div class="sales-layout"><section class="editor-card" data-voice-guide="${esc(frozen ? 'Hay una venta sin respuesta confirmada. Conservamos sus datos en esta pestaña. Pulsa Reintentar confirmación para conocer el resultado sin duplicarla. Puedes consultar el historial antes de continuar.' : 'Elige el producto que vendiste, su talla o color si corresponde, la cantidad y el lugar. Revisa el resumen antes de confirmar. El servidor actualiza las unidades disponibles.')}" aria-labelledby="sale-form-title"><h2 id="sale-form-title">${frozen ? 'Venta por confirmar' : '¿Qué vendiste?'}</h2>${listen}${frozen ? '<p class="sales-notice" role="alert">No tenemos respuesta confirmada. Conservamos los datos: reintenta esta misma venta. Mantén abierta esta pestaña hasta resolverla.</p>' : ''}<form id="sale-form" novalidate><fieldset id="sale-fields" ${frozen ? 'disabled' : ''}><legend class="visually-hidden">Datos de la venta</legend><label for="sale-product">Producto vendido</label><select id="sale-product" required><option value="">Elige un producto</option>${missing ? `<option selected value="${esc(command.productId)}">${esc(pending.summary.productName)} · venta por confirmar</option>` : ''}${options}</select><div id="sale-variant-group" hidden><label id="sale-variant-label">Talla, color u otra opción</label><div id="sale-variant-chips" class="variant-chips" role="group" aria-labelledby="sale-variant-label"></div></div><label for="sale-quantity">Cantidad vendida</label><div class="quantity-stepper"><button type="button" class="owner-secondary stepper-btn" data-sale-action="qty-minus" aria-label="Disminuir cantidad" ${frozen ? 'disabled' : ''}>−</button><input id="sale-quantity" type="text" inputmode="numeric" pattern="[0-9]+" value="${esc(command.quantity)}" required aria-describedby="sale-availability"><button type="button" class="owner-secondary stepper-btn" data-sale-action="qty-plus" aria-label="Aumentar cantidad" ${frozen ? 'disabled' : ''}>+</button></div><p id="sale-availability" class="editor-hint"></p><label for="sale-place">Lugar de la venta (opcional)</label><input id="sale-place" maxlength="240" value="${esc(command.place)}" placeholder="Ejemplo: feria de Alerce"><p class="editor-hint">Puedes escribir la feria, tu tienda u otro lugar.</p></fieldset><button type="submit" class="public-primary">${frozen ? 'Reintentar confirmación' : 'Revisar venta'}</button></form><button type="button" class="owner-secondary" data-sale-action="refresh">Actualizar productos</button></section><aside><div id="sale-product-info" class="editor-card sales-product-info"></div><div class="editor-card sales-private"><h2>${icon('user')}Tu información es privada</h2><p>El comprador y el administrador no pueden consultar tu historial.</p><p id="sale-history-state">${data.shop.historyEnabled ? 'El historial está activado: las nuevas ventas guardan su detalle.' : 'El historial está desactivado: las ventas actualizan las unidades, pero no guardan un detalle nuevo.'}</p></div></aside></div>`, 'Registra lo que vendiste.');
     fillVariants();updatePreview();
     if(!data.products.length && !frozen){app.querySelector('#sale-form button').disabled=true;notice='Primero agrega un producto desde Mi tienda → Mis productos.';}
     status(notice,error);
   }
   function selectedProduct(){return data.products.find(product=>product.id===(pending?.command || form).productId);}
   function fillVariants(){
-    const product=selectedProduct(),command=pending?.command || form,group=app.querySelector('#sale-variant-group'),select=app.querySelector('#sale-variant');
-    group.hidden=!product?.variants.length && !(pending && command.variantId);
-    select.innerHTML='<option value="">Elige una opción</option>'+(product?.variants || []).map(option=>`<option value="${esc(option.id)}" ${option.id===command.variantId ? 'selected' : ''}>${esc(option.label)}</option>`).join('');
-    if(pending && command.variantId && !product?.variants.some(option=>option.id===command.variantId))select.innerHTML=`<option selected value="${esc(command.variantId)}">${esc(pending.summary.variantLabel || 'Opción de esta venta')}</option>`;
+    const product=selectedProduct(),command=pending?.command || form,group=app.querySelector('#sale-variant-group'),chips=app.querySelector('#sale-variant-chips');
+    const variants=product?.variants || [];
+    group.hidden=!variants.length && !(pending && command.variantId);
+    if(!pending && variants.length && !variants.some(option=>option.id===form.variantId)){
+      form.variantId=variants[0].id;
+    }
+    const activeVariantId=(pending?.command || form).variantId;
+    const counted=product ? ['UNITS','UNIQUE'].includes(saleMode(product)) : false;
+    const list=variants.length ? variants : (pending && command.variantId ? [{id:command.variantId,label:pending.summary.variantLabel || 'Opción de esta venta',priceClp:pending.summary.unitPrice,quantity:command.quantity,photo:null}] : []);
+    chips.innerHTML=list.map(option=>{
+      const price=option.priceClp ?? product?.priceClp ?? 0;
+      const thumb=safeImageUrl(option.photo || product?.photo);
+      const stock=counted ? `${option.quantity ?? 0} ${(option.quantity ?? 0)===1 ? 'ud.' : 'uds.'}` : '';
+      const selected=option.id===activeVariantId;
+      return `<button type="button" class="variant-chip" data-sale-variant="${esc(option.id)}" aria-pressed="${selected}"${pending ? ' disabled' : ''}>${thumb ? `<img class="variant-chip-thumb" src="${esc(thumb)}" alt="">` : `<span class="variant-chip-thumb variant-chip-empty">${icon('grid')}</span>`}<span class="variant-chip-info"><strong>${esc(option.label)}</strong><small>${esc(pesos(price))}${stock ? ` · ${stock}` : ''}</small></span></button>`;
+    }).join('');
+    chips.querySelectorAll('img').forEach(img=>{img.onerror=()=>img.remove();});
   }
   function updatePreview(){
     const command=pending?.command || form,product=selectedProduct(),option=product?.variants.find(value=>value.id===command.variantId);
@@ -75,7 +93,9 @@ export function showOwnerSales(app,db,home,{isCurrent,onBack}) {
     const valid=/^\d+$/.test(String(command.quantity)) && Number(command.quantity)>0 && Number(command.quantity)<=2147483647;
     box.innerHTML=`${photo ? `<img class="sales-product-photo" src="${esc(photo)}" alt="${esc(product.name)}">` : icon('receipt')}<h2>${esc(product.name)}</h2><p>${esc(option?.label || STOCK_MODES[mode])}</p><p>Precio por unidad</p><strong class="sales-price">${esc(pesos(unitPrice))}</strong><p class="sales-estimate">Total de referencia: <strong>${valid ? esc(pesos(BigInt(unitPrice)*BigInt(command.quantity))) : 'Revisa la cantidad'}</strong></p><p class="editor-hint">Se usará el precio que tenga el producto al registrar la venta.</p>`;
     const img=box.querySelector('img');if(img)img.onerror=()=>img.replaceWith(document.createTextNode('Imagen no disponible'));
-    app.querySelector('#sale-availability').textContent=counted ? `${available ?? 0} unidades disponibles${mode==='UNIQUE' ? '. Esta pieza se vende de a una.' : '.'}` : mode==='ON_REQUEST' ? 'Por encargo: no se descontarán unidades.' : 'Sin conteo: no se descontarán unidades.';
+    const availableCount=available ?? 0;
+    const unitText=Number(availableCount)===1 ? '1 unidad disponible' : `${availableCount} unidades disponibles`;
+    app.querySelector('#sale-availability').textContent=counted ? `${unitText}${mode==='UNIQUE' ? '. Esta pieza se vende de a una.' : '.'}` : mode==='ON_REQUEST' ? 'Por encargo: no se descontarán unidades.' : 'Sin conteo: no se descontarán unidades.';
   }
   async function review(){
     let command;
@@ -133,10 +153,28 @@ export function showOwnerSales(app,db,home,{isCurrent,onBack}) {
     app.querySelector('#sales-page').textContent=`Página ${page+1} de ${Math.max(1,Math.ceil(filtered.length/20))}`;
     app.querySelector('[data-sale-action="previous-page"]').disabled=page===0;app.querySelector('[data-sale-action="next-page"]').disabled=start+20>=filtered.length;
   }
-  app.addEventListener('input',event=>{const map={'sale-product':'productId','sale-variant':'variantId','sale-quantity':'quantity','sale-place':'place'};if(!pending && map[event.target.id]){form[map[event.target.id]]=event.target.value;if(event.target.id==='sale-product'){form.variantId=null;fillVariants();}updatePreview();}},{signal:events.signal});
+  const syncFormInput=event=>{const map={'sale-product':'productId','sale-quantity':'quantity','sale-place':'place'};if(!pending && map[event.target.id]){form[map[event.target.id]]=event.target.value;if(event.target.id==='sale-product'){form.variantId=null;fillVariants();}updatePreview();}};
+  app.addEventListener('input',syncFormInput,{signal:events.signal});
+  app.addEventListener('change',event=>{if(event.target.id==='sale-product')syncFormInput(event);},{signal:events.signal});
   app.addEventListener('click',async event=>{
+    const variantChip=event.target.closest('[data-sale-variant]');
+    if(variantChip && !busy && !pending){
+      form.variantId=variantChip.dataset.saleVariant;
+      app.querySelectorAll('[data-sale-variant]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn===variantChip)));
+      updatePreview();
+      return;
+    }
     const button=event.target.closest('[data-sale-action]');if(!button || busy || button.disabled)return;
     const action=button.dataset.saleAction;
+    if(action==='qty-minus' || action==='qty-plus'){
+      if(pending)return;
+      const current=parseInt(form.quantity,10) || 1;
+      const next=action==='qty-plus' ? Math.min(2147483647,current+1) : Math.max(1,current-1);
+      form.quantity=String(next);
+      const input=app.querySelector('#sale-quantity');if(input)input.value=form.quantity;
+      updatePreview();
+      return;
+    }
     if(action==='back'){if(requestLeave())onBack();return;}
     if(action==='sale' || action==='history'){await load(action);return;}
     if(action==='refresh'){await load(view);return;}

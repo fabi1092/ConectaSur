@@ -42,3 +42,33 @@ html[data-contrast='high'] .owner-metric { background: #fff; border-color: #000;
  .owner-shortcuts button { min-height: var(--tap-size); padding: 20px; }
 }
 @media(max-width:480px) { .owner-metrics,html:not([data-text-size='normal']) .owner-metrics { grid-template-columns: minmax(0,1fr); } }
+
+/* Kyte Web style workspace for Modo Emprendedora */
+.owner-site { min-height: 100vh; display: flex; background: var(--cream); color: #284740; line-height: 1.5; }
+.owner-sidebar { justify-content: flex-start; padding: 20px 18px; gap: 10px; overflow-y: auto; }
+.owner-sidebar nav { margin-top: 8px; gap: 4px; }
+.owner-sidebar-shop { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); }
+.owner-sidebar-shop strong { display: block; color: #fff; font-size: 1rem; line-height: 1.3; overflow-wrap: anywhere; }
+.owner-sidebar-shop span { display: block; margin-top: 2px; color: #b3d4c9; font-size: .82rem; }
+.owner-sidebar-footer { margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.14); display: flex; flex-direction: column; gap: 2px; }
+.owner-sidebar-footer .sidebar-public-link { min-height: 44px; padding: 8px 10px; gap: 10px; border-radius: 10px; text-decoration: none; }
+.owner-sidebar-footer .sidebar-public-link:hover { background: #234e5c; }
+.owner-sidebar-logout { color: #ffd9d2 !important; }
+.owner-main { flex: 1; min-width: 0; padding: 28px 34px 48px; }
+.owner-main .owner-home,
+.owner-main .owner-catalog-page,
+.owner-main .owner-sales-page,
+.owner-main .shop-editor-page { margin: 0; padding: 0; width: 100%; max-width: none; }
+html[data-contrast='high'] .owner-sidebar { background: #000; border-right: 2px solid #fff; }
+html[data-contrast='high'] .owner-sidebar-shop { background: #111; border-color: #fff; }
+@media(max-width:760px) {
+  .owner-site { flex-direction: column; }
+  .owner-main { padding: 20px 16px 36px; }
+  .owner-sidebar-footer { margin-top: 8px; padding-top: 12px; }
+}
+.owner-product-photo img { width: 100%; height: 100%; object-fit: cover; }
+.owner-product-state { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: .82rem; font-weight: 700; width: fit-content; }
+.owner-product-state.state-published { background: #dff2e8; color: #14543d; }
+.owner-product-state.state-hidden { background: #ecebe4; color: #4d5652; }
+.owner-product-state.state-empty { background: #fde9e4; color: #8c2d19; }
+html[data-contrast='high'] .owner-product-state { background: #fff; color: #000; border: 1px solid #000; }

@@ -26,6 +26,9 @@ const shop = r => r && ({
   showPrices: r.show_prices,
   contactMode: r.contact_mode || 'form',
   whatsappNumber: r.whatsapp_number || '',
+  pickupLabel: r.pickup_label || '',
+  pickupLat: r.pickup_lat ?? null,
+  pickupLng: r.pickup_lng ?? null,
   historyEnabled: r.history_enabled,
   active: r.active,
   defaultProducts: r.default_products
@@ -55,6 +58,11 @@ const shopFields = {
   sector: 'sector',
   contact: 'contact',
   showPrices: 'show_prices',
+  contactMode: 'contact_mode',
+  whatsappNumber: 'whatsapp_number',
+  pickupLabel: 'pickup_label',
+  pickupLat: 'pickup_lat',
+  pickupLng: 'pickup_lng',
   historyEnabled: 'history_enabled'
 };
 
@@ -490,9 +498,107 @@ export function createDataLayer(config, { storage, storageKey, firebaseBuyer = n
     async listPublicShops() {
       return unwrap(
         await sdk.from('public_shops')
-          .select('id,name,description,logo_url,entrepreneur_type,sector,contact,show_prices')
+          .select('id,name,description,logo_url,entrepreneur_type,sector,contact,show_prices,contact_mode,whatsapp_number,pickup_label,pickup_lat,pickup_lng')
           .order('name')
       ).map(shop);
+    },
+
+    async listPublicAssociations() {
+      return unwrap(
+        await sdk.from('associations')
+          .select('id,name,description,logo_url,sector,contact,active')
+          .eq('active', true)
+          .order('name')
+      );
+    },
+
+    async listPublicShopAssociations() {
+      return unwrap(
+        await sdk.from('shop_associations')
+          .select('shop_id,association_id')
+      );
+    },
+
+    async getAnonymousNavigation() {
+      const row = unwrap(
+        await sdk.from('platform_settings')
+          .select('anonymous_navigation')
+          .eq('id', true)
+          .maybeSingle()
+      );
+      return row?.anonymous_navigation || 'allow';
+    },
+
+    async setAnonymousNavigation(mode) {
+      await requireAdmin();
+      return unwrap(await sdk.rpc('set_anonymous_navigation', { p_mode: mode }));
+    },
+
+    async listPublicFairs() {
+      return unwrap(
+        await sdk.from('public_fairs')
+          .select('*')
+          .order('starts_at', { ascending: true })
+      );
+    },
+
+    async upcomingFairs(lat = null, lng = null) {
+      return unwrap(await sdk.rpc('upcoming_fairs', { p_lat: lat, p_lng: lng }));
+    },
+
+    async listAdminFairs() {
+      await requireAdmin();
+      return unwrap(
+        await sdk.from('fairs')
+          .select('*')
+          .order('starts_at', { ascending: false })
+      );
+    },
+
+    async saveFair(fair) {
+      await requireAdmin();
+      const name = String(fair?.name || '').trim();
+      const placeName = String(fair?.placeName || '').trim();
+      const latitude = Number(fair?.latitude);
+      const longitude = Number(fair?.longitude);
+      if (!name || name.length > 120) throw new Error('Escribe el nombre de la feria (máx. 120 caracteres).');
+      if (!placeName || placeName.length > 240) throw new Error('Escribe el lugar de la feria (máx. 240 caracteres).');
+      if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+        throw new Error('Selecciona una ubicación válida en el mapa.');
+      }
+      const startsAt = new Date(fair.startsAt);
+      const endsAt = new Date(fair.endsAt);
+      if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
+        throw new Error('La fecha y hora de término debe ser posterior al inicio.');
+      }
+      const imageUrl = fair.imageUrl ? String(fair.imageUrl).trim() : null;
+      if (imageUrl) {
+        let valid = false;
+        try { valid = imageUrl.length <= 2048 && new URL(imageUrl).protocol === 'https:'; } catch {}
+        if (!valid) throw new Error('La imagen de la feria debe ser un enlace HTTPS válido.');
+      }
+      const status = ['draft', 'published', 'cancelled'].includes(fair.status) ? fair.status : 'draft';
+      const payload = {
+        name,
+        description: String(fair.description || '').slice(0, 2000),
+        image_url: imageUrl,
+        place_name: placeName,
+        latitude,
+        longitude,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        organizer: String(fair.organizer || '').slice(0, 240),
+        status
+      };
+      if (fair.id) {
+        return unwrap(await sdk.from('fairs').update(payload).eq('id', fair.id).select('*').single());
+      }
+      return unwrap(await sdk.from('fairs').insert(payload).select('*').single());
+    },
+
+    async deleteFair(id) {
+      await requireAdmin();
+      unwrap(await sdk.from('fairs').delete().eq('id', id));
     },
 
     async updateShop(id, changes) {
@@ -856,3 +962,7 @@ export const listItems = (...a) => current().listItems(...a);
 
 export const watchPublicProducts = (...a) =>
   current().watchPublicProducts(...a);
+
+export const listPublicFairs = (...a) => current().listPublicFairs(...a);
+export const upcomingFairs = (...a) => current().upcomingFairs(...a);
+export const getAnonymousNavigation = (...a) => current().getAnonymousNavigation(...a);

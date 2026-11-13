@@ -1,8 +1,10 @@
 import './style.css';
+import 'leaflet/dist/leaflet.css';
 import config from '../supabase-config.js';
 import { createDataLayer } from '../supabase-data.js';
 import { createFirebaseBuyerAuth } from '../firebase-buyer-auth.js';
-import { showPublicShops, showPublicShop, shopLogo, wireShopImages } from './public-shops.js';
+import { showPublicShops, showPublicShop, showPublicAssociation, showPublicFair, shopLogo, wireShopImages } from './public-shops.js';
+import { showAdminFairsAndAccess } from './fairs-admin.js';
 import { showAccountAccess } from './entrepreneur-access.js';
 import { icon, brand } from './visuals.js';
 import { initAccessibility } from './accessibility.js';
@@ -93,28 +95,37 @@ async function mostrarPanel(logout) {
     <div class="dashboard admin-site">
       <aside class="sidebar">
         <a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">${brand()}</a>
-        <p>Administración</p>
+        <div class="admin-user-card">
+          <span class="admin-user-role">Panel Administrador</span>
+          <strong class="admin-user-email">${escapar(usuarioActual.email)}</strong>
+        </div>
 
-        <nav>
+        <nav aria-label="Navegación administrativa">
+          <span class="admin-nav-label">Gestión</span>
           <button data-section="inicio">${icon('grid')} Inicio</button>
           <button data-section="emprendedoras">${icon('shop')} Emprendedoras</button>
-          <button data-section="administradores">${icon('user')} Administradores</button>
           <button data-section="asociaciones">${icon('people')} Asociaciones</button>
+          <button data-section="ferias">${icon('pin')} Ferias y Acceso</button>
+          <button data-section="administradores">${icon('user')} Administradores</button>
+          <span class="admin-nav-label">Catálogo base</span>
           <button data-section="tipos-emprendimiento">${icon('shop')} Tipos de emprendimiento</button>
           <button data-section="categorias">${icon('tag')} Categorías</button>
           <button data-section="tipos">${icon('yarn')} Tipos de productos</button>
         </nav>
 
-        <button id="logout">${icon('exit')} Cerrar sesión</button>
-        <a class="sidebar-public-link" href="#inicio">Ver tiendas públicas</a>
+        <div class="admin-sidebar-footer">
+          <a class="sidebar-public-link" href="#inicio">${icon('shop')} Ver tiendas públicas</a>
+          <button id="logout">${icon('exit')} Cerrar sesión</button>
+        </div>
       </aside>
 
       <main class="content">
         <header class="page-header">
           <div>
+            <p class="admin-header-eyebrow">ConectaSur · Administración</p>
             <h1>Panel administrativo</h1>
-            <p>Bienvenido, ${escapar(usuarioActual.email)}</p>
           </div>
+          <span class="status active"><span class="status-dot" aria-hidden="true"></span>Sesión activa</span>
         </header>
 
         <p id="mensaje-global" class="mensaje" role="status"></p>
@@ -151,9 +162,9 @@ async function abrirSeccion(seccion) {
   if (seccion === 'inicio') {
     contenido.innerHTML = `
       <div class="admin-welcome"><div><p class="admin-eyebrow">Tu comunidad, conectada</p><h2>Hagamos crecer lo local.</h2><p>Gestiona las tiendas y la información que da vida a ConectaSur.</p></div><div class="admin-welcome-icon">${icon('shop')}</div></div>
-      <div class="admin-stats">${[['shops','Tiendas registradas','shop'],['associations','Asociaciones','people'],['categories','Categorías','tag'],['types','Tipos de productos','yarn']].map(([id,label,symbol]) => `<div class="admin-stat">${icon(symbol)}<strong id="stat-${id}">—</strong><span>${label}</span></div>`).join('')}</div>
+      <div class="admin-stats">${[['shops','Tiendas registradas','shop','emprendedoras'],['associations','Asociaciones','people','asociaciones'],['categories','Categorías','tag','categorias'],['types','Tipos de productos','yarn','tipos']].map(([id,label,symbol,target]) => `<button type="button" class="admin-stat" data-shortcut="${target}"><span class="admin-stat-copy"><strong id="stat-${id}">—</strong><span>${label}</span></span><span class="admin-stat-badge">${icon(symbol)}</span></button>`).join('')}</div>
       <p id="dashboard-summary-status" role="status">Cargando resumen…</p>
-      <h3 class="admin-shortcuts-title">¿Qué necesitas hacer hoy?</h3><div class="admin-shortcuts">${[['emprendedoras','Gestionar emprendedoras','Crea cuentas y revisa sus tiendas.','shop'],['asociaciones','Organizar asociaciones','Conecta a las emprendedoras de tu comunidad.','people'],['categorias','Ordenar el catálogo','Mantén claras las categorías de productos.','tag']].map(([section,title,text,symbol]) => `<button data-shortcut="${section}">${icon(symbol)}<span><strong>${title}</strong><small>${text}</small></span>${icon('arrow')}</button>`).join('')}</div>`;
+      <h3 class="admin-shortcuts-title">¿Qué necesitas hacer hoy?</h3><div class="admin-shortcuts">${[['emprendedoras','Gestionar emprendedoras','Crea cuentas y revisa sus tiendas.','shop'],['asociaciones','Organizar asociaciones','Conecta a las emprendedoras de tu comunidad.','people'],['categorias','Ordenar el catálogo','Mantén claras las categorías de productos.','tag']].map(([section,title,text,symbol]) => `<button type="button" data-shortcut="${section}">${icon(symbol)}<span><strong>${title}</strong><small>${text}</small></span>${icon('arrow')}</button>`).join('')}</div>`;
     contenido.querySelectorAll('[data-shortcut]').forEach(button => button.addEventListener('click', () => abrirSeccion(button.dataset.shortcut)));
     const summaries = await Promise.allSettled([db.listShops(), db.listAssociations(), db.listItems('categories'), db.listItems('productTypes')]);
     if (!contenido.isConnected || seccionActual !== 'inicio') return;
@@ -169,6 +180,11 @@ async function abrirSeccion(seccion) {
 
   if (seccion === 'asociaciones') {
     await cargarAsociaciones();
+    return;
+  }
+
+  if (seccion === 'ferias') {
+    adminEditor = await showAdminFairsAndAccess(contenido, db, mostrarMensaje);
     return;
   }
 
@@ -1235,9 +1251,19 @@ async function iniciar() {
     try { id = decodeURIComponent(route.slice('#tienda/'.length)); }
     catch { id = ''; }
     await showPublicShop(app, db, id, isCurrent);
+  } else if (route.startsWith('#asociacion/')) {
+    let id;
+    try { id = decodeURIComponent(route.slice('#asociacion/'.length)); }
+    catch { id = ''; }
+    await showPublicAssociation(app, db, id, isCurrent);
+  } else if (route.startsWith('#feria/')) {
+    let id;
+    try { id = decodeURIComponent(route.slice('#feria/'.length)); }
+    catch { id = ''; }
+    await showPublicFair(app, db, id, isCurrent);
   } else {
     await showPublicShops(app, db, isCurrent);
-    if (isCurrent() && ['#productos', '#tiendas'].includes(route)) {
+    if (isCurrent() && ['#productos', '#tiendas', '#asociaciones', '#ferias'].includes(route)) {
       const section = document.querySelector(route);
       section?.scrollIntoView({ behavior: 'auto' });
       section?.querySelector('h2')?.focus({ preventScroll: true });
