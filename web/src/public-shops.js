@@ -4,8 +4,11 @@ import { icon, brand } from './visuals.js';
 import { accountDestination } from './account-navigation.js';
 import { photo, wirePhotos, productCard, wireProducts, isPublicProductVisible } from './public-products.js';
 import { contactMarkup, wireContact } from './shop-contact.js';
+import { renderInteractiveMap, directionsUrl } from './fair-map.js';
 
 const shopLink = id => '#tienda/' + encodeURIComponent(id);
+const associationLink = id => '#asociacion/' + encodeURIComponent(id);
+const fairLink = id => '#feria/' + encodeURIComponent(id);
 const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-CL');
 
 function logo(shop, large = false) {
@@ -38,7 +41,7 @@ function shell(content, { showAccountLink = true, accountLocation = 'Estás en t
     <div class="community-strip">${icon('pin')} Puerto Montt y Alerce <span>Un lugar para conectar con lo nuestro.</span></div>
     <header class="public-header">
       <a class="public-brand" href="#inicio" aria-label="ConectaSur, inicio">${brand()}</a>
-      <nav class="public-main-links" aria-label="Explorar ConectaSur"><a href="#inicio"${['','#inicio'].includes(location.hash) ? ' aria-current="page"' : ''}>Inicio</a><a href="#productos" data-section-link${location.hash === '#productos' ? ' aria-current="page"' : ''}>Productos</a><a href="#tiendas" data-section-link${location.hash === '#tiendas' ? ' aria-current="page"' : ''}>Tiendas locales</a></nav>
+      <nav class="public-main-links" aria-label="Explorar ConectaSur"><a href="#inicio"${['','#inicio'].includes(location.hash) ? ' aria-current="page"' : ''}>Inicio</a><a href="#productos" data-section-link${location.hash === '#productos' ? ' aria-current="page"' : ''}>Productos</a><a href="#tiendas" data-section-link${location.hash === '#tiendas' ? ' aria-current="page"' : ''}>Tiendas</a><a href="#asociaciones" data-section-link${location.hash === '#asociaciones' ? ' aria-current="page"' : ''}>Asociaciones</a><a href="#ferias" data-section-link${location.hash === '#ferias' ? ' aria-current="page"' : ''}>Ferias</a></nav>
       ${showAccountLink ? `<nav class="public-navigation" aria-label="Acceso a tu cuenta">
         <a class="public-owner-link" data-account-link href="${account.href}">${icon('user')} <span data-account-label>${account.label}</span></a>
       </nav>` : ''}
@@ -94,30 +97,127 @@ export async function showPublicShops(app, db, isCurrent = () => true) {
       <label for="shop-search">Buscar una tienda</label>
       <div><input type="search" id="shop-search" placeholder="Nombre, tipo o sector" maxlength="160" autocomplete="off"><button class="public-primary" type="submit">Buscar</button></div>
     </form>
+    <div class="directory-filters-row">
+      <div><label for="shop-filter-type">Tipo de emprendimiento</label><select id="shop-filter-type"><option value="">Todos los tipos</option></select></div>
+      <div><label for="shop-filter-sector">Sector</label><select id="shop-filter-sector"><option value="">Todos los sectores</option></select></div>
+      <div><label for="shop-filter-assoc">Asociación</label><select id="shop-filter-assoc"><option value="">Todas las asociaciones</option></select></div>
+    </div>
     <div id="public-results" class="public-shop-grid" aria-busy="true"><p role="status">Estamos buscando los emprendimientos.</p></div>
+  </section>
+  <section class="public-directory" id="asociaciones" aria-labelledby="associations-title">
+    <div class="public-directory-heading"><div><p class="public-eyebrow">Trabajo en comunidad</p><h2 id="associations-title" tabindex="-1">Asociaciones</h2></div>
+      <p id="associations-count" role="status">Cargando asociaciones…</p></div>
+    <div id="public-associations" class="public-associations-grid" aria-busy="true"><p role="status">Cargando asociaciones…</p></div>
+  </section>
+  <section class="public-directory" id="ferias" aria-labelledby="fairs-title">
+    <div class="public-directory-heading"><div><p class="public-eyebrow">Encuentra nuestras ferias</p><h2 id="fairs-title" tabindex="-1">Próximas ferias</h2></div>
+      <p id="fairs-count" role="status">Cargando ferias…</p></div>
+    <div id="public-fairs" class="public-fairs-grid" aria-busy="true"><p role="status">Cargando ferias…</p></div>
   </section>
   <section class="local-story"><div class="local-story-photo"><img src="/assets/creaciones-alerce.jpg" alt="Creaciones de las emprendedoras durante la visita a Alerce" loading="lazy" width="1599" height="899"></div><div><p class="public-eyebrow">Detrás de cada creación, una persona</p><h2>Conoce las manos<br>que le dan vida.</h2><p>Cada emprendimiento tiene algo que contar. En ConectaSur acercamos sus productos, oficios e ideas a nuestra comunidad.</p><a class="public-text-link" href="#tiendas" data-section-link>Descubrir las tiendas ${icon('arrow')}</a></div></section>`);
   app.querySelector('#public-title').focus({ preventScroll: true });
   app.querySelector('.public-search').addEventListener('submit', event => event.preventDefault());
   try {
-    const shops = await db.listPublicShops();
+    const [shops, associations, shopAssocs, fairs] = await Promise.all([
+      db.listPublicShops(),
+      db.listPublicAssociations().catch(() => []),
+      db.listPublicShopAssociations().catch(() => []),
+      db.listPublicFairs().catch(() => [])
+    ]);
     if (!isCurrent()) return;
     const results = app.querySelector('#public-results');
     const count = app.querySelector('#public-count');
     const input = app.querySelector('#shop-search');
+    const typeFilter = app.querySelector('#shop-filter-type');
+    const sectorFilter = app.querySelector('#shop-filter-sector');
+    const assocFilter = app.querySelector('#shop-filter-assoc');
+
+    const shopAssocMap = new Map();
+    shopAssocs.forEach(sa => {
+      if (!shopAssocMap.has(sa.shop_id)) shopAssocMap.set(sa.shop_id, new Set());
+      shopAssocMap.get(sa.shop_id).add(sa.association_id);
+    });
+
+    const uniqueTypes = [...new Set(shops.map(s => s.entrepreneurType).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+    const uniqueSectors = [...new Set(shops.map(s => s.sector).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+    uniqueTypes.forEach(t => { typeFilter.innerHTML += `<option value="${escape(t)}">${escape(t)}</option>`; });
+    uniqueSectors.forEach(s => { sectorFilter.innerHTML += `<option value="${escape(s)}">${escape(s)}</option>`; });
+    associations.forEach(a => { assocFilter.innerHTML += `<option value="${escape(a.id)}">${escape(a.name)}</option>`; });
+
     let products = [];
     function filter() {
       const term = normalize(input.value.trim());
-      const selected = shops.filter(shop => normalize([shop.name, shop.entrepreneurType, shop.sector].join(' ')).includes(term));
+      const fType = typeFilter.value;
+      const fSector = sectorFilter.value;
+      const fAssoc = assocFilter.value;
+      const selected = shops.filter(shop =>
+        (!fType || shop.entrepreneurType === fType) &&
+        (!fSector || shop.sector === fSector) &&
+        (!fAssoc || shopAssocMap.get(shop.id)?.has(fAssoc)) &&
+        normalize([shop.name, shop.entrepreneurType, shop.sector].join(' ')).includes(term)
+      );
       count.textContent = `${selected.length} ${selected.length === 1 ? 'tienda' : 'tiendas'}`;
       results.setAttribute('aria-busy', 'false');
-      results.innerHTML = selected.length ? selected.map(shop => card(shop, products)).join('') : `<div class="public-empty"><h3>${shops.length ? 'No encontramos tiendas con esa búsqueda' : 'Pronto encontrarás tiendas aquí'}</h3><p>${shops.length ? 'Prueba con otro nombre, tipo o sector.' : 'Las tiendas aparecerán cuando estén disponibles.'}</p></div>`;
+      results.innerHTML = selected.length ? selected.map(shop => card(shop, products)).join('') : `<div class="public-empty"><h3>${shops.length ? 'No encontramos tiendas con esos filtros' : 'Pronto encontrarás tiendas aquí'}</h3><p>${shops.length ? 'Prueba quitando o cambiando algún filtro.' : 'Las tiendas aparecerán cuando estén disponibles.'}</p></div>`;
       imageFallbacks(results);
       wirePhotos(results);
     }
     input.addEventListener('input', filter);
+    typeFilter.addEventListener('change', filter);
+    sectorFilter.addEventListener('change', filter);
+    assocFilter.addEventListener('change', filter);
     app.querySelector('.public-search').addEventListener('submit', event => { event.preventDefault(); filter(); });
     filter();
+
+    // Asociaciones públicas (W01, W05)
+    const assocGrid = app.querySelector('#public-associations');
+    const assocCount = app.querySelector('#associations-count');
+    assocCount.textContent = `${associations.length} ${associations.length === 1 ? 'asociación' : 'asociaciones'}`;
+    assocGrid.setAttribute('aria-busy', 'false');
+    assocGrid.innerHTML = associations.length ? associations.map(a => {
+      const members = shopAssocs.filter(sa => sa.association_id === a.id).length;
+      const logoSrc = imageUrl(a.logo_url);
+      return `<article class="public-shop-card">
+        <div class="public-shop-card-body">
+          <div class="public-card-heading">
+            ${logoSrc ? `<img class="shop-logo" src="${escape(logoSrc)}" alt="Logo ${escape(a.name)}">` : `<div class="shop-logo"><span class="shop-logo-fallback">${icon('people')}</span></div>`}
+            <span class="public-category">${members} ${members === 1 ? 'integrante' : 'integrantes'}</span>
+          </div>
+          <h3><a href="${escape(associationLink(a.id))}">${escape(a.name)}</a></h3>
+          <p class="public-sector">${icon('pin')} ${escape(a.sector || 'Puerto Montt y Alerce')}</p>
+          <p class="public-card-description">${escape(a.description || 'Asociación de emprendedoras locales.')}</p>
+          <a class="public-card-link" href="${escape(associationLink(a.id))}">Ver integrantes ${icon('arrow')}</a>
+        </div>
+      </article>`;
+    }).join('') : '<div class="public-empty"><h3>Aún no hay asociaciones publicadas</h3><p>Cuando la comunidad registre asociaciones aparecerán aquí.</p></div>';
+    imageFallbacks(assocGrid);
+
+    // Próximas ferias públicas (W16-W17)
+    const fairsGrid = app.querySelector('#public-fairs');
+    const fairsCount = app.querySelector('#fairs-count');
+    const dateFmt = new Intl.DateTimeFormat('es-CL', { dateStyle: 'medium', timeStyle: 'short' });
+    const visibleFairs = fairs.filter(f => f.status === 'published' || f.status === 'cancelled');
+    fairsCount.textContent = `${visibleFairs.length} ${visibleFairs.length === 1 ? 'feria' : 'ferias'}`;
+    fairsGrid.setAttribute('aria-busy', 'false');
+    fairsGrid.innerHTML = visibleFairs.length ? visibleFairs.map(f => {
+      const imgSrc = imageUrl(f.image_url);
+      const cancelled = f.status === 'cancelled';
+      return `<article class="public-shop-card">
+        ${imgSrc ? `<img class="shop-cover" src="${escape(imgSrc)}" alt="${escape(f.name)}">` : `<div class="shop-cover shop-cover-empty">${icon('pin')}<span>Feria local</span></div>`}
+        <div class="public-shop-card-body">
+          <div class="public-card-heading">
+            <span class="catalog-badge ${cancelled ? 'badge-soldout' : 'badge-available'}">${cancelled ? 'Cancelada' : 'Confirmada'}</span>
+          </div>
+          <h3><a href="${escape(fairLink(f.id))}">${escape(f.name)}</a></h3>
+          <p class="public-sector">${icon('pin')} ${escape(f.place_name)}</p>
+          <p class="public-card-description">${escape(dateFmt.format(new Date(f.starts_at)))} · ${escape(f.organizer || 'Feria comunitaria')}</p>
+          <div class="fair-card-actions">
+            <a class="public-card-link" href="${escape(fairLink(f.id))}">Ver mapa y detalles ${icon('arrow')}</a>
+          </div>
+        </div>
+      </article>`;
+    }).join('') : '<div class="public-empty"><h3>No hay ferias próximas publicadas</h3><p>Pronto publicaremos las fechas y ubicaciones de las próximas ferias.</p></div>';
+    imageFallbacks(fairsGrid);
     const catalog = app.querySelector('#catalog-results');
     const filters = app.querySelector('#catalog-filters');
     try {
@@ -172,14 +272,19 @@ export async function showPublicShop(app, db, id, isCurrent = () => true) {
       <div class="public-shop-details">
         <section class="public-about" aria-labelledby="about-title"><p class="public-eyebrow">Detrás de este emprendimiento</p><h2 id="about-title">Conoce nuestra tienda</h2><p class="public-description">${escape(shop.description || 'Esta tienda aún no ha agregado una descripción.')}</p></section>
         <section class="public-contact" aria-labelledby="contact-title"><p class="public-eyebrow">Conversemos</p><h2 id="contact-title">Contacta a la tienda</h2><p>Consulta directamente por sus productos y disponibilidad.</p>
-          <dl><dt>Datos de contacto</dt><dd class="public-description">${escape(shop.contact || 'La tienda aún no ha agregado sus datos de contacto.')}</dd><dt>Sector</dt><dd>${escape(shop.sector || 'Por informar')}</dd></dl>
+          <dl><dt>Datos de contacto</dt><dd class="public-description">${escape(shop.contact || 'La tienda aún no ha agregado sus datos de contacto.')}</dd><dt>Sector</dt><dd>${escape(shop.sector || 'Por informar')}</dd>${shop.pickupLat != null && shop.pickupLng != null ? `<dt>Punto de retiro o venta</dt><dd>${escape(shop.pickupLabel || 'Ubicación marcada en mapa')}<br><a class="public-text-link" target="_blank" rel="noopener noreferrer" href="${escape(directionsUrl(shop.pickupLat, shop.pickupLng))}">Cómo llegar en mapa ${icon('arrow')}</a></dd>` : ''}</dl>
           ${contactMarkup(shop)}
         </section>
       </div>
+      ${shop.pickupLat != null && shop.pickupLng != null ? `<section class="public-fair-map-section"><h2>Punto de retiro en el mapa</h2><div id="shop-pickup-map" class="fair-map"></div></section>` : ''}
       <section class="shop-catalog" aria-labelledby="shop-products-title"><div class="section-title-row"><div><p class="public-eyebrow">Descubre sus creaciones</p><h2 id="shop-products-title">Productos de esta tienda</h2></div></div><div id="shop-catalog-results" class="catalog-grid" aria-busy="true"><p role="status">Cargando productos…</p></div></section>
     </div>`);
     imageFallbacks(app);
     wireContact(app, db, shop, isCurrent);
+    if (shop.pickupLat != null && shop.pickupLng != null) {
+      const pickupMapEl = app.querySelector('#shop-pickup-map');
+      if (pickupMapEl) renderInteractiveMap(pickupMapEl, { lat: shop.pickupLat, lng: shop.pickupLng, zoom: 15, popupText: escape(shop.pickupLabel || shop.name) });
+    }
     app.querySelector('#shop-title').focus({ preventScroll: true });
     window.scrollTo(0, 0);
     try {
@@ -194,5 +299,111 @@ export async function showPublicShop(app, db, id, isCurrent = () => true) {
     }
   } catch {
     if (isCurrent()) showStatus(app, 'No pudimos cargar esta tienda', 'Revisa tu conexión y vuelve a intentarlo.', () => showPublicShop(app, db, id, isCurrent));
+  }
+}
+
+export async function showPublicAssociation(app, db, id, isCurrent = () => true) {
+  document.title = 'ConectaSur | Asociación';
+  app.innerHTML = shell('<section class="public-state"><p role="status">Cargando asociación…</p></section>');
+  try {
+    const [associations, shops, shopAssocs] = await Promise.all([
+      db.listPublicAssociations(),
+      db.listPublicShops(),
+      db.listPublicShopAssociations()
+    ]);
+    if (!isCurrent()) return;
+    const assoc = associations.find(a => a.id === id);
+    if (!assoc) {
+      showStatus(app, 'Esta asociación no está disponible', 'Puede que el enlace haya cambiado o ya no esté activa.');
+      return;
+    }
+    const memberIds = new Set(shopAssocs.filter(sa => sa.association_id === assoc.id).map(sa => sa.shop_id));
+    const members = shops.filter(s => memberIds.has(s.id));
+    const logoSrc = imageUrl(assoc.logo_url);
+    document.title = `${assoc.name} | ConectaSur`;
+    app.innerHTML = shell(`<div class="public-shop-page">
+      <a class="public-back" href="#asociaciones">← Volver a las asociaciones</a>
+      <section class="public-shop-banner" aria-labelledby="assoc-title">
+        ${logoSrc ? `<img class="shop-logo shop-logo-large" src="${escape(logoSrc)}" alt="Logo ${escape(assoc.name)}">` : `<div class="shop-logo shop-logo-large"><span class="shop-logo-fallback">${icon('people')}</span></div>`}
+        <div>
+          <p class="public-eyebrow">Asociación de emprendedoras</p>
+          <h1 id="assoc-title" tabindex="-1">${escape(assoc.name)}</h1>
+          <p class="public-sector">${icon('pin')} ${escape(assoc.sector || 'Puerto Montt y Alerce')}</p>
+        </div>
+      </section>
+      <div class="public-shop-details">
+        <section class="public-about"><h2>Sobre la asociación</h2><p class="public-description">${escape(assoc.description || 'Agrupación de emprendimientos locales.')}</p></section>
+        <section class="public-contact"><h2>Contacto</h2><p class="public-description">${escape(assoc.contact || 'Sin datos de contacto publicados.')}</p></section>
+      </div>
+      <section class="shop-catalog" aria-labelledby="assoc-members-title">
+        <div class="section-title-row"><div><p class="public-eyebrow">Tiendas participantes</p><h2 id="assoc-members-title">Integrantes (${members.length})</h2></div></div>
+        <div class="public-shop-grid">${members.length ? members.map(s => card(s, [])).join('') : '<div class="public-empty"><p>Aún no hay tiendas activas asignadas a esta asociación.</p></div>'}</div>
+      </section>
+    </div>`);
+    imageFallbacks(app);
+    app.querySelector('#assoc-title').focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  } catch {
+    if (isCurrent()) showStatus(app, 'No pudimos cargar esta asociación', 'Revisa tu conexión y vuelve a intentarlo.', () => showPublicAssociation(app, db, id, isCurrent));
+  }
+}
+
+export async function showPublicFair(app, db, id, isCurrent = () => true) {
+  document.title = 'ConectaSur | Feria';
+  app.innerHTML = shell('<section class="public-state"><p role="status">Cargando información de la feria…</p></section>');
+  try {
+    const fairs = await db.listPublicFairs();
+    if (!isCurrent()) return;
+    const fair = fairs.find(f => f.id === id);
+    if (!fair) {
+      showStatus(app, 'Esta feria no está disponible', 'Puede que aún sea un borrador o que el enlace ya no esté vigente.');
+      return;
+    }
+    const dateFmt = new Intl.DateTimeFormat('es-CL', { dateStyle: 'long', timeStyle: 'short' });
+    const imgSrc = imageUrl(fair.image_url);
+    const cancelled = fair.status === 'cancelled';
+    document.title = `${fair.name} | ConectaSur`;
+    app.innerHTML = shell(`<div class="public-shop-page">
+      <a class="public-back" href="#ferias">← Volver a las ferias</a>
+      <section class="public-shop-banner" aria-labelledby="fair-title">
+        ${imgSrc ? `<img class="shop-logo shop-logo-large" src="${escape(imgSrc)}" alt="${escape(fair.name)}">` : `<div class="shop-logo shop-logo-large"><span class="shop-logo-fallback">${icon('pin')}</span></div>`}
+        <div>
+          <p class="public-eyebrow">${cancelled ? 'Feria cancelada' : 'Feria presencial'}</p>
+          <h1 id="fair-title" tabindex="-1">${escape(fair.name)}</h1>
+          <p class="public-sector">${icon('pin')} ${escape(fair.place_name)}</p>
+        </div>
+      </section>
+      <div class="public-shop-details">
+        <section class="public-about">
+          <h2>Detalles del encuentro</h2>
+          <p class="public-description">${escape(fair.description || 'Encuentro comunitario de emprendedoras locales.')}</p>
+          <dl>
+            <dt>Inicio</dt><dd>${escape(dateFmt.format(new Date(fair.starts_at)))}</dd>
+            <dt>Término</dt><dd>${escape(dateFmt.format(new Date(fair.ends_at)))}</dd>
+            <dt>Organizador</dt><dd>${escape(fair.organizer || 'Organización comunitaria')}</dd>
+          </dl>
+        </section>
+        <section class="public-contact">
+          <h2>Cómo llegar</h2>
+          <p>${escape(fair.place_name)}</p>
+          <a class="public-primary" target="_blank" rel="noopener noreferrer" href="${escape(directionsUrl(fair.latitude, fair.longitude))}">${icon('pin')} Cómo llegar</a>
+        </section>
+      </div>
+      <section class="public-fair-map-section">
+        <h2>Ubicación en el mapa</h2>
+        <div id="public-fair-map" class="fair-map"></div>
+      </section>
+    </div>`);
+    imageFallbacks(app);
+    renderInteractiveMap(app.querySelector('#public-fair-map'), {
+      lat: fair.latitude,
+      lng: fair.longitude,
+      zoom: 15,
+      popupText: `${escape(fair.name)} · ${escape(fair.place_name)}`
+    });
+    app.querySelector('#fair-title').focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  } catch {
+    if (isCurrent()) showStatus(app, 'No pudimos cargar esta feria', 'Revisa tu conexión y vuelve a intentarlo.', () => showPublicFair(app, db, id, isCurrent));
   }
 }

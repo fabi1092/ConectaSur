@@ -1,8 +1,9 @@
-import { publicShell, shopLogo, wireShopImages, escapeHtml as escape } from './public-shops.js';
+import { shopLogo, wireShopImages, escapeHtml as escape } from './public-shops.js';
+import { ownerShell, wireOwnerShell } from './owner-shell.js';
 import { icon } from './visuals.js';
 import { prepareImage } from './prepare-image.js';
 
-export function showShopEditor(app, db, data, { isCurrent, onSaved, onCancel }) {
+export function showShopEditor(app, db, data, { isCurrent, onSaved, onCancel, onNavigate, onLogout }) {
   const { shop } = data;
   let disposed = false, saving = false, preparing = false, saved = false;
   let logoFile = null, removeLogo = false, previewUrl = null;
@@ -12,8 +13,8 @@ export function showShopEditor(app, db, data, { isCurrent, onSaved, onCancel }) 
   const initial = Object.fromEntries(fields.map(key => [key, (shop[key] || '').replace(/\r\n?/g, '\n')]));
   initial.showPrices = shop.showPrices !== false;
   document.title = 'Editar mi tienda | ConectaSur';
-  app.innerHTML = publicShell(`<section class="shop-editor-page" aria-labelledby="shop-editor-title">
-    <div class="editor-heading"><div><p class="public-eyebrow">Mi tienda</p><h1 id="shop-editor-title" tabindex="-1">Dale tu sello a tu tienda.</h1><p>Revisa tus datos y el logo antes de publicarlos.</p></div><button id="editor-back" class="owner-secondary" type="button">Volver a Mi tienda</button></div>
+  app.innerHTML = ownerShell(shop, 'edit', `<section class="shop-editor-page" aria-labelledby="shop-editor-title">
+    <div class="editor-heading"><div><p class="public-eyebrow">Mi tienda</p><h1 id="shop-editor-title" tabindex="-1">Dale tu sello a tu tienda.</h1><p>Revisa tus datos y el logo antes de publicarlos.</p></div><button id="editor-back" class="owner-secondary" type="button">Volver a Resumen</button></div>
     <form id="shop-editor-form">
       <fieldset id="shop-editor-fields"><legend class="visually-hidden">Datos y logo de tu tienda</legend><div class="shop-editor-layout">
         <section class="editor-card" aria-labelledby="editor-data-title"><h2 id="editor-data-title">Datos de tu tienda</h2><p class="editor-intro">Así te conocerán quienes visiten tu ficha pública.</p>
@@ -34,6 +35,11 @@ export function showShopEditor(app, db, data, { isCurrent, onSaved, onCancel }) 
       <p id="editor-status" class="editor-status" role="status" tabindex="-1"></p>
     </form>
   </section>`);
+  wireOwnerShell(app, {
+    onNavigate: target => { if (requestLeave()) (onNavigate ? onNavigate(target) : onCancel()); },
+    onLogout: () => { if (requestLeave()) onLogout?.(); },
+    signal: events.signal
+  });
   app.querySelector('#shop-editor-title').focus({ preventScroll: true });
   window.scrollTo(0, 0);
   wireShopImages(app);

@@ -1,4 +1,5 @@
 import { publicShell, shopLogo, wireShopImages, escapeHtml as escape } from './public-shops.js';
+import { ownerShell, wireOwnerShell } from './owner-shell.js';
 import { showShopEditor } from './shop-editor.js';
 import { showOwnerCatalog } from './owner-catalog.js';
 import { showOwnerSales } from './owner-sales.js';
@@ -155,6 +156,50 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     } finally { busy = false; }
   }
 
+  function navigateOwner(target, data) {
+    if (!alive()) return;
+    editor?.dispose?.();
+    editor = null;
+    if (target === 'home') {
+      loadHome();
+      return;
+    }
+    if (target === 'products') {
+      mode = 'products';
+      editor = showOwnerCatalog(app, db, data, {
+        isCurrent: () => alive() && mode === 'products',
+        onBack: () => navigateOwner('home', data),
+        onNavigate: next => navigateOwner(next, data),
+        onLogout: logout
+      });
+      return;
+    }
+    if (target === 'sales') {
+      mode = 'sales';
+      editor = showOwnerSales(app, db, data, {
+        isCurrent: () => alive() && mode === 'sales',
+        onBack: () => navigateOwner('home', data),
+        onNavigate: next => navigateOwner(next, data),
+        onLogout: logout
+      });
+      return;
+    }
+    if (target === 'edit') {
+      mode = 'edit';
+      editor = showShopEditor(app, db, data, {
+        isCurrent: () => alive() && mode === 'edit',
+        onSaved: updated => {
+          editor?.dispose?.();
+          editor = null;
+          home(updated, 'Guardamos los cambios de tu tienda. Ya puedes verlos en tu ficha pública.');
+        },
+        onCancel: () => navigateOwner('home', data),
+        onNavigate: next => navigateOwner(next, data),
+        onLogout: logout
+      });
+    }
+  }
+
   function home(data, notice = '') {
     if (!alive()) return;
     const { user, shop } = data;
@@ -163,8 +208,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     setAccountNavigation(user);
     mode = 'home';
     document.title = 'Mi tienda | ConectaSur';
-    app.innerHTML = publicShell(`<section class="owner-home" aria-labelledby="owner-home-title">
-      <div class="owner-topbar"><a class="public-back" href="#tiendas">← Volver a las tiendas</a><button id="owner-logout" class="owner-secondary">Cerrar sesión</button></div>
+    app.innerHTML = ownerShell(shop, 'home', `<section class="owner-home" aria-labelledby="owner-home-title">
       <div class="owner-welcome"><div><p class="public-eyebrow">Panel de mi tienda</p><h1 id="owner-home-title" tabindex="-1">Esta es tu tienda.</h1><p><strong>${escape(shop.name)}</strong>. Tus productos, ventas y pendientes en un solo lugar.</p></div><span class="owner-session-state">Sesión iniciada</span></div>
       ${notice ? `<p class="owner-save-success" role="status">${escape(notice)}</p>` : ''}
       ${dashboardMetrics()}
@@ -176,33 +220,18 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
         <div class="owner-actions"><a class="owner-secondary" href="#tienda/${escape(encodeURIComponent(shop.id))}">Ver mi ficha pública <span aria-hidden="true">↗</span></a><button class="owner-secondary" id="owner-refresh">Actualizar información</button></div>
       </div>
       <div class="owner-bottom"><section class="owner-update-help"><h2>Tu tienda, en ambos lugares</h2><p>Los datos y el logo que guardes aquí también se verán en Android y en tu ficha pública. Puedes editar tu tienda desde cualquiera de los dos.</p></section><section class="owner-account"><h2>Tu cuenta</h2><p>Ingresaste con</p><p class="owner-account-email">${escape(user.email)}</p><p>Si compartes este equipo, cierra tu sesión al terminar.</p></section></div>
-    </section>`, { showAccountLink: false });
+    </section>`);
     wireShopImages(app);
+    wireOwnerShell(app, { onNavigate: target => navigateOwner(target, data), onLogout: logout });
     app.querySelector('#owner-home-title').focus({ preventScroll: true });
     window.scrollTo(0, 0);
     const root=app.querySelector('.owner-home');
     loadDashboard(root,db,data,()=>alive() && mode==='home' && dashboardVersion===version);
-    root.querySelectorAll('[data-dashboard-open]').forEach(button=>button.addEventListener('click',()=>root.querySelector(button.dataset.dashboardOpen==='sales' ? '#owner-sales' : '#owner-products').click()));
-    app.querySelector('#owner-logout').addEventListener('click', logout);
+    root.querySelectorAll('[data-dashboard-open]').forEach(button=>button.addEventListener('click',()=>navigateOwner(button.dataset.dashboardOpen==='sales' ? 'sales' : 'products', data)));
     app.querySelector('#owner-refresh').addEventListener('click', () => loadHome());
-    app.querySelector('#owner-sales').addEventListener('click',()=>{
-      mode='sales';editor=showOwnerSales(app,db,data,{isCurrent:()=>alive() && mode==='sales',onBack:()=>{editor.dispose();editor=null;loadHome();}});
-    });
-    app.querySelector('#owner-products').addEventListener('click', () => {
-      mode = 'products';
-      editor = showOwnerCatalog(app, db, data, {
-        isCurrent: () => alive() && mode === 'products',
-        onBack: () => { editor.dispose(); editor = null; loadHome(); }
-      });
-    });
-    app.querySelector('#owner-edit').addEventListener('click', () => {
-      mode = 'edit';
-      editor = showShopEditor(app, db, data, {
-        isCurrent: () => alive() && mode === 'edit',
-        onSaved: updated => { editor.dispose(); editor = null; home(updated, 'Guardamos los cambios de tu tienda. Ya puedes verlos en tu ficha pública.'); },
-        onCancel: () => { editor.dispose(); editor = null; loadHome(); }
-      });
-    });
+    app.querySelector('#owner-sales').addEventListener('click', () => navigateOwner('sales', data));
+    app.querySelector('#owner-products').addEventListener('click', () => navigateOwner('products', data));
+    app.querySelector('#owner-edit').addEventListener('click', () => navigateOwner('edit', data));
   }
 
   async function openAccount(user) {
