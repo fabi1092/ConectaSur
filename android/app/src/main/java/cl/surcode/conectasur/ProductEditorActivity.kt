@@ -153,7 +153,8 @@ class ProductEditorActivity : OwnerActivity() {
                 shouldPersistDraft = false
             } else {
                 shouldPersistDraft = true
-                val rawDefaults = workspace.configuration(shopId).getJSONObject("default_products")
+                val rawDefaults = workspace.refreshConfiguration(shopId).optJSONObject("default_products")
+                    ?: workspace.configuration(shopId).getJSONObject("default_products")
                 val defaults = ProductDefaults.fromValues(
                     rawDefaults.optString("stockMode"),
                     rawDefaults.optString("soldOut"),
@@ -462,6 +463,26 @@ class ProductEditorActivity : OwnerActivity() {
             renderVariants()
         }
 
+        click(R.id.pe_copy_main_variant) {
+            if (StockMode.valueOf(draft.getString("mode")) == StockMode.UNIQUE) {
+                findViewById<View>(R.id.pe_add_variant).performClick()
+                return@click
+            }
+            val rows = draft.getJSONArray("variants")
+            if (rows.length() >= 20) return@click
+            rows.put(
+                JSONObject()
+                    .put("id", UUID.randomUUID().toString())
+                    .put("label", "Estándar")
+                    .put("quantity", draft.optString("quantity").ifBlank { "1" })
+                    .put("priceClp", draft.optString("priceClp"))
+                    .put("photo", draft.optString("photo"))
+            )
+            persist()
+            renderVariants()
+            status("Creamos la Variante 1 con tu foto y precio principal. Ahora puedes agregar la Variante 2.")
+        }
+
         // A01: Navegación paso a paso del flujo guiado (Issue 7: siguiente arriba, volver abajo)
         click(R.id.pe_previous) {
             step = previousEditorStep(step)
@@ -598,6 +619,8 @@ class ProductEditorActivity : OwnerActivity() {
         val box = findViewById<LinearLayout>(R.id.pe_variants) ?: return
         box.removeAllViews()
         val rows = draft.getJSONArray("variants")
+        findViewById<View>(R.id.pe_copy_main_variant)?.isVisible = rows.length() == 0
+        findViewById<View>(R.id.pe_single_variant_note)?.isVisible = rows.length() == 1
         val tracked = StockMode.valueOf(draft.getString("mode")).countsUnits
 
         for (i in 0 until rows.length()) {
@@ -632,19 +655,8 @@ class ProductEditorActivity : OwnerActivity() {
                 }
                 statusText.text = "Foto propia lista."
             } else {
-                val mainPhoto = draft.optString("photo")
-                if (mainPhoto.isNotBlank()) {
-                    if (mainPhoto.startsWith("data:")) {
-                        val b = Base64.decode(mainPhoto.substringAfter(','), Base64.NO_WRAP)
-                        previewImg.setImageBitmap(BitmapFactory.decodeByteArray(b, 0, b.size))
-                    } else {
-                        PublicImageLoader.load(lifecycleScope, previewImg, mainPhoto, BuildConfig.SUPABASE_URL)
-                    }
-                    statusText.text = "Usará la foto principal."
-                } else {
-                    previewImg.setImageResource(R.drawable.ic_products)
-                    statusText.text = "Sin foto (usará la principal)."
-                }
+                previewImg.setImageResource(R.drawable.ic_products)
+                statusText.text = "Sin foto propia (opcional)."
             }
 
             // Issue 9 y A06: Botón de cámara para variantes
@@ -778,7 +790,7 @@ class ProductEditorActivity : OwnerActivity() {
                     contentDescription = "Foto opción"
                 }
 
-                val vPhoto = v.optString("photo").ifBlank { photo }
+                val vPhoto = v.optString("photo")
                 if (vPhoto.startsWith("data:")) {
                     val b = Base64.decode(vPhoto.substringAfter(','), Base64.NO_WRAP)
                     thumb.setImageBitmap(BitmapFactory.decodeByteArray(b, 0, b.size))

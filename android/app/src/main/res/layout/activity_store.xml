@@ -3,6 +3,7 @@
     android:id="@+id/account_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/appBackground"
     android:orientation="vertical">
 
     <ScrollView
@@ -16,56 +17,69 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingHorizontal="@dimen/space_lg"
+            android:paddingTop="@dimen/space_md"
+            android:paddingBottom="@dimen/space_xl">
 
-            <!-- Cabecera estándar de navegación accesible -->
+            <!-- Compact Header -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="@dimen/space_md"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <Button
                     android:id="@+id/account_back"
-                    style="@style/ConectaSur.Button"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/go_home" />
+
+                <TextView
+                    android:id="@+id/account_title"
+                    style="@style/ConectaSur.Title"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="@dimen/space_sm"
                     android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:minHeight="56dp"
-                    android:text="@string/go_home" />
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/login_title" />
 
                 <Button
                     android:id="@+id/account_read"
-                    style="@style/ConectaSur.Button"
-                    android:layout_width="0dp"
+                    style="@style/ConectaSur.Button.Tonal"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:minHeight="56dp"
+                    android:paddingHorizontal="14dp"
                     android:text="@string/store_read" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/account_title"
-                style="@style/ConectaSur.Title"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/login_title" />
+                android:layout_marginBottom="@dimen/space_md"
+                android:background="@drawable/status_banner_bg"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="@dimen/space_md">
 
-            <TextView
-                android:id="@+id/account_status"
-                style="@style/ConectaSur.Body"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:accessibilityLiveRegion="polite" />
+                <TextView
+                    android:id="@+id/account_status"
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:accessibilityLiveRegion="polite" />
 
-            <ProgressBar
-                android:id="@+id/account_progress"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone" />
+                <ProgressBar
+                    android:id="@+id/account_progress"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_marginStart="@dimen/space_sm"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <!-- FORMULARIO DE ACCESO (MERCADO LIBRE STYLE) -->
             <LinearLayout
@@ -593,11 +607,21 @@
 
                     <Button
                         android:id="@+id/shop_register_sale"
+                        style="@style/ConectaSur.Button.Primary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/button_terracotta"
+                        android:minHeight="60dp"
+                        android:text="Anotar venta rápida"
+                        android:textColor="@color/conectasur_surface" />
+
+                    <Button
+                        android:id="@+id/shop_share_qr"
                         style="@style/ConectaSur.Button"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minHeight="60dp"
-                        android:text="Anotar una venta" />
+                        android:minHeight="56dp"
+                        android:text="Compartir tienda / QR" />
 
                     <Button
                         android:id="@+id/shop_history"
@@ -870,6 +894,69 @@
                             android:paddingBottom="14dp"
                             android:saveEnabled="false"
                             android:textSize="18sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Punto de venta o retiro en mapa (opcional)"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/shop_pickup_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/input_field"
+                        android:hint="Ej: Puesto 4, Feria de Alerce o taller en casa"
+                        android:importantForAutofill="no"
+                        android:inputType="textCapSentences"
+                        android:maxLength="240"
+                        android:minHeight="52dp"
+                        android:paddingStart="16dp"
+                        android:paddingTop="12dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="12dp"
+                        android:saveEnabled="false"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/shop_pickup_coords"
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Sin ubicación marcada en el mapa"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/shop_pickup_pick"
+                            style="@style/ConectaSur.Button.Tonal"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_marginBottom="0dp"
+                            android:layout_weight="1"
+                            android:text="Marcar en mapa"
+                            android:textSize="15sp" />
+
+                        <Button
+                            android:id="@+id/shop_pickup_clear"
+                            style="@style/ConectaSur.Button"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:layout_marginBottom="0dp"
+                            android:layout_weight="1"
+                            android:text="Quitar punto"
+                            android:textSize="15sp" />
                     </LinearLayout>
 
                     <Button

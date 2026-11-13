@@ -43,6 +43,8 @@ class StoreActivity : FragmentActivity() {
     private lateinit var reader: SpeechReader
     private lateinit var prompt: BiometricPrompt
     private var biometricAction: String? = null
+    private var shouldOfferBiometricAfterSignIn = false
+    private var offerBiometricDialog: AlertDialog? = null
     private var binding = false
     private var choosingLogo = false
     private var choosingGoogle = false
@@ -66,7 +68,7 @@ class StoreActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(if (presentation.highContrast) R.style.Theme_ConectaSur_HighContrast else R.style.Theme_ConectaSur)
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        if (!BuildConfig.DEBUG) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         enableEdgeToEdge()
         setContentView(R.layout.activity_store)
         ViewCompat.setAccessibilityHeading(findViewById(R.id.account_title), true)
@@ -94,6 +96,7 @@ class StoreActivity : FragmentActivity() {
             override fun <T : ViewModel> create(modelClass: Class<T>): T = StoreViewModel(RepositoryProvider.auth(), RepositoryProvider.shops()) as T
         })[StoreViewModel::class.java]
         biometricAction = savedInstanceState?.getString("biometric_action")
+        shouldOfferBiometricAfterSignIn = savedInstanceState?.getBoolean("should_offer_biometric", false) == true
         prompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                 val action = biometricAction
@@ -262,6 +265,21 @@ class StoreActivity : FragmentActivity() {
             discardIfNeeded { startActivity(Intent(this, ShopInboxActivity::class.java)) }
         }
         findViewById<Button>(R.id.shop_save).setOnClickListener { captureDraft(); hideKeyboard(); showStatus(); model.save() }
+        findViewById<Button>(R.id.shop_share_qr)?.setOnClickListener {
+            val shop = model.draft ?: model.state.value.shop ?: return@setOnClickListener
+            if (shop.id.isBlank()) { model.message("Guarda primero tu tienda para generar su QR.", true); return@setOnClickListener }
+            val title = shop.name.ifBlank { "Mi tienda" }
+            val subtitle = shop.sector.ifBlank { "ConectaSur" }
+            QrShareHelper.showQrDialog(this, title, subtitle, QrShareHelper.shopUrl(shop.id))
+        }
+        findViewById<EditText>(R.id.shop_pickup_label)?.doAfterTextChanged { if (!binding) captureDraft() }
+        findViewById<Button>(R.id.shop_pickup_pick)?.setOnClickListener { openPickupMapDialog() }
+        findViewById<Button>(R.id.shop_pickup_clear)?.setOnClickListener {
+            val latest = model.draft ?: return@setOnClickListener
+            model.edit(latest.copy(pickupLabel = "", pickupLat = null, pickupLng = null))
+            model.message("Punto de entrega quitado. Pulsa Guardar cambios para publicar.")
+            render(model.state.value)
+        }
         findViewById<Button>(R.id.shop_choose_logo).setOnClickListener { captureDraft(); picker.launch("image/*") }
         findViewById<Button>(R.id.shop_remove_logo).setOnClickListener { captureDraft(); model.removeLogo() }
         findViewById<Button>(R.id.shop_reload).setOnClickListener { model.restore() }
@@ -281,7 +299,7 @@ class StoreActivity : FragmentActivity() {
         findViewById<Button>(R.id.shop_products).setOnClickListener { discardIfNeeded { startActivity(Intent(this, ProductManagerActivity::class.java)) } }
         findViewById<Button>(R.id.shop_register_sale).setOnClickListener { discardIfNeeded { startActivity(Intent(this, SalesActivity::class.java)) } }
         findViewById<Button>(R.id.shop_history).setOnClickListener { discardIfNeeded { startActivity(Intent(this, SalesActivity::class.java).putExtra("history",true)) } }
-        model.start(biometric.enabled)
+        model.start(biometric.enabled && !BiometricStoreLock.isSessionUnlocked())
         render(model.state.value)
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { model.state.collect { render(it) } } }
     }
@@ -298,6 +316,7 @@ class StoreActivity : FragmentActivity() {
         password.text.clear()
         hideKeyboard()
         showStatus()
+        shouldOfferBiometricAfterSignIn = true
         model.signIn(email.text.toString(), secret)
     }
 
@@ -373,7 +392,17 @@ class StoreActivity : FragmentActivity() {
                 findViewById<EditText>(fields[index]).let { if (it.text.toString() != value) it.setText(value) }
             }
             findViewById<CheckBox>(R.id.shop_show_prices).isChecked = draft.showPrices
+            findViewById<EditText>(R.id.shop_pickup_label)?.let {
+                val targetLabel = draft.pickupLabel.orEmpty()
+                if (it.text.toString() != targetLabel) it.setText(targetLabel)
+            }
             binding = false
+            findViewById<TextView>(R.id.shop_pickup_coords)?.text =
+                if (draft.pickupLat != null && draft.pickupLng != null)
+                    String.format(java.util.Locale.US, "Ubicación guardada: %.5f, %.5f", draft.pickupLat, draft.pickupLng)
+                else "Sin ubicación guardada"
+            findViewById<View>(R.id.shop_pickup_clear)?.isEnabled =
+                !state.busy && (draft.pickupLat != null || !draft.pickupLabel.isNullOrBlank())
             findViewById<Button>(R.id.shop_contact_mode).text = draft.contactMode.label
             findViewById<View>(R.id.shop_whatsapp_group).isVisible = draft.contactMode.hasWhatsApp
             bindChoice(R.id.shop_edit_type, draft.entrepreneurType, if (state.choicesError) emptyList() else state.choices.entrepreneurTypes, R.string.shop_choose_type, state)
@@ -400,15 +429,34 @@ class StoreActivity : FragmentActivity() {
                 isVisible = !available && !biometric.enabled
                 setText(R.string.bio_unavailable)
             }
+            if (shouldOfferBiometricAfterSignIn) {
+                shouldOfferBiometricAfterSignIn = false
+                if (!biometric.enabled && available && offerBiometricDialog?.isShowing != true) {
+                    offerBiometricEnrollmentDialog()
+                }
+            }
         }
+    }
+
+    private fun offerBiometricEnrollmentDialog() {
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Activar huella digital")
+            .setMessage("¿Quieres activar tu huella digital para entrar más rápido a tu cuenta de emprendedora en este teléfono?")
+            .setPositiveButton("Sí, activar huella") { _, _ -> authenticate(true) }
+            .setNegativeButton("Ahora no", null)
+            .create()
+        dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, presentation) }
+        offerBiometricDialog = dialog
+        dialog.show()
     }
 
     private fun captureDraft() {
         if (!::model.isInitialized || model.state.value.locked) return
         val base = model.draft ?: return
         val values = fields.map { findViewById<EditText>(it).text.toString() }
+        val pickupText = findViewById<EditText>(R.id.shop_pickup_label)?.text?.toString()?.trim().orEmpty()
         model.edit(base.copy(name = values[0], description = values[1], contact = values[2], whatsappNumber = values[3],
-            showPrices = findViewById<CheckBox>(R.id.shop_show_prices).isChecked))
+            showPrices = findViewById<CheckBox>(R.id.shop_show_prices).isChecked, pickupLabel = pickupText))
     }
     private fun bindChoice(id: Int, current: String, choices: List<String>, action: Int, state: StoreState) {
         findViewById<Button>(id).apply {
@@ -481,12 +529,77 @@ class StoreActivity : FragmentActivity() {
         state.associations.isEmpty() -> getString(R.string.shop_associations_none)
         else -> state.associations.joinToString(", ")
     }
-    override fun onSaveInstanceState(outState: Bundle) { outState.putString("biometric_action", biometricAction); super.onSaveInstanceState(outState) }
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("biometric_action", biometricAction)
+        outState.putBoolean("should_offer_biometric", shouldOfferBiometricAfterSignIn)
+        super.onSaveInstanceState(outState)
+    }
     override fun onStop() {
         reader.stop()
-        if (::model.isInitialized && biometric.enabled) { model.lock(); render(model.state.value) }
+        if (::model.isInitialized && biometric.enabled && !BiometricStoreLock.isSessionUnlocked()) { model.lock(); render(model.state.value) }
         findViewById<EditText>(R.id.account_password).text.clear()
         super.onStop()
     }
-    override fun onDestroy() { reader.close(); super.onDestroy() }
+    @android.annotation.SuppressLint("SetJavaScriptEnabled")
+    private fun openPickupMapDialog() {
+        captureDraft()
+        val current = model.draft ?: return
+        var pickedLat = current.pickupLat ?: -41.4693
+        var pickedLng = current.pickupLng ?: -72.9424
+        val coordsLabel = TextView(this).apply {
+            text = String.format(java.util.Locale.US, "Toca el mapa para mover el punto (%.5f, %.5f)", pickedLat, pickedLng)
+            textSize = 14f
+            setPadding(0, 0, 0, 16)
+        }
+        val webView = android.webkit.WebView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (340 * resources.displayMetrics.density).toInt())
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            addJavascriptInterface(object {
+                @android.webkit.JavascriptInterface
+                fun onPickLocation(lat: Double, lng: Double) {
+                    runOnUiThread {
+                        pickedLat = lat
+                        pickedLng = lng
+                        coordsLabel.text = String.format(java.util.Locale.US, "Punto seleccionado: %.5f, %.5f", lat, lng)
+                    }
+                }
+            }, "AndroidMap")
+            webViewClient = object : android.webkit.WebViewClient() {
+                override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
+                    val safeLabel = (current.pickupLabel ?: current.name).replace("'", "\\'")
+                    evaluateJavascript("if(window.setPicker){setPicker($pickedLat, $pickedLng, '$safeLabel');}", null)
+                }
+            }
+            loadUrl("file:///android_asset/conectasur_map.html")
+        }
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val pad = (16 * resources.displayMetrics.density).toInt()
+            setPadding(pad, pad, pad, 0)
+            addView(coordsLabel)
+            addView(webView)
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Elegir punto de entrega en mapa")
+            .setView(container)
+            .setPositiveButton("Guardar punto") { _, _ ->
+                model.draft?.let { latest ->
+                    model.edit(latest.copy(pickupLat = pickedLat, pickupLng = pickedLng))
+                    model.message("Punto de entrega seleccionado. Pulsa Guardar cambios para publicar.")
+                    render(model.state.value)
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+        dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, presentation) }
+        dialog.show()
+    }
+
+    override fun onDestroy() {
+        offerBiometricDialog?.dismiss()
+        offerBiometricDialog = null
+        reader.close()
+        super.onDestroy()
+    }
 }

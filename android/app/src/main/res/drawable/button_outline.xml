@@ -1,31 +1,31 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_pressed="true">
         <shape>
-            <solid android:color="#DCEDE6" />
-            <corners android:radius="16dp" />
-            <stroke android:width="3dp" android:color="?attr/appInk" />
+            <solid android:color="#DCECE6" />
+            <corners android:radius="14dp" />
+            <stroke android:width="2dp" android:color="?attr/appInk" />
         </shape>
     </item>
     <item android:state_focused="true">
         <shape>
             <solid android:color="?attr/appSurface" />
-            <corners android:radius="16dp" />
-            <stroke android:width="3dp" android:color="#A85D17" />
+            <corners android:radius="14dp" />
+            <stroke android:width="2dp" android:color="?attr/appPrimary" />
         </shape>
     </item>
     <item android:state_selected="true">
         <shape>
-            <solid android:color="?attr/appSurface" />
-            <corners android:radius="16dp" />
-            <stroke android:width="3dp" android:color="?attr/appPrimary" />
+            <solid android:color="@color/conectasur_forest_soft" />
+            <corners android:radius="14dp" />
+            <stroke android:width="2dp" android:color="?attr/appPrimary" />
         </shape>
     </item>
     <item>
         <shape>
             <solid android:color="?attr/appSurface" />
-            <corners android:radius="16dp" />
-            <stroke android:width="1dp" android:color="?attr/appBorder" />
+            <corners android:radius="14dp" />
+            <stroke android:width="1.5dp" android:color="?attr/appBorder" />
         </shape>
     </item>
 </selector>

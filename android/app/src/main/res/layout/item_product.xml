@@ -1,90 +1,81 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="16dp"
     android:background="@drawable/card_surface"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:screenReaderFocusable="true">
+    android:padding="10dp">
 
     <cl.surcode.conectasur.ui.ProductPhotoView
         android:id="@+id/product_photo"
         android:layout_width="match_parent"
-        android:layout_height="188dp"
-        android:layout_marginBottom="12dp"
-        android:contentDescription="@string/photo_description"
-        android:scaleType="centerCrop"
-        android:src="@drawable/flores" />
+        android:layout_height="152dp"
+        android:background="@drawable/photo_frame_bg"
+        android:clipToOutline="true"
+        android:contentDescription="Foto del producto"
+        android:scaleType="centerCrop" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/product_category"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:layout_marginBottom="6dp">
-
-        <TextView
-            android:id="@+id/product_category"
-            style="@style/ConectaSur.Label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="0dp"
-            android:background="@drawable/badge_pill_forest"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:text="@string/product_category"
-            android:textColor="@color/conectasur_ink"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/product_availability"
-            style="@style/ConectaSur.Label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="0dp"
-            android:text="@string/available"
-            android:textColor="#1A7B6E"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+        android:layout_marginTop="8dp"
+        android:background="@drawable/badge_pill_forest"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="3dp"
+        android:text="Categoría"
+        android:textColor="@color/conectasur_forest_dark"
+        android:textSize="11sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/product_name"
-        style="@style/ConectaSur.Section"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:layout_marginBottom="4dp"
-        android:text="@string/product_name"
-        android:textSize="20sp" />
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:lineSpacingExtra="2dp"
+        android:maxLines="2"
+        android:minLines="2"
+        android:text="Nombre del producto"
+        android:textColor="?attr/appInk"
+        android:textSize="15sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/product_price"
-        style="@style/ConectaSur.Section"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="0dp"
-        android:layout_marginBottom="12dp"
+        android:layout_marginTop="4dp"
         android:fontFeatureSettings="tnum"
-        android:text="@string/product_price"
-        android:textColor="@color/conectasur_forest"
-        android:textSize="24sp" />
+        android:text="$0"
+        android:textColor="@color/conectasur_forest_dark"
+        android:textSize="19sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/product_availability"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="Disponible"
+        android:textColor="?attr/appMuted"
+        android:textSize="12sp"
+        android:textStyle="bold" />
 
     <Button
         android:id="@+id/open_product"
         style="@style/ConectaSur.Button.Primary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="0dp"
-        android:minHeight="56dp"
-        android:text="@string/open_product" />
+        android:layout_marginTop="8dp"
+        android:text="Ver producto"
+        android:visibility="gone" />
 </LinearLayout>

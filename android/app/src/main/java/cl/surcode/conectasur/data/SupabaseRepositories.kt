@@ -55,6 +55,43 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
         return ShopChoices(entrepreneurTypes = names)
     }
     override suspend fun getShop(shopId: String) = (client.request("/rest/v1/public_shops?select=*&id=eq.${SupabaseClient.encode(shopId)}") as JSONArray).optJSONObject(0)?.toShop()
+    override suspend fun listPublicShops(): List<Shop> {
+        val rows = client.request("/rest/v1/public_shops?select=*&order=name") as JSONArray
+        return rows.rows { it.toShop() }
+    }
+    override suspend fun listPublicAssociations(): List<PublicAssociation> {
+        val rows = client.request("/rest/v1/associations?select=id,name,description,logo_url,sector,contact,active&active=eq.true&order=name") as JSONArray
+        val links = client.request("/rest/v1/shop_associations?select=shop_id,association_id") as JSONArray
+        val byAssoc = mutableMapOf<String, MutableList<String>>()
+        for (i in 0 until links.length()) {
+            val l = links.optJSONObject(i) ?: continue
+            val aId = l.optString("association_id")
+            val sId = l.optString("shop_id")
+            if (aId.isNotBlank() && sId.isNotBlank()) byAssoc.getOrPut(aId) { mutableListOf() }.add(sId)
+        }
+        return (0 until rows.length()).mapNotNull { i ->
+            val r = rows.optJSONObject(i) ?: return@mapNotNull null
+            val id = r.optString("id")
+            PublicAssociation(
+                id = id,
+                name = r.optString("name"),
+                description = r.optString("description"),
+                logoUrl = r.nullableString("logo_url"),
+                sector = r.optString("sector"),
+                contact = r.optString("contact"),
+                shopIds = byAssoc[id].orEmpty()
+            )
+        }
+    }
+    override suspend fun listPublicFairs(lat: Double?, lng: Double?): List<PublicFair> {
+        val body = JSONObject().put("p_lat", lat ?: JSONObject.NULL).put("p_lng", lng ?: JSONObject.NULL)
+        val rows = client.request("/rest/v1/rpc/upcoming_fairs", "POST", body, false) as JSONArray
+        return rows.rows { it.toPublicFair() }
+    }
+    override suspend fun getAnonymousNavigation(): String {
+        val rows = client.request("/rest/v1/platform_settings?select=anonymous_navigation&id=eq.true") as JSONArray
+        return rows.optJSONObject(0)?.optString("anonymous_navigation")?.takeIf { it in listOf("allow", "invite", "require") } ?: "allow"
+    }
     override suspend fun listShopAssociations(shopId: String): List<String> {
         val links = client.request("/rest/v1/shop_associations?select=association_id&shop_id=eq.${SupabaseClient.encode(shopId)}") as JSONArray
         val ids = (0 until links.length()).mapNotNull { links.optJSONObject(it)?.optString("association_id")?.takeIf(String::isNotBlank) }.toSet()
@@ -69,6 +106,9 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
         val body = JSONObject().put("name", shop.name).put("description", shop.description).put("logo_url", shop.logoUrl ?: JSONObject.NULL)
             .put("entrepreneur_type", shop.entrepreneurType).put("sector", shop.sector).put("contact", shop.contact).put("show_prices", shop.showPrices)
             .put("contact_mode", shop.contactMode.wire).put("whatsapp_number", shop.whatsappNumber)
+            .put("pickup_label", shop.pickupLabel)
+            .put("pickup_lat", shop.pickupLat ?: JSONObject.NULL)
+            .put("pickup_lng", shop.pickupLng ?: JSONObject.NULL)
         val rows = client.request("/rest/v1/shops?id=eq.${SupabaseClient.encode(shop.id)}", "PATCH", body, true, "return=representation") as JSONArray
         if (rows.length() == 0) throw BackendException(403, "No tienes permiso para editar esta tienda")
     }

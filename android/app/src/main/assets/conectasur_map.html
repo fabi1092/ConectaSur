@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #EEF6F4; font-family: sans-serif; }
+    .pin { width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #C2592B; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(14,58,76,0.35); }
+    .user-dot { width: 16px; height: 16px; border-radius: 50%; background: #1A7B6E; border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(26,123,110,0.22); }
+    .popup-btn { display: inline-block; margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: #1A7B6E; color: #fff; text-decoration: none; font-weight: bold; font-size: 13px; border: 0; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const PUERTO_MONTT = [-41.4693, -72.9424];
+  const map = L.map('map', { zoomControl: true }).setView(PUERTO_MONTT, 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+  const layer = L.layerGroup().addTo(map);
+  const fairIcon = L.divIcon({ className: '', html: '<div class="pin"></div>', iconSize: [24, 24], iconAnchor: [12, 24] });
+  const userIcon = L.divIcon({ className: '', html: '<div class="user-dot"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
+
+  function esc(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  window.setFairs = function(fairsJson, userLat, userLng) {
+    layer.clearLayers();
+    const fairs = typeof fairsJson === 'string' ? JSON.parse(fairsJson) : fairsJson;
+    const bounds = [];
+    if (userLat !== null && userLng !== null && !Number.isNaN(userLat) && !Number.isNaN(userLng)) {
+      L.marker([userLat, userLng], { icon: userIcon }).addTo(layer).bindPopup('Tu ubicación actual');
+      bounds.push([userLat, userLng]);
+    }
+    fairs.forEach(f => {
+      const m = L.marker([f.lat, f.lng], { icon: fairIcon }).addTo(layer);
+      const dist = f.distanceKm != null ? `<br><small>A ${f.distanceKm.toFixed(1)} km</small>` : '';
+      const html = `<strong>${esc(f.name)}</strong><br>${esc(f.placeName)}${dist}<br><button class="popup-btn" onclick="AndroidMap.openFair('${esc(f.id)}')">Ver feria</button>`;
+      m.bindPopup(html);
+      bounds.push([f.lat, f.lng]);
+    });
+    if (userLat !== null && userLng !== null) {
+      map.setView([userLat, userLng], 13);
+    } else if (bounds.length > 1) {
+      map.fitBounds(bounds, { padding: [30, 30] });
+    } else if (bounds.length === 1) {
+      map.setView(bounds[0], 14);
+    } else {
+      map.setView(PUERTO_MONTT, 13);
+    }
+  };
+
+  window.setPicker = function(lat, lng, label) {
+    layer.clearLayers();
+    const startLat = (lat !== null && !Number.isNaN(lat)) ? lat : PUERTO_MONTT[0];
+    const startLng = (lng !== null && !Number.isNaN(lng)) ? lng : PUERTO_MONTT[1];
+    let marker = L.marker([startLat, startLng], { icon: fairIcon, draggable: true }).addTo(layer);
+    if (label) marker.bindPopup(esc(label)).openPopup();
+    map.setView([startLat, startLng], 14);
+    marker.on('dragend', () => {
+      const p = marker.getLatLng();
+      if (window.AndroidMap && window.AndroidMap.onPickLocation) {
+        window.AndroidMap.onPickLocation(Number(p.lat.toFixed(6)), Number(p.lng.toFixed(6)));
+      }
+    });
+    map.on('click', e => {
+      const p = e.latlng;
+      marker.setLatLng(p);
+      if (window.AndroidMap && window.AndroidMap.onPickLocation) {
+        window.AndroidMap.onPickLocation(Number(p.lat.toFixed(6)), Number(p.lng.toFixed(6)));
+      }
+    });
+  };
+</script>
+</body>
+</html>

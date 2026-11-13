@@ -6,6 +6,7 @@ import org.json.JSONObject
 
 internal fun JSONObject.nullableString(key: String) = if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
 internal fun JSONObject.nullableLong(key: String) = if (isNull(key)) null else getLong(key)
+internal fun JSONObject.nullableDouble(key: String) = if (isNull(key) || !has(key)) null else optDouble(key).takeIf { !it.isNaN() }
 internal fun JSONObject.attributes(): Map<String, String> = optJSONObject("attributes")?.let { values ->
     values.keys().asSequence().associateWith { values.optString(it) }
 }.orEmpty()
@@ -36,7 +37,14 @@ internal fun OwnerProduct.toSupabase(): JSONObject = JSONObject().apply {
 }
 internal fun JSONObject.toShop() = Shop(getString("id"), getString("name"), optString("description"), nullableString("logo_url"),
     optString("entrepreneur_type"), optString("sector"), optString("contact"), getBoolean("show_prices"),
-    ContactMode.from(optString("contact_mode")), optString("whatsapp_number"))
+    ContactMode.from(optString("contact_mode")), optString("whatsapp_number"),
+    optString("pickup_label", ""), nullableDouble("pickup_lat"), nullableDouble("pickup_lng"))
+internal fun JSONObject.toPublicFair() = PublicFair(
+    getString("id"), getString("name"), optString("description"), nullableString("image_url"),
+    optString("place_name"), getDouble("latitude"), getDouble("longitude"),
+    optString("starts_at"), optString("ends_at"), optString("organizer"),
+    optString("status", "published"), nullableDouble("distance_km")
+)
 internal fun JSONObject.toSale() = Sale(getString("id"), getString("product_id"), getString("product_name"),
     nullableString("variant_id"), getInt("quantity"), getLong("price_clp"), optString("place"), getLong("date_millis"))
 internal fun <T> JSONArray.rows(map: (JSONObject) -> T): List<T> = (0 until length()).map { map(getJSONObject(it)) }

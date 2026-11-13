@@ -1,22 +1,26 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.ConectaSur" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans-serif</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/conectasur_cream</item>
         <item name="android:colorAccent">@color/conectasur_forest</item>
         <item name="android:windowBackground">@color/conectasur_cream</item>
         <item name="android:colorBackground">@color/conectasur_cream</item>
         <item name="android:textColorPrimary">@color/conectasur_ink</item>
-        <item name="android:textColorSecondary">#4D655F</item>
+        <item name="android:textColorSecondary">@color/conectasur_muted</item>
         <item name="appInk">@color/conectasur_ink</item>
-        <item name="appMuted">#4D655F</item>
-        <item name="appSurface">#FFFFFF</item>
+        <item name="appMuted">@color/conectasur_muted</item>
+        <item name="appSurface">@color/conectasur_surface</item>
         <item name="appPrimary">@color/conectasur_forest</item>
-        <item name="appBorder">#CAD8D1</item>
+        <item name="appBorder">@color/conectasur_forest_border</item>
+        <item name="appBackground">@color/conectasur_cream</item>
     </style>
+
     <style name="Theme.ConectaSur.HighContrast" parent="Theme.ConectaSur">
         <item name="android:windowBackground">#FFFFFF</item>
         <item name="android:colorBackground">#FFFFFF</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
         <item name="android:textColorPrimary">#000000</item>
         <item name="android:textColorSecondary">#000000</item>
         <item name="android:colorAccent">#000000</item>
@@ -24,53 +28,118 @@
         <item name="appMuted">#000000</item>
         <item name="appPrimary">#000000</item>
         <item name="appBorder">#000000</item>
+        <item name="appBackground">#FFFFFF</item>
     </style>
+
     <style name="ConectaSur.Title" parent="android:Widget.TextView">
-        <item name="android:textSize">28sp</item>
+        <item name="android:textSize">25sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">?attr/appInk</item>
+        <item name="android:lineSpacingMultiplier">1.12</item>
+        <item name="android:layout_marginBottom">8dp</item>
+    </style>
+
+    <style name="ConectaSur.Body" parent="android:Widget.TextView">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">?attr/appInk</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
         <item name="android:layout_marginBottom">12dp</item>
     </style>
-    <style name="ConectaSur.Body" parent="android:Widget.TextView">
-        <item name="android:textSize">18sp</item>
-        <item name="android:textColor">?attr/appInk</item>
-        <item name="android:layout_marginBottom">16dp</item>
-    </style>
+
     <style name="ConectaSur.Label" parent="ConectaSur.Body">
-        <item name="android:textSize">16sp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:textColor">?attr/appMuted</item>
+        <item name="android:layout_marginBottom">6dp</item>
     </style>
+
     <style name="ConectaSur.Section" parent="ConectaSur.Body">
-        <item name="android:textSize">20sp</item>
+        <item name="android:textSize">19sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:layout_marginTop">16dp</item>
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
     </style>
+
     <style name="ConectaSur.Button" parent="android:Widget.Button">
         <item name="android:background">@drawable/button_outline</item>
         <item name="android:textColor">?attr/appInk</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textStyle">bold</item>
         <item name="android:textAllCaps">false</item>
-        <item name="android:minHeight">56dp</item>
+        <item name="android:minHeight">52dp</item>
         <item name="android:paddingStart">16dp</item>
         <item name="android:paddingEnd">16dp</item>
-        <item name="android:paddingTop">12dp</item>
-        <item name="android:paddingBottom">12dp</item>
-        <item name="android:layout_marginBottom">12dp</item>
-        <item name="android:drawablePadding">12dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:layout_marginBottom">10dp</item>
+        <item name="android:drawablePadding">10dp</item>
         <item name="android:stateListAnimator">@null</item>
     </style>
+
     <style name="ConectaSur.Button.Primary" parent="ConectaSur.Button">
         <item name="android:background">@drawable/button_primary</item>
         <item name="android:textColor">#FFFFFF</item>
     </style>
-    <style name="ConectaSur.Option" parent="android:Widget.CompoundButton.RadioButton">
-        <item name="android:textSize">18sp</item>
+
+    <style name="ConectaSur.Button.Tonal" parent="ConectaSur.Button">
+        <item name="android:background">@drawable/button_tonal</item>
         <item name="android:textColor">?attr/appInk</item>
-        <item name="android:minHeight">56dp</item>
+    </style>
+
+    <style name="ConectaSur.Button.Danger" parent="ConectaSur.Button">
+        <item name="android:background">@drawable/button_danger_tonal</item>
+        <item name="android:textColor">@color/conectasur_danger</item>
+    </style>
+
+    <style name="ConectaSur.Button.Compact" parent="ConectaSur.Button.Tonal">
+        <item name="android:textSize">15sp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+        <item name="android:layout_marginBottom">0dp</item>
+        <item name="android:drawablePadding">6dp</item>
+    </style>
+
+    <style name="ConectaSur.NavButton" parent="android:Widget.Button">
+        <item name="android:background">@drawable/nav_item_bg</item>
+        <item name="android:textColor">?attr/appInk</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="android:paddingStart">6dp</item>
+        <item name="android:paddingEnd">6dp</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+        <item name="android:drawablePadding">4dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <style name="ConectaSur.Input" parent="android:Widget.EditText">
+        <item name="android:background">@drawable/input_field</item>
+        <item name="android:textColor">?attr/appInk</item>
+        <item name="android:textColorHint">@color/conectasur_muted</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:layout_marginBottom">12dp</item>
+    </style>
+
+    <style name="ConectaSur.Option" parent="android:Widget.CompoundButton.RadioButton">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">?attr/appInk</item>
+        <item name="android:minHeight">52dp</item>
         <item name="android:padding">8dp</item>
     </style>
+
     <style name="ConectaSur.Check" parent="android:Widget.CompoundButton.CheckBox">
-        <item name="android:textSize">18sp</item><item name="android:textColor">?attr/appInk</item>
-        <item name="android:minHeight">56dp</item><item name="android:padding">8dp</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">?attr/appInk</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="android:padding">8dp</item>
     </style>
 </resources>

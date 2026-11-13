@@ -3,6 +3,7 @@ package cl.surcode.conectasur
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.os.Bundle
 import android.util.Base64
 import android.widget.Button
 import android.widget.CheckBox
@@ -10,6 +11,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
@@ -40,9 +42,26 @@ class ProductManagerActivity : OwnerActivity() {
     private val selected = mutableSetOf<String>()
     private var preview = false
     private var defaults = false
+    private var bulkMode = false
     private var showPrices = true
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (defaults) {
+                    showList()
+                } else {
+                    finish()
+                }
+            }
+        })
+    }
+
     override fun onOwnerReady() {
+        findViewById<Button>(R.id.owner_back)?.setOnClickListener {
+            if (defaults) showList() else finish()
+        }
         if (!initialized) {
             initialized = true
             showList()
@@ -75,6 +94,38 @@ class ProductManagerActivity : OwnerActivity() {
             render()
         }
         click(R.id.pm_bulk) { bulk() }
+        click(R.id.pm_bulk_apply) { bulk() }
+        click(R.id.pm_bulk_cancel) {
+            bulkMode = false
+            selected.clear()
+            render()
+        }
+        click(R.id.pm_more_options) {
+            val options = arrayOf(
+                if (bulkMode) "Salir de selección múltiple" else "Cambiar disponibilidad de varios productos",
+                "Preferencias de productos e historial",
+                if (preview) "Volver a mi catálogo privado" else "Vista previa pública"
+            )
+            AlertDialog.Builder(this)
+                .setTitle("Más opciones")
+                .setItems(options) { _, which ->
+                    when (which) {
+                        0 -> {
+                            bulkMode = !bulkMode
+                            if (!bulkMode) selected.clear()
+                            render()
+                        }
+                        1 -> showDefaults()
+                        2 -> {
+                            preview = !preview
+                            if (preview) bulkMode = false
+                            render()
+                        }
+                    }
+                }
+                .setNegativeButton("Cerrar", null)
+                .show()
+        }
         findViewById<EditText>(R.id.pm_search).doAfterTextChanged { render() }
         products = workspace.cached(shopId)
         render()
@@ -104,10 +155,15 @@ class ProductManagerActivity : OwnerActivity() {
             .filter { (it.base.name + " " + it.base.category).contains(query, true) }
             .filter { !preview || it.toPublicOrNull(showPrices) != null }
 
+        findViewById<android.view.View>(R.id.pm_bulk_bar)?.isVisible = bulkMode && !preview
+        findViewById<Button>(R.id.pm_bulk_apply)?.text =
+            if (selected.isEmpty()) "Cambiar varios..." else "Aplicar a ${selected.size}"
         findViewById<TextView>(R.id.pm_summary).text = if (preview) {
             "Vista previa pública: ${rows.size} productos. No muestra cantidades privadas."
-        } else {
+        } else if (bulkMode) {
             "${rows.size} productos · ${selected.size} seleccionados"
+        } else {
+            "${rows.size} productos"
         }
 
         // A11: Si hay un borrador interrumpido, ofrece retomarlo directamente
@@ -121,7 +177,7 @@ class ProductManagerActivity : OwnerActivity() {
 
             row.findViewById<TextView>(R.id.pm_name).text = p.name
             row.findViewById<CheckBox>(R.id.pm_select).apply {
-                isVisible = !preview
+                isVisible = bulkMode && !preview
                 text = "Seleccionar ${p.name}"
                 isChecked = p.id in selected
                 setOnCheckedChangeListener { _, value ->
@@ -164,7 +220,6 @@ class ProductManagerActivity : OwnerActivity() {
                             render()
                             val msg = "Quedan $nextQty unidades de ${p.name}."
                             status(if (result.offline) "$msg Guardado sin conexión." else msg)
-                            speakFeedback(msg)
                         }
                     }
                     row.findViewById<Button>(R.id.pm_stock_minus)?.setOnClickListener { changeStock(-1) }
@@ -241,6 +296,14 @@ class ProductManagerActivity : OwnerActivity() {
     // BLOQUE FELIPE GALLARDO (A14): Cambio masivo por selección, categoría o catálogo
     // -------------------------------------------------------------------------
     private fun bulk() {
+        if (products.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("Catálogo vacío")
+                .setMessage("Aún no tienes productos en tu tienda para cambiar su disponibilidad.")
+                .setPositiveButton("Entendido", null)
+                .show()
+            return
+        }
         val scopes = arrayOf("Seleccionados (${selected.size})", "Una categoría", "Todo mi catálogo")
         AlertDialog.Builder(this)
             .setTitle("¿A qué productos aplicar?")
@@ -299,11 +362,19 @@ class ProductManagerActivity : OwnerActivity() {
                         .show()
                 }
                 if (scope == 1) {
-                    val cats = products.map { it.base.category }.distinct().sorted()
-                    AlertDialog.Builder(this)
-                        .setTitle("Elegir categoría")
-                        .setItems(cats.toTypedArray()) { _, i -> choose(cats[i]) }
-                        .show()
+                    val cats = products.map { it.base.category }.filter { it.isNotBlank() }.distinct().sorted()
+                    if (cats.isEmpty()) {
+                        AlertDialog.Builder(this)
+                            .setTitle("Sin categorías")
+                            .setMessage("Ninguno de tus productos tiene una categoría asignada todavía.")
+                            .setPositiveButton("Entendido", null)
+                            .show()
+                    } else {
+                        AlertDialog.Builder(this)
+                            .setTitle("Elegir categoría")
+                            .setItems(cats.toTypedArray()) { _, i -> choose(cats[i]) }
+                            .show()
+                    }
                 } else {
                     choose(null)
                 }
