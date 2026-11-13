@@ -1,191 +1,169 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/page_scroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    tools:theme="@style/Theme.ConectaSur">
+    android:background="?attr/appBackground"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="24dp">
+        android:paddingHorizontal="@dimen/space_lg"
+        android:paddingTop="@dimen/space_md"
+        android:paddingBottom="@dimen/space_xl">
 
-        <!-- Cabecera compacta de marca y estado de exploración -->
+        <!-- Compact Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:orientation="horizontal">
 
-            <cl.surcode.conectasur.ConectaSurLogoView
+            <ImageView
                 android:id="@+id/catalog_brand_logo"
-                android:layout_width="136dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="12dp"
-                android:contentDescription="@string/brand_description" />
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/photo_frame_bg"
+                android:contentDescription="Logo ConectaSur"
+                android:padding="4dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/conectasur_logo" />
 
-            <TextView
-                android:id="@+id/catalog_mode"
-                style="@style/ConectaSur.Label"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_sm"
                 android:layout_weight="1"
-                android:accessibilityLiveRegion="polite"
-                android:background="@drawable/badge_pill_forest"
-                android:gravity="center"
-                android:layout_marginBottom="0dp"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:text="@string/buyer_public_mode"
-                android:textColor="@color/conectasur_ink"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/page_title"
+                    style="@style/ConectaSur.Title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/catalog_title" />
+
+                <TextView
+                    android:id="@+id/catalog_mode"
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Catálogo público" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- AVISO / ACCESO DIRECTO PARA EMPRENDEDORA (ISSUE 2) -->
+        <TextView
+            android:id="@+id/catalog_intro"
+            style="@style/ConectaSur.Body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xs"
+            android:text="@string/catalog_intro" />
+
+        <!-- Owner Preview Banner (when previewing as owner) -->
         <LinearLayout
             android:id="@+id/catalog_owner_banner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:background="@drawable/card_surface_owner_primary"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/status_banner_bg"
             android:orientation="vertical"
-            android:padding="14dp"
+            android:padding="@dimen/space_md"
             android:visibility="gone">
 
             <TextView
-                style="@style/ConectaSur.Label"
+                style="@style/ConectaSur.Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="6dp"
-                android:text="Estás viendo la vitrina pública de clientes. Para crear o editar tus productos, ve a Mis productos:"
-                android:textColor="@color/conectasur_ink"
-                android:textSize="14sp"
+                android:text="Estás viendo tu tienda como la ve el público."
                 android:textStyle="bold" />
 
             <Button
                 android:id="@+id/catalog_go_to_manager"
-                style="@style/ConectaSur.Button.Primary"
+                style="@style/ConectaSur.Button.Tonal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_products"
-                android:minHeight="48dp"
-                android:text="Mis productos (editar y crear)" />
+                android:layout_marginTop="@dimen/space_sm"
+                android:text="Volver a mis productos" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/page_title"
-            style="@style/ConectaSur.Title"
+        <!-- Mercado Libre-style Search Pill Bar -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:text="@string/catalog_title"
-            android:textSize="24sp" />
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp">
 
-        <TextView
-            android:id="@+id/catalog_intro"
-            style="@style/ConectaSur.Label"
-            android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/search_label"
+                style="@style/ConectaSur.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:labelFor="@id/search_input"
+                android:text="@string/search_label"
+                android:visibility="gone" />
+
+            <EditText
+                android:id="@+id/search_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:autofillHints=""
+                android:background="@android:color/transparent"
+                android:drawableStart="@drawable/ic_search"
+                android:drawablePadding="8dp"
+                android:hint="Buscar en ConectaSur..."
+                android:imeOptions="actionSearch"
+                android:inputType="textCapSentences"
+                android:minHeight="48dp"
+                android:paddingHorizontal="6dp"
+                android:singleLine="true"
+                android:textColor="?attr/appInk"
+                android:textColorHint="?attr/appMuted"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/voice_search"
+                style="@style/ConectaSur.Button.Compact"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:contentDescription="Buscar productos con la voz"
+                android:paddingHorizontal="12dp"
+                android:text="Voz" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/clear_search"
+            style="@style/ConectaSur.Button.Compact"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="@string/catalog_intro"
-            android:textSize="16sp" />
+            android:layout_marginTop="@dimen/space_xs"
+            android:text="@string/clear_search"
+            android:visibility="gone" />
 
+        <!-- Status & Count -->
         <TextView
             android:id="@+id/catalog_status"
             style="@style/ConectaSur.Label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:accessibilityLiveRegion="polite"
+            android:layout_marginTop="@dimen/space_sm"
             android:visibility="gone" />
-
-        <!-- Barra de búsqueda integrada estilo marketplace -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="14dp"
-            android:background="@drawable/card_surface"
-            android:orientation="vertical"
-            android:padding="14dp">
-
-            <TextView
-                android:id="@+id/search_label"
-                style="@style/ConectaSur.Body"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:labelFor="@id/search_input"
-                android:text="@string/search_label"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <EditText
-                    android:id="@+id/search_input"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    android:autofillHints=""
-                    android:background="@drawable/input_field"
-                    android:hint="@string/search_hint"
-                    android:imeOptions="actionSearch"
-                    android:inputType="textCapSentences"
-                    android:minHeight="56dp"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="12dp"
-                    android:singleLine="true"
-                    android:textColor="@color/conectasur_ink"
-                    android:textColorHint="#4D655F"
-                    android:textSize="17sp" />
-
-                <Button
-                    android:id="@+id/voice_search"
-                    style="@style/ConectaSur.Button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="0dp"
-                    android:minHeight="56dp"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:text="Por voz"
-                    android:contentDescription="Buscar productos con la voz" />
-            </LinearLayout>
-
-            <Button
-                android:id="@+id/clear_search"
-                style="@style/ConectaSur.Button"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:layout_marginBottom="0dp"
-                android:text="@string/clear_search"
-                android:visibility="gone" />
-        </LinearLayout>
 
         <TextView
             android:id="@+id/results_count"
             style="@style/ConectaSur.Label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
+            android:layout_marginTop="@dimen/space_md"
+            android:layout_marginBottom="@dimen/space_sm"
             android:text="@string/empty_catalog"
             android:textStyle="bold" />
 
@@ -201,7 +179,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/card_surface"
-            android:padding="20dp"
+            android:padding="@dimen/space_lg"
             android:text="@string/empty_search"
             android:visibility="gone" />
     </LinearLayout>

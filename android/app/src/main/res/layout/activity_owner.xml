@@ -1,1 +1,150 @@
-<?xml version="1.0" encoding="utf-8"?><LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/owner_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp"><Button android:id="@+id/owner_back" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_activity_owner_1" /><TextView android:id="@+id/owner_title" style="@style/ConectaSur.Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_activity_owner_2" /><TextView android:id="@+id/owner_status" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_activity_owner_3" /><ProgressBar android:id="@+id/owner_progress" android:layout_width="48dp" android:layout_height="48dp" android:visibility="gone"/><Button android:id="@+id/owner_read" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_activity_owner_4" /><Button android:id="@+id/owner_unlock" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/e5_activity_owner_5" /><FrameLayout android:id="@+id/owner_container" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" /></LinearLayout>
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/owner_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBackground"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/owner_back"
+                style="@style/ConectaSur.Button.Compact"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableStart="@drawable/ic_back"
+                android:text="@string/e5_activity_owner_1" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/owner_read"
+                style="@style/ConectaSur.Button.Compact"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableStart="@drawable/ic_speaker"
+                android:text="@string/e5_activity_owner_4" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/owner_title"
+            style="@style/ConectaSur.Title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/e5_activity_owner_2"
+            android:textSize="22sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/status_banner_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
+
+        <ProgressBar
+            android:id="@+id/owner_progress"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="10dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/owner_status"
+            style="@style/ConectaSur.Label"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="0dp"
+            android:layout_weight="1"
+            android:text="@string/e5_activity_owner_3"
+            android:textColor="?attr/appInk"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/owner_unlock"
+        style="@style/ConectaSur.Button.Primary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="10dp"
+        android:text="@string/e5_activity_owner_5"
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:id="@+id/owner_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="12dp" />
+
+    <LinearLayout
+        android:id="@+id/owner_bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/appSurface"
+        android:elevation="8dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="6dp">
+
+        <Button
+            android:id="@+id/owner_nav_home"
+            style="@style/ConectaSur.NavButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_home"
+            android:text="@string/home" />
+
+        <Button
+            android:id="@+id/owner_nav_products"
+            style="@style/ConectaSur.NavButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_products"
+            android:text="@string/products" />
+
+        <Button
+            android:id="@+id/owner_nav_sales"
+            style="@style/ConectaSur.NavButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_store"
+            android:text="Ventas" />
+
+        <Button
+            android:id="@+id/owner_nav_help"
+            style="@style/ConectaSur.NavButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_help"
+            android:text="@string/help" />
+    </LinearLayout>
+</LinearLayout>

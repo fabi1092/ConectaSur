@@ -7,7 +7,7 @@
         android:id="@+id/cardOwnerProduct"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="14dp"
         android:background="@drawable/card_surface"
         android:orientation="vertical"
         android:padding="16dp"
@@ -18,72 +18,119 @@
             style="@style/ConectaSur.Check"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/e5_item_owner_product_1" />
+            android:layout_marginBottom="6dp"
+            android:minHeight="48dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:text="@string/e5_item_owner_product_1"
+            android:textSize="15sp" />
 
-        <TextView
-            android:id="@+id/pm_name"
-            style="@style/ConectaSur.Section"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/e5_item_owner_product_2" />
+            android:layout_marginBottom="12dp"
+            android:gravity="top"
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/pm_details"
-            style="@style/ConectaSur.Body"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/e5_item_owner_product_3" />
+            <ImageView
+                android:id="@+id/pm_photo"
+                android:layout_width="92dp"
+                android:layout_height="92dp"
+                android:layout_marginEnd="14dp"
+                android:background="@drawable/photo_frame_bg"
+                android:clipToOutline="true"
+                android:contentDescription="@string/e5_item_owner_product_4"
+                android:scaleType="centerCrop" />
 
-        <ImageView
-            android:id="@+id/pm_photo"
-            android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:contentDescription="@string/e5_item_owner_product_4"
-            android:scaleType="centerCrop" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/pm_name"
+                    style="@style/ConectaSur.Section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="0dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="@string/e5_item_owner_product_2"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:id="@+id/pm_details"
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="0dp"
+                    android:text="@string/e5_item_owner_product_3"
+                    android:textColor="?attr/appMuted"
+                    android:textSize="15sp" />
+            </LinearLayout>
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/pm_quick_stock_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
             android:orientation="horizontal"
-            android:paddingTop="8dp"
-            android:paddingBottom="4dp"
             android:visibility="gone">
 
             <Button
                 android:id="@+id/pm_stock_minus"
-                style="@style/ConectaSur.Button"
+                style="@style/ConectaSur.Button.Tonal"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="0dp"
                 android:layout_weight="1"
-                android:minHeight="60dp"
-                android:text="- 1 unidad" />
+                android:minHeight="48dp"
+                android:text="- 1 unidad"
+                android:textSize="15sp" />
 
             <Button
                 android:id="@+id/pm_stock_plus"
-                style="@style/ConectaSur.Button"
+                style="@style/ConectaSur.Button.Tonal"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_marginBottom="0dp"
                 android:layout_weight="1"
-                android:minHeight="60dp"
-                android:text="+ 1 unidad" />
+                android:minHeight="48dp"
+                android:text="+ 1 unidad"
+                android:textSize="15sp" />
         </LinearLayout>
 
-        <Button
-            android:id="@+id/pm_edit"
-            style="@style/ConectaSur.Button"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="@string/e5_item_owner_product_5" />
+            android:orientation="horizontal">
 
-        <Button
-            android:id="@+id/pm_delete"
-            style="@style/ConectaSur.Button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="@string/e5_item_owner_product_6" />
+            <Button
+                android:id="@+id/pm_edit"
+                style="@style/ConectaSur.Button.Tonal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="0dp"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/e5_item_owner_product_5"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/pm_delete"
+                style="@style/ConectaSur.Button.Danger"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_marginBottom="0dp"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/e5_item_owner_product_6"
+                android:textSize="15sp" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

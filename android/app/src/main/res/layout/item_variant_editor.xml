@@ -6,7 +6,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="14dp"
         android:background="@drawable/card_surface"
         android:orientation="vertical"
         android:padding="16dp">
@@ -20,77 +20,96 @@
 
         <EditText
             android:id="@+id/pv_label"
+            style="@style/ConectaSur.Input"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Ej. Talla M, Color Azul, 500 gramos"
             android:importantForAutofill="no"
             android:inputType="textCapSentences"
             android:maxLength="1000"
-            android:minHeight="56dp"
-            android:saveEnabled="false"
-            android:textSize="18sp" />
+            android:saveEnabled="false" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@id/pv_price"
+                    android:text="@string/e5_item_variant_editor_2" />
+
+                <EditText
+                    android:id="@+id/pv_price"
+                    style="@style/ConectaSur.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Opcional"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:maxLength="1000"
+                    android:saveEnabled="false" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/pv_quantity_label"
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@id/pv_quantity"
+                    android:text="@string/e5_item_variant_editor_3" />
+
+                <EditText
+                    android:id="@+id/pv_quantity"
+                    style="@style/ConectaSur.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="1"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:maxLength="1000"
+                    android:saveEnabled="false" />
+            </LinearLayout>
+        </LinearLayout>
 
         <TextView
             style="@style/ConectaSur.Label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:labelFor="@id/pv_price"
-            android:text="@string/e5_item_variant_editor_2" />
-
-        <EditText
-            android:id="@+id/pv_price"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Opcional: si tiene un precio distinto"
-            android:importantForAutofill="no"
-            android:inputType="number"
-            android:maxLength="1000"
-            android:minHeight="56dp"
-            android:saveEnabled="false"
-            android:textSize="18sp" />
-
-        <TextView
-            android:id="@+id/pv_quantity_label"
-            style="@style/ConectaSur.Label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:labelFor="@id/pv_quantity"
-            android:text="@string/e5_item_variant_editor_3" />
-
-        <EditText
-            android:id="@+id/pv_quantity"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="1"
-            android:importantForAutofill="no"
-            android:inputType="number"
-            android:maxLength="1000"
-            android:minHeight="56dp"
-            android:saveEnabled="false"
-            android:textSize="18sp" />
-
-        <!-- FOTO DE LA VARIANTE: MINIATURA VISIBLE + BOTONES DE CAMARA Y GALERIA (A06) -->
-        <TextView
-            style="@style/ConectaSur.Label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="4dp"
             android:text="Foto de esta opción (opcional):" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="10dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <ImageView
                 android:id="@+id/pv_photo_preview"
-                android:layout_width="84dp"
-                android:layout_height="84dp"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
                 android:layout_marginEnd="12dp"
-                android:background="@drawable/card_surface"
+                android:background="@drawable/photo_frame_bg"
+                android:clipToOutline="true"
                 android:contentDescription="Foto miniatura de la opción"
                 android:scaleType="centerCrop"
                 android:src="@drawable/ic_products" />
@@ -103,11 +122,12 @@
 
                 <TextView
                     android:id="@+id/pv_photo_status"
-                    style="@style/ConectaSur.Body"
+                    style="@style/ConectaSur.Label"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="6dp"
                     android:text="@string/e5_item_variant_editor_4"
+                    android:textColor="?attr/appInk"
                     android:textSize="14sp" />
 
                 <LinearLayout
@@ -117,10 +137,11 @@
 
                     <Button
                         android:id="@+id/pv_photo_camera"
-                        style="@style/ConectaSur.Button"
+                        style="@style/ConectaSur.Button.Tonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
+                        android:layout_marginBottom="0dp"
                         android:layout_weight="1"
                         android:minHeight="48dp"
                         android:paddingTop="6dp"
@@ -130,10 +151,11 @@
 
                     <Button
                         android:id="@+id/pv_photo_gallery"
-                        style="@style/ConectaSur.Button"
+                        style="@style/ConectaSur.Button.Tonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
+                        android:layout_marginBottom="0dp"
                         android:layout_weight="1"
                         android:minHeight="48dp"
                         android:paddingTop="6dp"
@@ -146,11 +168,12 @@
 
         <Button
             android:id="@+id/pv_remove"
-            style="@style/ConectaSur.Button"
+            style="@style/ConectaSur.Button.Danger"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:minHeight="52dp"
-            android:text="@string/e5_item_variant_editor_6" />
+            android:layout_marginBottom="0dp"
+            android:minHeight="48dp"
+            android:text="@string/e5_item_variant_editor_6"
+            android:textSize="15sp" />
     </LinearLayout>
 </FrameLayout>

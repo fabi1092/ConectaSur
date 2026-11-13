@@ -1,5 +1,15 @@
 <resources>
     <color name="conectasur_forest">#1A7B6E</color>
+    <color name="conectasur_forest_dark">#125950</color>
+    <color name="conectasur_forest_soft">#E6F1EE</color>
+    <color name="conectasur_forest_border">#C8DBD5</color>
     <color name="conectasur_cream">#FAF7F2</color>
+    <color name="conectasur_surface">#FFFFFF</color>
     <color name="conectasur_ink">#183A34</color>
+    <color name="conectasur_muted">#4D655F</color>
+    <color name="conectasur_danger">#B3261E</color>
+    <color name="conectasur_danger_soft">#FCEEEE</color>
+    <color name="conectasur_danger_border">#EBC4C2</color>
+    <color name="conectasur_amber">#9A5B00</color>
+    <color name="conectasur_amber_soft">#FFF4E0</color>
 </resources>

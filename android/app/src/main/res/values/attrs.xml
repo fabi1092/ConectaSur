@@ -5,4 +5,5 @@
     <attr name="appSurface" format="color" />
     <attr name="appPrimary" format="color" />
     <attr name="appBorder" format="color" />
+    <attr name="appBackground" format="color" />
 </resources>

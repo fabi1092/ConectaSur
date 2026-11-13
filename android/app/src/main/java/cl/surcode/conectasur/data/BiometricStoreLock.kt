@@ -15,6 +15,15 @@ import javax.crypto.spec.GCMParameterSpec
 
 /** Desbloqueo local opcional. La sesión sigue cifrada por SecureBackendStore y validada por Supabase. */
 class BiometricStoreLock(private val context: Context) {
+    companion object {
+        @Volatile
+        private var sessionUnlocked: Boolean = false
+
+        fun isSessionUnlocked(): Boolean = sessionUnlocked
+        fun markSessionUnlocked() { sessionUnlocked = true }
+        fun lockSession() { sessionUnlocked = false }
+    }
+
     private val prefs = context.getSharedPreferences("store_biometric", Context.MODE_PRIVATE)
     private val alias = "cl.surcode.conectasur.store.biometric"
     val enabled get() = prefs.contains("proof")
@@ -38,6 +47,7 @@ class BiometricStoreLock(private val context: Context) {
     fun finishEnrollment(cipher: Cipher, uid: String) {
         val proof = cipher.doFinal(uid.toByteArray(Charsets.UTF_8))
         check(prefs.edit().putString("proof", encode(proof)).putString("iv", encode(cipher.iv)).putString("uid", uid).commit())
+        markSessionUnlocked()
     }
     fun unlockCipher(): Cipher {
         val key = keyStore().getKey(alias, null) as SecretKey
@@ -48,9 +58,12 @@ class BiometricStoreLock(private val context: Context) {
     fun finishUnlock(cipher: Cipher): Boolean {
         val proof = cipher.doFinal(decode(requireNotNull(prefs.getString("proof", null))))
         val owner = SecureBackendStore(context).read("auth")?.let { org.json.JSONObject(it).optJSONObject("user")?.optString("id") }
-        return String(proof, Charsets.UTF_8) == owner && owner == prefs.getString("uid", null)
+        val ok = String(proof, Charsets.UTF_8) == owner && owner == prefs.getString("uid", null)
+        if (ok) markSessionUnlocked()
+        return ok
     }
     fun clear() {
+        lockSession()
         check(prefs.edit().clear().commit())
         keyStore().let { if (it.containsAlias(alias)) it.deleteEntry(alias) }
     }

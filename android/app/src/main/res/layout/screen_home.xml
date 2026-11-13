@@ -1,349 +1,340 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/page_scroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    tools:theme="@style/Theme.ConectaSur">
+    android:background="?attr/appBackground"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingHorizontal="@dimen/space_lg"
+        android:paddingTop="@dimen/space_md"
+        android:paddingBottom="@dimen/space_xl">
 
-        <!-- CABECERA DE IDENTIDAD COMUNITARIA -->
+        <!-- Top Brand + Mode Pill (Figma Screen 01) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/card_surface_owner_header"
-            android:orientation="vertical"
-            android:padding="20dp">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <cl.surcode.conectasur.ConectaSurLogoView
+            <ImageView
                 android:id="@+id/brand_logo"
-                android:layout_width="match_parent"
-                android:layout_height="76dp"
-                android:layout_marginBottom="14dp"
-                android:contentDescription="@string/brand_description" />
-
-            <TextView
-                android:id="@+id/community_name"
-                style="@style/ConectaSur.Label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:background="@drawable/badge_pill_forest"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"
-                android:text="@string/community_name"
-                android:textColor="@color/conectasur_ink"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/photo_frame_bg"
+                android:contentDescription="Logo ConectaSur"
+                android:padding="4dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/conectasur_logo" />
 
             <TextView
                 android:id="@+id/welcome_title"
-                style="@style/ConectaSur.Title"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="@string/welcome_title" />
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:text="ConectaSur"
+                android:textColor="?attr/appInk"
+                android:textSize="21sp"
+                android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/welcome_description"
-                style="@style/ConectaSur.Body"
-                android:layout_width="match_parent"
+                android:id="@+id/home_mode_badge"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="@string/welcome_description" />
-
-            <TextView
-                android:id="@+id/demo_note"
-                style="@style/ConectaSur.Label"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="0dp"
-                android:text="@string/demo" />
+                android:background="@drawable/badge_pill_forest"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="5dp"
+                android:text="Modo Comprador"
+                android:textColor="@color/conectasur_forest_dark"
+                android:textSize="12sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- BLOQUE 1: MODO COMPRADOR Y VITRINA LOCAL (RF-ACC-05) -->
+        <!-- Search Pill + Voice Button -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/card_surface"
-            android:orientation="vertical"
-            android:padding="20dp">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp">
 
-            <TextView
-                style="@style/ConectaSur.Label"
+            <EditText
+                android:id="@+id/home_search_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:autofillHints=""
+                android:background="@android:color/transparent"
+                android:drawableStart="@drawable/ic_search"
+                android:drawablePadding="8dp"
+                android:hint="Buscar en ConectaSur..."
+                android:imeOptions="actionSearch"
+                android:inputType="textCapSentences"
+                android:minHeight="48dp"
+                android:paddingHorizontal="6dp"
+                android:singleLine="true"
+                android:textColor="?attr/appInk"
+                android:textColorHint="?attr/appMuted"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/home_voice_search"
+                style="@style/ConectaSur.Button.Compact"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:background="@drawable/badge_pill_forest"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"
-                android:text="Modo comprador · Vitrina local"
-                android:textColor="@color/conectasur_ink"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:layout_marginStart="6dp"
+                android:contentDescription="Buscar productos con la voz"
+                android:paddingHorizontal="12dp"
+                android:text="Voz" />
+        </LinearLayout>
+
+        <!-- Horizontal Category Filter Chips -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/home_cat_all"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Todas" />
+
+                <Button
+                    android:id="@+id/home_cat_tejidos"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Tejidos" />
+
+                <Button
+                    android:id="@+id/home_cat_madera"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Madera" />
+
+                <Button
+                    android:id="@+id/home_cat_reposteria"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Repostería" />
+
+                <Button
+                    android:id="@+id/home_cat_conservas"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Conservas" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <!-- Section Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/home_question"
                 style="@style/ConectaSur.Section"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="0dp"
-                android:layout_marginBottom="6dp"
-                android:text="@string/home_question" />
+                android:layout_weight="1"
+                android:text="Productos locales" />
 
             <TextView
+                android:id="@+id/home_products_count"
                 style="@style/ConectaSur.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 disponibles" />
+        </LinearLayout>
+
+        <!-- 2-Column Product Grid right on Inicio -->
+        <LinearLayout
+            android:id="@+id/home_product_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <Button
+            android:id="@+id/open_catalog"
+            style="@style/ConectaSur.Button.Tonal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Ver todo el catálogo" />
+
+        <!-- Hidden legacy text views for accessibility/test compatibility -->
+        <TextView
+            android:id="@+id/community_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Feria y Emprendedoras del Sur"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/welcome_description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Explora productos hechos a mano, revisa disponibilidad real y organiza tu tienda de forma simple."
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/demo_note"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <!-- Entrepreneur / Owner Actions (shown when logged in as owner) -->
+        <LinearLayout
+            android:id="@+id/home_owner_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface_owner_header"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/ConectaSur.Section"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:text="Explora el catálogo de emprendedoras de Alerce y Puerto Montt o busca directamente por rubro:" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp">
-
-                <Button
-                    android:id="@+id/home_cat_tejidos"
-                    style="@style/ConectaSur.Button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:layout_marginBottom="0dp"
-                    android:minHeight="48dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="Tejidos"
-                    android:textSize="16sp" />
-
-                <Button
-                    android:id="@+id/home_cat_madera"
-                    style="@style/ConectaSur.Button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:layout_marginBottom="0dp"
-                    android:minHeight="48dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="Madera"
-                    android:textSize="16sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="14dp">
-
-                <Button
-                    android:id="@+id/home_cat_reposteria"
-                    style="@style/ConectaSur.Button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:layout_marginBottom="0dp"
-                    android:minHeight="48dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="Repostería"
-                    android:textSize="16sp" />
-
-                <Button
-                    android:id="@+id/home_cat_conservas"
-                    style="@style/ConectaSur.Button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:layout_marginBottom="0dp"
-                    android:minHeight="48dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="Conservas"
-                    android:textSize="16sp" />
-            </LinearLayout>
+                android:text="Panel de emprendedora" />
 
             <Button
-                android:id="@+id/open_catalog"
+                android:id="@+id/home_owner_manage_products"
                 style="@style/ConectaSur.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="@string/see_products" />
+                android:layout_marginTop="@dimen/space_sm"
+                android:text="Administrar productos" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/home_owner_sales"
+                    style="@style/ConectaSur.Button.Tonal"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/space_xs"
+                    android:layout_weight="1"
+                    android:text="Registrar venta" />
+
+                <Button
+                    android:id="@+id/home_owner_history"
+                    style="@style/ConectaSur.Button.Tonal"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_xs"
+                    android:layout_weight="1"
+                    android:text="Historial" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Buyer Session Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md">
+
+            <TextView
+                style="@style/ConectaSur.Section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tu cuenta" />
 
             <TextView
                 android:id="@+id/buyer_session_status"
-                style="@style/ConectaSur.Label"
+                style="@style/ConectaSur.Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
-                android:accessibilityLiveRegion="polite"
-                android:visibility="gone" />
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="Sin sesión iniciada" />
 
             <Button
                 android:id="@+id/buyer_demo_login"
-                style="@style/ConectaSur.Button"
+                style="@style/ConectaSur.Button.Tonal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="0dp"
-                android:text="@string/buyer_demo_login"
-                android:visibility="gone" />
+                android:layout_marginTop="@dimen/space_sm"
+                android:text="Ingresar como comprador" />
 
             <Button
                 android:id="@+id/buyer_cancel_login"
                 style="@style/ConectaSur.Button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="0dp"
-                android:text="@string/buyer_cancel_login"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="Cancelar ingreso"
                 android:visibility="gone" />
 
             <Button
                 android:id="@+id/buyer_logout"
-                style="@style/ConectaSur.Button"
+                style="@style/ConectaSur.Button.Danger"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="0dp"
-                android:text="@string/buyer_logout"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="Cerrar sesión"
                 android:visibility="gone" />
         </LinearLayout>
 
-        <!-- BLOQUE 2: MODO EMPRENDEDORA Y ACCESO A CUENTA (RF-ACC-05) -->
+        <!-- Store Access & Settings Footer -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/card_surface_owner_primary"
-            android:orientation="vertical"
-            android:padding="20dp">
-
-            <TextView
-                style="@style/ConectaSur.Label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:background="@drawable/badge_pill_forest"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"
-                android:text="Modo emprendedora · Cuenta y tienda"
-                android:textColor="@color/conectasur_ink"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                style="@style/ConectaSur.Section"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="0dp"
-                android:layout_marginBottom="6dp"
-                android:text="Tu tienda o cuenta personal" />
-
-            <TextView
-                style="@style/ConectaSur.Label"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:text="Si eres emprendedora, administra tus productos y ventas. Si eres comprador, conéctate con Google para guardar tu perfil." />
+            android:layout_marginTop="@dimen/space_md"
+            android:orientation="horizontal">
 
             <Button
                 android:id="@+id/open_store"
                 style="@style/ConectaSur.Button"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:drawableStart="@drawable/ic_store"
-                android:text="@string/account_entry" />
-
-            <LinearLayout
-                android:id="@+id/home_owner_actions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <Button
-                    android:id="@+id/home_owner_manage_products"
-                    style="@style/ConectaSur.Button.Primary"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:drawableStart="@drawable/ic_products"
-                    android:minHeight="52dp"
-                    android:text="Mis productos (editar y crear)" />
-
-                <Button
-                    android:id="@+id/home_owner_sales"
-                    style="@style/ConectaSur.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:minHeight="48dp"
-                    android:text="Anotar una venta" />
-
-                <Button
-                    android:id="@+id/home_owner_history"
-                    style="@style/ConectaSur.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="0dp"
-                    android:minHeight="48dp"
-                    android:text="Historial de ventas" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- BLOQUE 3: ACCESIBILIDAD Y LECTURA FÁCIL (RNF-USA-01 a 03) -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/card_surface"
-            android:orientation="vertical"
-            android:padding="20dp">
-
-            <TextView
-                style="@style/ConectaSur.Section"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="0dp"
-                android:layout_marginBottom="6dp"
-                android:text="Comodidad visual y voz" />
-
-            <TextView
-                style="@style/ConectaSur.Label"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:text="Ajusta el tamaño de las letras, activa botones grandes o alto contraste según tu preferencia." />
+                android:layout_marginEnd="@dimen/space_xs"
+                android:layout_weight="1"
+                android:text="Acceso tienda" />
 
             <Button
                 android:id="@+id/open_settings"
                 style="@style/ConectaSur.Button"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="0dp"
-                android:drawableStart="@drawable/ic_text"
-                android:text="@string/accessibility" />
+                android:layout_marginStart="@dimen/space_xs"
+                android:layout_weight="1"
+                android:text="Ajustes" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

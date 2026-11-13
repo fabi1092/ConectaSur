@@ -12,7 +12,20 @@ data class Session(val uid: String, val email: String?, val role: Role, val shop
 data class Shop(
     val id: String, val name: String, val description: String, val logoUrl: String?,
     val entrepreneurType: String, val sector: String, val contact: String, val showPrices: Boolean,
-    val contactMode: ContactMode = ContactMode.FORM, val whatsappNumber: String = ""
+    val contactMode: ContactMode = ContactMode.FORM, val whatsappNumber: String = "",
+    val pickupLabel: String = "", val pickupLat: Double? = null, val pickupLng: Double? = null
+)
+
+data class PublicAssociation(
+    val id: String, val name: String, val description: String, val logoUrl: String?,
+    val sector: String, val contact: String, val shopIds: List<String> = emptyList()
+)
+
+data class PublicFair(
+    val id: String, val name: String, val description: String, val imageUrl: String?,
+    val placeName: String, val latitude: Double, val longitude: Double,
+    val startsAt: String, val endsAt: String, val organizer: String,
+    val status: String = "published", val distanceKm: Double? = null
 )
 
 /** Una opcion de un producto (talla, color...), con su propio stock. */
@@ -50,6 +63,10 @@ interface ShopRepository {
     suspend fun getShop(shopId: String): Shop?
     suspend fun getShopChoices(): ShopChoices
     suspend fun listShopAssociations(shopId: String): List<String> = emptyList()
+    suspend fun listPublicShops(): List<Shop> = emptyList()
+    suspend fun listPublicAssociations(): List<PublicAssociation> = emptyList()
+    suspend fun listPublicFairs(lat: Double? = null, lng: Double? = null): List<PublicFair> = emptyList()
+    suspend fun getAnonymousNavigation(): String = "allow"
     suspend fun updateShop(shop: Shop)
     /** Sube el logo (JPEG ya comprimido), guarda su URL en la tienda y la devuelve. */
     suspend fun uploadLogo(shopId: String, jpegBytes: ByteArray): String

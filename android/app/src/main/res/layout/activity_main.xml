@@ -1,17 +1,151 @@
-<?xml version='1.0' encoding='utf-8'?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:id="@+id/main_scroll" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" tools:context=".MainActivity">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingStart="16dp" android:paddingEnd="16dp" android:paddingTop="8dp">
-        <Button android:id="@+id/back_button" style="@style/ConectaSur.Button" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/back" android:drawableStart="@drawable/ic_back" android:layout_marginEnd="8dp" android:visibility="gone" />
-        <Button android:id="@+id/read_button" style="@style/ConectaSur.Button" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/listen" android:drawableStart="@drawable/ic_speaker" />
-        <Button android:id="@+id/main_account" style="@style/ConectaSur.Button" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/account_entry" />
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_scroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/appSurface"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
+
+        <Button
+            android:id="@+id/back_button"
+            style="@style/ConectaSur.Button.Compact"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/ic_back"
+            android:text="@string/back"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/read_button"
+            style="@style/ConectaSur.Button.Compact"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableStart="@drawable/ic_speaker"
+            android:text="@string/listen" />
+
+        <Button
+            android:id="@+id/main_account"
+            style="@style/ConectaSur.Button.Primary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_marginBottom="0dp"
+            android:layout_weight="1"
+            android:minHeight="48dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:text="@string/account_entry"
+            android:textSize="15sp" />
     </LinearLayout>
-    <FrameLayout android:id="@+id/screen_content" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/appBorder" />
+
+    <FrameLayout
+        android:id="@+id/screen_content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
         <include layout="@layout/screen_home" />
     </FrameLayout>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingTop="8dp" android:background="?attr/appSurface" android:id="@+id/normal_navigation">
-        <Button android:id="@+id/nav_home" style="@style/ConectaSur.Button" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:paddingStart="4dp" android:paddingEnd="4dp" android:textSize="16sp" android:text="@string/home" android:drawableTop="@drawable/ic_home" android:layout_marginEnd="8dp" />
-        <Button android:id="@+id/nav_catalog" style="@style/ConectaSur.Button" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:paddingStart="4dp" android:paddingEnd="4dp" android:textSize="16sp" android:text="@string/products" android:drawableTop="@drawable/ic_products" android:layout_marginEnd="8dp" />
-        <Button android:id="@+id/nav_help" style="@style/ConectaSur.Button" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:paddingStart="4dp" android:paddingEnd="4dp" android:textSize="16sp" android:text="@string/help" android:drawableTop="@drawable/ic_help" />
+
+    <LinearLayout
+        android:id="@+id/normal_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/nav_bar_surface"
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
+
+        <Button
+            android:id="@+id/nav_home"
+            style="@style/ConectaSur.NavButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="2dp"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_home"
+            android:paddingHorizontal="2dp"
+            android:text="@string/home"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/nav_catalog"
+            style="@style/ConectaSur.NavButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="2dp"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_products"
+            android:paddingHorizontal="2dp"
+            android:text="@string/products"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/nav_stores"
+            style="@style/ConectaSur.NavButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="2dp"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_store"
+            android:paddingHorizontal="2dp"
+            android:text="Tiendas"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/nav_fairs"
+            style="@style/ConectaSur.NavButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="2dp"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_location"
+            android:paddingHorizontal="2dp"
+            android:text="Ferias"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/nav_help"
+            style="@style/ConectaSur.NavButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_help"
+            android:paddingHorizontal="2dp"
+            android:text="@string/help"
+            android:textSize="12sp" />
     </LinearLayout>
-    <Button android:id="@+id/large_menu" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_marginEnd="12dp" android:text="@string/menu" android:visibility="gone" />
+
+    <Button
+        android:id="@+id/large_menu"
+        style="@style/ConectaSur.Button.Primary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        android:text="@string/menu"
+        android:visibility="gone" />
 </LinearLayout>

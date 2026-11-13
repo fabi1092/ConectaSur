@@ -9,9 +9,9 @@
     </item>
     <item>
         <shape>
-            <solid android:color="#FAF7F2" />
+            <solid android:color="#FFFFFF" />
             <corners android:radius="14dp" />
-            <stroke android:width="1.5dp" android:color="#728880" />
+            <stroke android:width="1.5dp" android:color="#BDD1CA" />
         </shape>
     </item>
 </selector>

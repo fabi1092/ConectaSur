@@ -1,5 +1,6 @@
 package cl.surcode.conectasur
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -36,7 +37,7 @@ abstract class OwnerActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(if(settings.highContrast)R.style.Theme_ConectaSur_HighContrast else R.style.Theme_ConectaSur)
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        if (!BuildConfig.DEBUG) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_owner)
         RepositoryProvider.initialize(applicationContext)
         findViewById<TextView>(R.id.owner_title).text=titleText
@@ -57,10 +58,39 @@ abstract class OwnerActivity : FragmentActivity() {
             }
         }
         val root=findViewById<View>(R.id.owner_root)
-        ViewCompat.setOnApplyWindowInsetsListener(root){v,insets-> val safe=insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime());val p=(16*resources.displayMetrics.density).toInt();v.setPadding(p+safe.left,p+safe.top,p+safe.right,safe.bottom);insets}
+        ViewCompat.setOnApplyWindowInsetsListener(root){v,insets-> val safe=insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime());v.setPadding(safe.left,safe.top,safe.right,safe.bottom);insets}
+        wireBottomNav()
         applyAccessibility(root,settings)
     }
-    override fun onStart() { super.onStart();content.isVisible=false;if(biometric.enabled){status("Tu tienda está protegida. Pulsa Desbloquear con huella.");findViewById<View>(R.id.owner_unlock).isVisible=true}else validate() }
+    private fun wireBottomNav() {
+        val navHome = findViewById<Button>(R.id.owner_nav_home) ?: return
+        val navProducts = findViewById<Button>(R.id.owner_nav_products)
+        val navSales = findViewById<Button>(R.id.owner_nav_sales)
+        val navHelp = findViewById<Button>(R.id.owner_nav_help)
+        navProducts?.isSelected = this is ProductManagerActivity || this is ProductEditorActivity
+        navSales?.isSelected = this is SalesActivity
+        navHome.setOnClickListener {
+            startActivity(Intent(this, MainActivity::class.java).putExtra("screen", "home").addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+            finish()
+        }
+        navProducts?.setOnClickListener {
+            if (this !is ProductManagerActivity) {
+                startActivity(Intent(this, ProductManagerActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                finish()
+            }
+        }
+        navSales?.setOnClickListener {
+            if (this !is SalesActivity) {
+                startActivity(Intent(this, SalesActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                if (this !is ProductManagerActivity) finish()
+            }
+        }
+        navHelp?.setOnClickListener {
+            startActivity(Intent(this, MainActivity::class.java).putExtra("screen", "help").addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+            finish()
+        }
+    }
+    override fun onStart() { super.onStart();content.isVisible=false;if(biometric.enabled && !BiometricStoreLock.isSessionUnlocked()){status("Tu tienda está protegida. Pulsa Desbloquear con huella.");findViewById<View>(R.id.owner_unlock).isVisible=true}else validate() }
     private fun validate() = lifecycleScope.launch {
         try {
             val session=RepositoryProvider.auth().currentSession()

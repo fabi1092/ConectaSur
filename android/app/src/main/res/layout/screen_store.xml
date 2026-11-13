@@ -1,16 +1,186 @@
-<?xml version='1.0' encoding='utf-8'?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:id="@+id/page_scroll" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" tools:theme="@style/Theme.ConectaSur">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
-        <TextView android:id="@+id/page_title" style="@style/ConectaSur.Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/store_title" />
-        <ImageView android:id="@+id/store_logo" android:layout_width="104dp" android:layout_height="104dp" android:layout_gravity="center_horizontal" android:layout_marginBottom="20dp" android:background="@drawable/card_surface" android:padding="12dp" android:scaleType="centerInside" android:src="@drawable/ic_shop_logo" android:contentDescription="@string/store_logo" />
-        <TextView android:id="@+id/store_name" style="@style/ConectaSur.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/store_name" />
-        <TextView android:id="@+id/store_description" style="@style/ConectaSur.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/store_description" />
-        <TextView android:id="@+id/store_demo" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/demo" />
-        <Button android:id="@+id/change_logo" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/change_logo" />
-        <Button android:id="@+id/remove_logo" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/remove_logo" />
-        <TextView android:id="@+id/local_logo_note" style="@style/ConectaSur.Label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/local_logo_note" />
-        <Button android:id="@+id/store_contact" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Contactar a la tienda" android:visibility="gone" />
-        <Button android:id="@+id/store_catalog" style="@style/ConectaSur.Button.Primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/store_catalog" />
-        <Button android:id="@+id/store_sales" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/store_sales" />
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/page_scroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBackground"
+    android:fillViewport="true"
+    tools:theme="@style/Theme.ConectaSur">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/space_lg"
+        android:paddingTop="@dimen/space_md"
+        android:paddingBottom="@dimen/space_xl">
+
+        <TextView
+            android:id="@+id/page_title"
+            style="@style/ConectaSur.Title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/store_title" />
+
+        <!-- Store Identity Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface_owner_header"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="@dimen/space_lg">
+
+            <ImageView
+                android:id="@+id/store_logo"
+                android:layout_width="104dp"
+                android:layout_height="104dp"
+                android:background="@drawable/photo_frame_bg"
+                android:clipToOutline="true"
+                android:contentDescription="@string/store_logo"
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_shop_logo" />
+
+            <TextView
+                android:id="@+id/store_name"
+                style="@style/ConectaSur.Section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:gravity="center"
+                android:text="@string/store_name" />
+
+            <TextView
+                android:id="@+id/store_description"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:gravity="center"
+                android:text="@string/store_description" />
+
+            <TextView
+                android:id="@+id/store_demo"
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:gravity="center"
+                android:text="@string/demo" />
+        </LinearLayout>
+
+        <!-- Logo Management Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/change_logo"
+                    style="@style/ConectaSur.Button.Tonal"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/space_xs"
+                    android:layout_weight="1"
+                    android:text="@string/change_logo" />
+
+                <Button
+                    android:id="@+id/remove_logo"
+                    style="@style/ConectaSur.Button.Danger"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_xs"
+                    android:layout_weight="1"
+                    android:text="@string/remove_logo" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/local_logo_note"
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:text="@string/local_logo_note" />
+        </LinearLayout>
+
+        <!-- Store Actions -->
+        <LinearLayout
+            android:id="@+id/store_pickup_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Punto de retiro o feria" />
+
+            <TextView
+                android:id="@+id/store_pickup_text"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" />
+
+            <Button
+                android:id="@+id/store_pickup_directions"
+                style="@style/ConectaSur.Button.Tonal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:minHeight="48dp"
+                android:text="Cómo llegar en mapa" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/store_contact"
+            style="@style/ConectaSur.Button.Primary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:text="Contactar a la tienda"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/store_share_qr"
+            style="@style/ConectaSur.Button.Tonal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:minHeight="48dp"
+            android:text="Compartir tienda / QR"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/store_catalog"
+            style="@style/ConectaSur.Button.Primary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:text="@string/store_catalog" />
+
+        <Button
+            android:id="@+id/store_sales"
+            style="@style/ConectaSur.Button.Tonal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:text="@string/store_sales" />
     </LinearLayout>
 </ScrollView>
