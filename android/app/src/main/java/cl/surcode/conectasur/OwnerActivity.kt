@@ -31,6 +31,7 @@ abstract class OwnerActivity : FragmentActivity() {
     private lateinit var reader: SpeechReader
     private var authorized=false
     private var prompting=false
+    private var autoPromptedLockEpoch = -1L
     private var busy=false
     protected abstract val titleText: String
     protected abstract fun onOwnerReady()
@@ -40,6 +41,7 @@ abstract class OwnerActivity : FragmentActivity() {
         if (!BuildConfig.DEBUG) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_owner)
         RepositoryProvider.initialize(applicationContext)
+        autoPromptedLockEpoch = savedInstanceState?.getLong("auto_prompted_lock_epoch", -1L) ?: -1L
         findViewById<TextView>(R.id.owner_title).text=titleText
         ViewCompat.setAccessibilityHeading(findViewById(R.id.owner_title),true)
         findViewById<TextView>(R.id.owner_status).accessibilityLiveRegion=View.ACCESSIBILITY_LIVE_REGION_POLITE
@@ -90,7 +92,31 @@ abstract class OwnerActivity : FragmentActivity() {
             finish()
         }
     }
-    override fun onStart() { super.onStart();content.isVisible=false;if(biometric.enabled && !BiometricStoreLock.isSessionUnlocked()){status("Tu tienda está protegida. Pulsa Desbloquear con huella.");findViewById<View>(R.id.owner_unlock).isVisible=true}else validate() }
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putLong("auto_prompted_lock_epoch", autoPromptedLockEpoch)
+        super.onSaveInstanceState(outState)
+    }
+    override fun onResume() {
+        super.onResume()
+        window.decorView.post {
+            if (!isFinishing && !isDestroyed && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                maybeAutoPromptBiometric()
+            }
+        }
+    }
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) maybeAutoPromptBiometric()
+    }
+    private fun maybeAutoPromptBiometric() {
+        if (!hasWindowFocus() || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        if (!biometric.enabled || BiometricStoreLock.isSessionUnlocked() || prompting) return
+        val epoch = BiometricStoreLock.lockEpoch()
+        if (autoPromptedLockEpoch == epoch) return
+        autoPromptedLockEpoch = epoch
+        unlock()
+    }
+    override fun onStart() { super.onStart();content.isVisible=false;if(biometric.enabled && !BiometricStoreLock.isSessionUnlocked()){status("Tu tienda está protegida. Pulsa Desbloquear con huella.");findViewById<View>(R.id.owner_unlock).isVisible=true}else{findViewById<View>(R.id.owner_unlock).isVisible=false;validate()} }
     private fun validate() = lifecycleScope.launch {
         try {
             val session=RepositoryProvider.auth().currentSession()

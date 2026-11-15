@@ -202,6 +202,38 @@ class BuyerViewModelTest {
         override fun active() = value
         override fun setActive(active: Boolean) { value = active }
     }
+    @Test fun signInGoogleSignsInBuyerAndMarksSessionChecked() = runTest(dispatcher) {
+        val vm = model()
+        vm.start()
+        advanceUntilIdle()
+        assertTrue(vm.state.value.sessionChecked)
+        assertNull(vm.state.value.session)
+
+        vm.signInGoogle("google-id-token")
+        advanceUntilIdle()
+
+        assertEquals(listOf("google-id-token"), auth.nativeGoogleTokens)
+        assertEquals(buyer, vm.state.value.session)
+        assertTrue(vm.state.value.sessionChecked)
+        assertFalse(vm.state.value.busy)
+        assertFalse(vm.state.value.demo)
+    }
+
+    @Test fun signInGoogleRejectsOwnerRoleAndLeavesVisitorChecked() = runTest(dispatcher) {
+        auth.nativeGoogleSession = Session("owner-1", "duena@example.cl", Role.EMPRENDEDORA, "shop-1")
+        val vm = model()
+        vm.start()
+        advanceUntilIdle()
+
+        vm.signInGoogle("owner-id-token")
+        advanceUntilIdle()
+
+        assertNull(vm.state.value.session)
+        assertEquals(1, auth.logouts)
+        assertTrue(vm.state.value.sessionChecked)
+        assertFalse(vm.state.value.busy)
+    }
+
     private inner class FakeAuth : AuthRepository {
         var session: Session? = null
         var enabled = true
@@ -211,7 +243,15 @@ class BuyerViewModelTest {
         var failure: Exception? = null
         var sessionFailure: Exception? = null
         var completeGate: CompletableDeferred<Unit>? = null
+        var nativeGoogleSession: Session = buyer
+        var nativeGoogleFailure: Exception? = null
+        var nativeGoogleTokens = mutableListOf<String>()
         override suspend fun signIn(email: String, password: String) = buyer
+        override suspend fun signInWithGoogleIdToken(idToken: String): Session {
+            nativeGoogleTokens.add(idToken)
+            nativeGoogleFailure?.let { throw it }
+            return nativeGoogleSession
+        }
         override suspend fun currentSession(): Session? { sessionFailure?.let { throw it }; return session }
         override fun signOut() { logouts++; session = null }
         override suspend fun isGoogleEnabled(): Boolean { failure?.let { throw it }; return enabled }

@@ -25,6 +25,7 @@ import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
+import cl.surcode.conectasur.data.BiometricStoreLock
 import cl.surcode.conectasur.domain.CatalogProduct
 import cl.surcode.conectasur.domain.OwnerProduct
 import cl.surcode.conectasur.domain.ProductDefaults
@@ -98,15 +99,15 @@ class ProductEditorActivity : OwnerActivity() {
     private val soldOutValues = listOf("SHOW", "HIDE", "ORDER")
 
     private val gallery = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) encodePhoto(uri)
+        BiometricStoreLock.clearBackgroundLockSuppression(); if (uri != null) encodePhoto(uri)
     }
 
     private val camera = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) cameraUri?.let(::encodePhoto)
+        BiometricStoreLock.clearBackgroundLockSuppression(); if (success) cameraUri?.let(::encodePhoto)
     }
 
     private val dictation = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val phrase = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        BiometricStoreLock.clearBackgroundLockSuppression(); val phrase = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
         if (phrase != null && initialized) {
             draft.put(dictationField, phrase)
             val id = if (dictationField == "name") R.id.pe_name else R.id.pe_description
@@ -409,7 +410,7 @@ class ProductEditorActivity : OwnerActivity() {
         }
         click(R.id.pe_gallery) {
             photoTarget = "main"
-            gallery.launch("image/*")
+            BiometricStoreLock.suppressNextBackgroundLock(); gallery.launch("image/*")
         }
 
         click(R.id.pe_dictate) {
@@ -418,6 +419,7 @@ class ProductEditorActivity : OwnerActivity() {
                 .setItems(arrayOf("Nombre", "Descripción")) { _, i ->
                     dictationField = if (i == 0) "name" else "description"
                     try {
+                        BiometricStoreLock.suppressNextBackgroundLock()
                         dictation.launch(
                             Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -425,6 +427,7 @@ class ProductEditorActivity : OwnerActivity() {
                                 .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
                         )
                     } catch (_: Exception) {
+                        BiometricStoreLock.clearBackgroundLockSuppression()
                         status("El dictado no está disponible en este teléfono. Puedes usar el micrófono del teclado o escribir.")
                     }
                 }
@@ -555,8 +558,10 @@ class ProductEditorActivity : OwnerActivity() {
             val folder = File(cacheDir, "product_photos").apply { mkdirs() }
             val file = File(folder, "producto-${UUID.randomUUID()}.jpg").apply { createNewFile() }
             cameraUri = FileProvider.getUriForFile(this, "$packageName.files", file)
+            BiometricStoreLock.suppressNextBackgroundLock()
             camera.launch(requireNotNull(cameraUri))
         } catch (_: Exception) {
+            BiometricStoreLock.clearBackgroundLockSuppression()
             status("No se pudo abrir la cámara. Puedes elegir una foto de la galería.")
         }
     }
@@ -666,7 +671,7 @@ class ProductEditorActivity : OwnerActivity() {
             }
             row.findViewById<Button>(R.id.pv_photo_gallery).setOnClickListener {
                 photoTarget = data.getString("id")
-                gallery.launch("image/*")
+                BiometricStoreLock.suppressNextBackgroundLock(); gallery.launch("image/*")
             }
 
             row.findViewById<Button>(R.id.pv_remove).setOnClickListener {

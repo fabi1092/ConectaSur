@@ -43,6 +43,7 @@ class StoreActivity : FragmentActivity() {
     private lateinit var reader: SpeechReader
     private lateinit var prompt: BiometricPrompt
     private var biometricAction: String? = null
+    private var autoPromptedLockEpoch = -1L
     private var shouldOfferBiometricAfterSignIn = false
     private var offerBiometricDialog: AlertDialog? = null
     private var binding = false
@@ -50,6 +51,7 @@ class StoreActivity : FragmentActivity() {
     private var choosingGoogle = false
     private val fields = listOf(R.id.shop_edit_name, R.id.shop_edit_description, R.id.shop_edit_contact, R.id.shop_whatsapp)
     private val picker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        BiometricStoreLock.clearBackgroundLockSuppression()
         if (uri != null && ::model.isInitialized && model.state.value.session != null) {
             val owner = model.state.value.session?.uid
             choosingLogo = true
@@ -96,6 +98,7 @@ class StoreActivity : FragmentActivity() {
             override fun <T : ViewModel> create(modelClass: Class<T>): T = StoreViewModel(RepositoryProvider.auth(), RepositoryProvider.shops()) as T
         })[StoreViewModel::class.java]
         biometricAction = savedInstanceState?.getString("biometric_action")
+        autoPromptedLockEpoch = savedInstanceState?.getLong("auto_prompted_lock_epoch", -1L) ?: -1L
         shouldOfferBiometricAfterSignIn = savedInstanceState?.getBoolean("should_offer_biometric", false) == true
         prompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
@@ -110,7 +113,7 @@ class StoreActivity : FragmentActivity() {
                     } else if (action == "unlock") {
                         check(biometric.finishUnlock(cipher))
                         if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) model.unlock()
-                        else model.lock()
+
                     }
                 } catch (_: Exception) { model.message("No pudimos verificar la huella. Ingresa con tu contraseña.", true) }
                 render(model.state.value)
@@ -132,12 +135,12 @@ class StoreActivity : FragmentActivity() {
                 choosingGoogle=true
                 findViewById<Button>(R.id.account_google_login).isEnabled=false
                 lifecycleScope.launch {
-                    try { model.signInGoogle(GoogleAccountChooser(this@StoreActivity).requestToken()) }
+                    try { BiometricStoreLock.suppressNextBackgroundLock(); model.signInGoogle(GoogleAccountChooser(this@StoreActivity).requestToken()) }
                     catch(cancelled: kotlinx.coroutines.CancellationException) { RepositoryProvider.auth().cancelGoogleSignIn(); throw cancelled }
                     catch(_: androidx.credentials.exceptions.GetCredentialCancellationException) { model.message("Cancelaste el acceso con Google. Puedes intentarlo nuevamente.") }
                     catch(_: androidx.credentials.exceptions.NoCredentialException) { model.message("Agrega una cuenta de Google en los ajustes del teléfono y vuelve a intentarlo.",true) }
                     catch(_: Exception) { model.message("No pudimos abrir Google. Revisa tu conexión y vuelve a intentarlo.",true) }
-                    finally { choosingGoogle=false; render(model.state.value) }
+                    finally { BiometricStoreLock.clearBackgroundLockSuppression(); choosingGoogle=false; render(model.state.value) }
                 }
             }
         }
@@ -280,7 +283,7 @@ class StoreActivity : FragmentActivity() {
             model.message("Punto de entrega quitado. Pulsa Guardar cambios para publicar.")
             render(model.state.value)
         }
-        findViewById<Button>(R.id.shop_choose_logo).setOnClickListener { captureDraft(); picker.launch("image/*") }
+        findViewById<Button>(R.id.shop_choose_logo).setOnClickListener { captureDraft(); BiometricStoreLock.suppressNextBackgroundLock(); picker.launch("image/*") }
         findViewById<Button>(R.id.shop_remove_logo).setOnClickListener { captureDraft(); model.removeLogo() }
         findViewById<Button>(R.id.shop_reload).setOnClickListener { model.restore() }
         findViewById<Button>(R.id.shop_associations_retry).setOnClickListener { model.retryAssociations() }
@@ -531,14 +534,57 @@ class StoreActivity : FragmentActivity() {
     }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("biometric_action", biometricAction)
+        outState.putLong("auto_prompted_lock_epoch", autoPromptedLockEpoch)
         outState.putBoolean("should_offer_biometric", shouldOfferBiometricAfterSignIn)
         super.onSaveInstanceState(outState)
     }
+    override fun onStart() {
+        super.onStart()
+        if (!::model.isInitialized) return
+        if (biometric.enabled && !BiometricStoreLock.isSessionUnlocked()) {
+            if (!model.state.value.locked) {
+                model.lock()
+                render(model.state.value)
+            }
+        } else {
+            if (biometricAction != null) biometricAction = null
+            if (biometric.enabled && BiometricStoreLock.isSessionUnlocked() && model.state.value.locked) {
+                model.unlock()
+            }
+        }
+    }
+    override fun onResume() {
+        super.onResume()
+        scheduleAutoBiometric()
+    }
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) maybeAutoPromptBiometric()
+    }
+    private fun scheduleAutoBiometric() {
+        window.decorView.post {
+            if (!isFinishing && !isDestroyed && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                maybeAutoPromptBiometric()
+            }
+        }
+    }
+    private fun maybeAutoPromptBiometric() {
+        if (!::model.isInitialized || !hasWindowFocus() || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
+        val state = model.state.value
+        if (!state.locked || !biometric.enabled || BiometricStoreLock.isSessionUnlocked()) return
+        if (biometricAction != null || state.busy) return
+        val epoch = BiometricStoreLock.lockEpoch()
+        if (autoPromptedLockEpoch == epoch) return
+        autoPromptedLockEpoch = epoch
+        authenticate(false)
+    }
     override fun onStop() {
         reader.stop()
-        if (::model.isInitialized && biometric.enabled && !BiometricStoreLock.isSessionUnlocked()) { model.lock(); render(model.state.value) }
+
+
         findViewById<EditText>(R.id.account_password).text.clear()
         super.onStop()
+        if (::model.isInitialized && biometric.enabled && !BiometricStoreLock.isSessionUnlocked()) { model.lock(); render(model.state.value) }
     }
     @android.annotation.SuppressLint("SetJavaScriptEnabled")
     private fun openPickupMapDialog() {

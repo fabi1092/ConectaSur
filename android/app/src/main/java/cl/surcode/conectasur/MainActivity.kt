@@ -64,15 +64,28 @@ class MainActivity : FragmentActivity() {
     private var shopFilter: String? = null
     private val selectedVariants = mutableMapOf<String,String>()
     private lateinit var buyerModel: BuyerViewModel
+    private lateinit var mainShell: View
+    private lateinit var lockScreen: View
+    private lateinit var lockStatus: TextView
     private lateinit var content: FrameLayout
     private lateinit var reader: SpeechReader
     private lateinit var page: View
     private lateinit var entryBiometricPrompt: BiometricPrompt
     private var biometricPrompting = false
     private var bypassEntryLockForPublic = false
-    private var lockDialog: AlertDialog? = null
+    private var bypassLockEpoch = -1L
+    private var autoPromptedLockEpoch = -1L
     private var gateDialog: AlertDialog? = null
     private var anonymousNavMode = "allow"
+
+
+
+
+
+    private var anonymousNavLoaded = false
+    private var choosingGoogle = false
+    private var requireGoogleAttempted = false
+    private var requireErrorMessage: String? = null
     private var navGateDismissed = false
     private var publicShops = emptyList<Shop>()
     private var publicAssociations = emptyList<PublicAssociation>()
@@ -96,6 +109,7 @@ class MainActivity : FragmentActivity() {
         }
     }
     private val voiceSearchLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        BiometricStoreLock.clearBackgroundLockSuppression()
         val phrase = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
         if (!phrase.isNullOrBlank() && ::page.isInitialized && current.screen == "catalog") {
             query = phrase
@@ -121,13 +135,38 @@ class MainActivity : FragmentActivity() {
         buyerModel.start()
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+        mainShell = findViewById(R.id.main_scroll)
+        lockScreen = findViewById(R.id.app_lock_screen)
+        lockStatus = findViewById(R.id.app_lock_status)
         content = findViewById(R.id.screen_content)
+        findViewById<Button>(R.id.app_lock_unlock).setOnClickListener {
+            lockStatus.text = "Usa tu huella digital para entrar."
+            launchEntryBiometric()
+        }
+        findViewById<Button>(R.id.app_lock_password).setOnClickListener {
+            biometric.clear()
+            if (RepositoryProvider.supabaseReady()) RepositoryProvider.auth().signOut()
+            buyerModel.logout()
+            bypassEntryLockForPublic = false
+            bypassLockEpoch = -1L
+            updateContentVisibility()
+            openAccount()
+        }
+        findViewById<Button>(R.id.app_lock_public).setOnClickListener {
+            bypassEntryLockForPublic = true
+            bypassLockEpoch = BiometricStoreLock.lockEpoch()
+            updateContentVisibility()
+            checkAnonymousGate(buyerModel.state.value)
+        }
         savedInstanceState?.let { state ->
             current = Destination.decode(state.getString("route") ?: "catalog|")
             history.addAll(state.getStringArrayList("history").orEmpty().map(Destination::decode))
             query = state.getString("query").orEmpty()
             shopFilter = state.getString("shop_filter")
             bypassEntryLockForPublic = state.getBoolean("bypass_entry_lock", false)
+            bypassLockEpoch = state.getLong("bypass_lock_epoch", -1L)
+            autoPromptedLockEpoch = state.getLong("auto_prompted_lock_epoch", -1L)
+            requireGoogleAttempted = state.getBoolean("require_google_attempted", false)
             state.getBundle("scroll")?.let { positions -> positions.keySet().forEach { scrollPositions[it] = positions.getInt(it) } }
         }
         entryBiometricPrompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
@@ -135,18 +174,20 @@ class MainActivity : FragmentActivity() {
                 biometricPrompting = false
                 val ok = runCatching { result.cryptoObject?.cipher?.let(biometric::finishUnlock) == true }.getOrDefault(false)
                 if (ok) {
-                    lockDialog?.dismiss()
-                    lockDialog = null
-                    content.isVisible = true
+                    bypassEntryLockForPublic = false
+                    bypassLockEpoch = -1L
+                    updateContentVisibility()
+                    checkAnonymousGate(buyerModel.state.value)
                 } else {
-                    showAppLockDialog("No pudimos verificar tu huella digital. Ingresa con tu contraseña.")
+                    showAppLockState("No pudimos verificar tu huella digital. Ingresa con tu contraseña.")
                 }
             }
 
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                 biometricPrompting = false
                 if (!biometric.enabled || BiometricStoreLock.isSessionUnlocked()) {
-                    content.isVisible = true
+                    updateContentVisibility()
+                    checkAnonymousGate(buyerModel.state.value)
                     return
                 }
                 val msg = if (errorCode in listOf(
@@ -159,7 +200,13 @@ class MainActivity : FragmentActivity() {
                 } else {
                     "Huella no disponible en este momento. Puedes ingresar con tu contraseña."
                 }
-                showAppLockDialog(msg)
+                showAppLockState(msg)
+            }
+
+            override fun onAuthenticationFailed() {
+                if (::lockStatus.isInitialized) {
+                    lockStatus.text = "No reconocimos la huella. Inténtalo nuevamente."
+                }
             }
         })
         reader = SpeechReader(this) { active -> findViewById<Button>(R.id.read_button).setText(if (active) R.string.stop else R.string.listen) }
@@ -188,7 +235,7 @@ class MainActivity : FragmentActivity() {
         if (intent?.getStringExtra("screen") == "help") {
             navigate(Destination("help"))
         }
-        val root = findViewById<View>(R.id.main_scroll)
+        val root = findViewById<View>(R.id.main_root)
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val safe = insets.getInsets(WindowInsetsCompat.Type.systemBars() or
                 WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime())
@@ -202,6 +249,7 @@ class MainActivity : FragmentActivity() {
         if (RepositoryProvider.supabaseReady()) {
             lifecycleScope.launch {
                 anonymousNavMode = runCatching { RepositoryProvider.shops().getAnonymousNavigation() }.getOrDefault("allow")
+                anonymousNavLoaded = true
                 checkAnonymousGate(buyerModel.state.value)
             }
         }
@@ -248,32 +296,57 @@ class MainActivity : FragmentActivity() {
         intent.data = null
         buyerModel.completeGoogle(callback.toString())
     }
+    private fun isEntryBypassActive() =
+        bypassEntryLockForPublic && bypassLockEpoch == BiometricStoreLock.lockEpoch()
+
+    private fun isBiometricEntryBlocked() =
+        biometric.enabled && !BiometricStoreLock.isSessionUnlocked() && !isEntryBypassActive()
+
     override fun onStart() {
         super.onStart()
-        checkAppEntryBiometric()
+        if (BiometricStoreLock.isSessionUnlocked()) {
+            bypassEntryLockForPublic = false
+            bypassLockEpoch = -1L
+        }
+        updateContentVisibility()
+        refreshAnonymousNavigation()
     }
 
     override fun onResume() {
         super.onResume()
         if (::buyerModel.isInitialized) buyerModel.refresh()
+        scheduleEntryBiometricCheck()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            checkAppEntryBiometric()
+        }
+    }
+
+    private fun scheduleEntryBiometricCheck() {
+        window.decorView.post {
+            if (!isFinishing && !isDestroyed && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                checkAppEntryBiometric()
+            }
+        }
     }
 
     private fun checkAppEntryBiometric() {
-        if (!biometric.enabled || BiometricStoreLock.isSessionUnlocked() || bypassEntryLockForPublic) {
-            lockDialog?.dismiss()
-            lockDialog = null
-            content.isVisible = true
-            return
-        }
-        content.isVisible = false
-        if (biometricPrompting || lockDialog?.isShowing == true) return
+        updateContentVisibility()
+        if (!isBiometricEntryBlocked()) return
+        if (isFinishing || isDestroyed || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) || !hasWindowFocus()) return
+        val epoch = BiometricStoreLock.lockEpoch()
+        if (biometricPrompting || autoPromptedLockEpoch == epoch) return
+        autoPromptedLockEpoch = epoch
         launchEntryBiometric()
     }
 
     private fun launchEntryBiometric() {
         if (biometricPrompting) return
         if (!biometric.available()) {
-            showAppLockDialog("La huella no está disponible en este teléfono. Puedes ingresar con tu contraseña.")
+            showAppLockState("La huella no está disponible en este teléfono. Puedes ingresar con tu contraseña.")
             return
         }
         try {
@@ -290,35 +363,19 @@ class MainActivity : FragmentActivity() {
             )
         } catch (_: Exception) {
             biometricPrompting = false
-            showAppLockDialog("La huella cambió o no está disponible. Ingresa con tu contraseña para volver a activarla.")
+            showAppLockState("La huella cambió o no está disponible. Ingresa con tu contraseña para volver a activarla.")
         }
     }
 
-    private fun showAppLockDialog(message: String) {
-        if (isFinishing || isDestroyed) return
-        lockDialog?.dismiss()
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Desbloquear ConectaSur")
-            .setMessage(message)
-            .setCancelable(false)
-            .setPositiveButton("Desbloquear con huella") { _, _ -> launchEntryBiometric() }
-            .setNegativeButton("Ingresar con contraseña") { _, _ ->
-                biometric.clear()
-                content.isVisible = true
-                openAccount()
-            }
-            .setNeutralButton("Ver catálogo público") { _, _ ->
-                bypassEntryLockForPublic = true
-                content.isVisible = true
-            }
-            .create()
-        dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, prefs.read()) }
-        lockDialog = dialog
-        dialog.show()
+    private fun showAppLockState(message: String) {
+        updateContentVisibility()
+        if (::lockStatus.isInitialized) {
+            lockStatus.text = message
+        }
     }
     private fun applyPresentation() {
         val settings = prefs.read()
-        applyAccessibility(findViewById(R.id.main_scroll), settings)
+        applyAccessibility(findViewById(R.id.main_root), settings)
         val large = resources.configuration.fontScale * settings.textScale >= 1.7f
         findViewById<View>(R.id.normal_navigation).isVisible = !large
         findViewById<View>(R.id.large_menu).isVisible = large
@@ -450,6 +507,7 @@ class MainActivity : FragmentActivity() {
         }
         page.findViewById<Button>(R.id.home_voice_search)?.setOnClickListener {
             try {
+                BiometricStoreLock.suppressNextBackgroundLock()
                 voiceSearchLauncher.launch(
                     Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                         .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -457,6 +515,7 @@ class MainActivity : FragmentActivity() {
                         .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
                 )
             } catch (_: Exception) {
+                BiometricStoreLock.clearBackgroundLockSuppression()
                 Toast.makeText(this, "El buscador por voz no está disponible en este teléfono.", Toast.LENGTH_LONG).show()
             }
         }
@@ -577,6 +636,7 @@ class MainActivity : FragmentActivity() {
         }
         page.findViewById<Button>(R.id.voice_search)?.setOnClickListener {
             try {
+                BiometricStoreLock.suppressNextBackgroundLock()
                 voiceSearchLauncher.launch(
                     Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                         .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -584,6 +644,7 @@ class MainActivity : FragmentActivity() {
                         .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
                 )
             } catch (_: Exception) {
+                BiometricStoreLock.clearBackgroundLockSuppression()
                 Toast.makeText(this, "El buscador por voz no está disponible en este teléfono.", Toast.LENGTH_LONG).show()
             }
         }
@@ -924,32 +985,133 @@ class MainActivity : FragmentActivity() {
         outState.putString("query", query)
         outState.putString("shop_filter", shopFilter)
         outState.putBoolean("bypass_entry_lock", bypassEntryLockForPublic)
+        outState.putLong("bypass_lock_epoch", bypassLockEpoch)
+        outState.putLong("auto_prompted_lock_epoch", autoPromptedLockEpoch)
+        outState.putBoolean("require_google_attempted", requireGoogleAttempted)
         outState.putBundle("scroll", Bundle().apply { scrollPositions.forEach { (key, value) -> putInt(key, value) } })
         super.onSaveInstanceState(outState)
     }
-    override fun onStop() { reader.stop(); super.onStop() }
+    override fun onStop() {
+        reader.stop()
+        super.onStop()
+        if (!isChangingConfigurations && !BiometricStoreLock.isBackgroundLockSuppressed()) {
+            bypassEntryLockForPublic = false
+            bypassLockEpoch = -1L
+        }
+    }
+    private fun updateContentVisibility(state: BuyerState = buyerModel.state.value) {
+        val blockedByBiometric = isBiometricEntryBlocked()
+        val requireOk = anonymousNavMode != "require" || state.session != null || state.demo
+        if (::lockScreen.isInitialized) lockScreen.isVisible = blockedByBiometric
+        if (::mainShell.isInitialized) mainShell.isVisible = !blockedByBiometric
+        if (::content.isInitialized) content.isVisible = !blockedByBiometric && requireOk
+    }
+
+    private fun refreshAnonymousNavigation() {
+        if (!RepositoryProvider.supabaseReady()) return
+        lifecycleScope.launch {
+            anonymousNavMode = runCatching { RepositoryProvider.shops().getAnonymousNavigation() }.getOrDefault(anonymousNavMode)
+            anonymousNavLoaded = true
+            checkAnonymousGate(buyerModel.state.value)
+        }
+    }
+
+    private fun launchDirectGoogleSignIn() {
+        val currentState = buyerModel.state.value
+        if (choosingGoogle || currentState.busy || currentState.session != null) return
+        if (currentState.awaitingGoogle) buyerModel.cancelGoogle()
+        if (!RepositoryProvider.supabaseReady() || !RepositoryProvider.auth().nativeGoogleAvailable) {
+            buyerModel.beginGoogle()
+            return
+        }
+        choosingGoogle = true
+        BiometricStoreLock.suppressNextBackgroundLock()
+        lifecycleScope.launch {
+            try {
+                val token = GoogleAccountChooser(this@MainActivity).requestToken()
+                buyerModel.signInGoogle(token)
+            } catch (cancelled: CancellationException) {
+                RepositoryProvider.auth().cancelGoogleSignIn()
+                throw cancelled
+            } catch (_: androidx.credentials.exceptions.GetCredentialCancellationException) {
+                requireErrorMessage = "Cancelaste el acceso con Google. Inicia sesión para continuar."
+            } catch (_: androidx.credentials.exceptions.NoCredentialException) {
+                requireErrorMessage = "Agrega una cuenta de Google en los ajustes del teléfono y vuelve a intentarlo."
+            } catch (_: Exception) {
+                requireErrorMessage = "No pudimos abrir Google. Revisa tu conexión y vuelve a intentarlo."
+            } finally {
+                BiometricStoreLock.clearBackgroundLockSuppression()
+                choosingGoogle = false
+                checkAnonymousGate(buyerModel.state.value)
+            }
+        }
+    }
+
+    private fun showRequireGoogleDialog(state: BuyerState) {
+        if (isFinishing || isDestroyed) return
+        val detail = requireErrorMessage ?: state.message.takeIf {
+            it.isNotBlank() && it != getString(R.string.buyer_visitor)
+        }
+        val body = buildString {
+            append("La administración configuró ConectaSur para navegar con cuenta de Google.")
+            if (!detail.isNullOrBlank()) {
+                append("\n\n")
+                append(detail)
+            }
+        }
+        val dlg = AlertDialog.Builder(this)
+            .setTitle("Inicia sesión con Google")
+            .setMessage(body)
+            .setCancelable(false)
+            .setPositiveButton("Continuar con Google") { _, _ ->
+                requireErrorMessage = null
+                launchDirectGoogleSignIn()
+            }
+            .setNeutralButton("Acceso emprendedora") { _, _ -> openAccount() }
+            .create()
+        dlg.setOnShowListener { applyAccessibility(dlg.window!!.decorView, prefs.read()) }
+        gateDialog = dlg
+        dlg.show()
+    }
+
     private fun checkAnonymousGate(state: BuyerState) {
+        updateContentVisibility(state)
         if (isFinishing || isDestroyed) return
         if (state.session != null || state.demo) {
+            requireGoogleAttempted = false
+            requireErrorMessage = null
             gateDialog?.dismiss()
             gateDialog = null
             return
         }
-        if (anonymousNavMode == "allow") return
+        if (anonymousNavMode == "allow") {
+            gateDialog?.dismiss()
+            gateDialog = null
+            return
+        }
+        if (anonymousNavMode == "require") {
+            val biometricBlocking = isBiometricEntryBlocked()
+            if (biometricBlocking || biometricPrompting) return
+            if (!anonymousNavLoaded || !state.sessionChecked) return
+            if (choosingGoogle || state.busy || state.launchUrl != null) return
+            if (gateDialog?.isShowing == true) return
+            if (!requireGoogleAttempted && requireErrorMessage == null) {
+                requireGoogleAttempted = true
+                launchDirectGoogleSignIn()
+                return
+            }
+            showRequireGoogleDialog(state)
+            return
+        }
         if (anonymousNavMode == "invite" && navGateDismissed) return
         if (gateDialog?.isShowing == true) return
-        val required = anonymousNavMode == "require"
+        val inviteMessage = "Puedes iniciar sesión con tu cuenta para guardar tu perfil o explorar directamente sin cuenta."
         val builder = AlertDialog.Builder(this)
-            .setTitle(if (required) "Inicia sesión para continuar" else "Bienvenida/o a ConectaSur")
-            .setMessage(
-                if (required) "La administración configuró ConectaSur para navegar con cuenta. Inicia sesión para explorar tiendas, productos y ferias."
-                else "Puedes iniciar sesión con tu cuenta para guardar tu perfil o explorar directamente sin cuenta."
-            )
-            .setCancelable(!required)
+            .setTitle("Bienvenida/o a ConectaSur")
+            .setMessage(inviteMessage)
+            .setCancelable(true)
             .setPositiveButton("Iniciar sesión") { _, _ -> openAccount() }
-        if (!required) {
-            builder.setNegativeButton("Explorar sin cuenta") { _, _ -> navGateDismissed = true }
-        }
+        builder.setNegativeButton("Explorar sin cuenta") { _, _ -> navGateDismissed = true }
         gateDialog = builder.create().also { dlg ->
             dlg.setOnShowListener { applyAccessibility(dlg.window!!.decorView, prefs.read()) }
             dlg.show()
@@ -1377,8 +1539,6 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onDestroy() {
-        lockDialog?.dismiss()
-        lockDialog = null
         gateDialog?.dismiss()
         gateDialog = null
         reader.close()

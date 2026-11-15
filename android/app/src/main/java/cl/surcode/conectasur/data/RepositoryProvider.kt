@@ -11,6 +11,7 @@ object RepositoryProvider {
     @Synchronized fun initialize(context: Context) {
         if (backend == null && supabaseReady()) backend = SupabaseClient(
             BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY, SecureBackendStore(context.applicationContext))
+        BiometricStoreLock.observeAppLifecycle(context)
         if(firebaseBuyer == null && FirebaseBuyerAuth.configured()) firebaseBuyer = FirebaseBuyerAuth(context.applicationContext)
     }
     fun supabaseReady() = BuildConfig.SUPABASE_URL.isNotBlank() && BuildConfig.SUPABASE_ANON_KEY.isNotBlank()

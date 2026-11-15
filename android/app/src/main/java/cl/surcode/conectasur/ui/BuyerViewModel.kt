@@ -24,7 +24,8 @@ data class BuyerState(
     val busy: Boolean = false,
     val awaitingGoogle: Boolean = false,
     val launchUrl: String? = null,
-    val message: String = ""
+    val message: String = "",
+    val sessionChecked: Boolean = false
 )
 
 /** El estado de demostración nunca entra en AuthRepository ni se presenta como una cuenta de Google. */
@@ -40,13 +41,13 @@ class BuyerViewModel(private val auth: AuthRepository?, private val demoStore: D
     fun refresh() {
         if (mutable.value.busy || mutable.value.awaitingGoogle) return
         if (auth == null) {
-            mutable.value = if (demoStore.active()) demoState() else mutable.value.copy(session = null, demo = false)
+            mutable.value = if (demoStore.active()) demoState() else mutable.value.copy(session = null, demo = false, sessionChecked = true)
             return
         }
         operate { id ->
             val session = auth.currentSession()
             val pending = session == null && auth.hasPendingGoogleSignIn()
-            publish(id, mutable.value.copy(session = session, demo = false, awaitingGoogle = pending,
+            publish(id, mutable.value.copy(session = session, demo = false, awaitingGoogle = pending, sessionChecked = true,
                 message = if (pending) "Termina el acceso en Google o pulsa Cancelar." else mutable.value.message))
         }
     }
@@ -63,6 +64,18 @@ class BuyerViewModel(private val auth: AuthRepository?, private val demoStore: D
                 val url = auth.beginGoogleSignIn()
                 publish(id, mutable.value.copy(awaitingGoogle = true, launchUrl = url, message = "Continúa en Google para ingresar."))
             }
+        }
+    }
+    fun signInGoogle(idToken: String) {
+        if (mutable.value.session != null || mutable.value.busy || mutable.value.awaitingGoogle) return
+        if (auth == null) {
+            mutable.value = mutable.value.copy(message = "Google requiere una versión conectada.")
+            return
+        }
+        operate { id ->
+            val session = auth.signInWithGoogleIdToken(idToken)
+            requireBuyerSession(auth, session)
+            publish(id, BuyerState(session = session, sessionChecked = true, message = "Ingresaste como comprador."))
         }
     }
     fun browserLaunched() { mutable.value = mutable.value.copy(launchUrl = null) }
@@ -82,8 +95,8 @@ class BuyerViewModel(private val auth: AuthRepository?, private val demoStore: D
         mutable.value = mutable.value.copy(awaitingGoogle = true)
         operate(replace = true) { id ->
             val session = auth.completeGoogleSignIn(callbackUrl)
-            check(session.role == Role.COMPRADOR) { "Esta cuenta no es de comprador. Usa Mi tienda para ingresar." }
-            publish(id, BuyerState(session = session, message = "Ingresaste como comprador."))
+            requireBuyerSession(auth, session)
+            publish(id, BuyerState(session = session, sessionChecked = true, message = "Ingresaste como comprador."))
         }
     }
     fun cancelGoogle() {
@@ -106,7 +119,7 @@ class BuyerViewModel(private val auth: AuthRepository?, private val demoStore: D
         auth?.cancelGoogleSignIn()
         auth?.signOut()
         demoStore.setActive(false)
-        mutable.value = BuyerState(message = "Sesión cerrada. Continúas como visitante.")
+        mutable.value = BuyerState(sessionChecked = true, message = "Sesión cerrada. Continúas como visitante.")
     }
     /** La pantalla común asume el acceso; una consulta anterior no puede reemplazar su resultado. */
     fun pauseForAccountAccess() {
@@ -116,8 +129,14 @@ class BuyerViewModel(private val auth: AuthRepository?, private val demoStore: D
         mutable.value = mutable.value.copy(busy = false, awaitingGoogle = false, launchUrl = null, message = "")
     }
     private fun demoState() = BuyerState(session = Session("demo-buyer", null, Role.COMPRADOR, null), demo = true,
-        message = "Demostración local de comprador. No se inició sesión en Google.")
+        sessionChecked = true, message = "Demostración local de comprador. No se inició sesión en Google.")
     private fun publish(id: Long, state: BuyerState) { if (generation == id) mutable.value = state }
+    private fun requireBuyerSession(auth: AuthRepository, session: Session) {
+        if (session.role != Role.COMPRADOR) {
+            auth.signOut()
+            error("Esta cuenta no es de comprador. Usa Mi tienda para ingresar.")
+        }
+    }
     private fun operate(replace: Boolean = false, block: suspend (Long) -> Unit) {
         if (mutable.value.busy && !replace) return
         if (replace) job?.cancel()
@@ -131,7 +150,7 @@ class BuyerViewModel(private val auth: AuthRepository?, private val demoStore: D
                 if (error is BackendException && error.status in listOf(401, 403)) {
                     auth?.signOut()
                     auth?.cancelGoogleSignIn()
-                    mutable.value = BuyerState(message = "Tu sesión terminó o fue desactivada. Vuelve a ingresar.")
+                    mutable.value = BuyerState(sessionChecked = true, message = "Tu sesión terminó o fue desactivada. Vuelve a ingresar.")
                     return@launch
                 }
                 val message = when (error) {
@@ -140,7 +159,7 @@ class BuyerViewModel(private val auth: AuthRepository?, private val demoStore: D
                     else -> "No pudimos confirmar el acceso con Google. Inténtalo nuevamente."
                 }
                 if (generation == id) mutable.value = mutable.value.copy(message = message,
-                    awaitingGoogle = auth?.hasPendingGoogleSignIn() == true)
+                    awaitingGoogle = auth?.hasPendingGoogleSignIn() == true, sessionChecked = true)
             } finally { if (generation == id) mutable.value = mutable.value.copy(busy = false) }
         }
     }
