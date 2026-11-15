@@ -838,7 +838,7 @@ class MainActivity : FragmentActivity() {
             val activeVariant = product.variants.find { it.id == selectedVariants[product.id] }
             val activePrice = activeVariant?.priceClp ?: product.priceClp
             val variantSuffix = activeVariant?.let { " (${it.label})" }.orEmpty()
-            val url = "${QrShareHelper.publicWebBaseUrl()}/#producto/${Uri.encode(product.id)}"
+            val url = QrShareHelper.productUrl(product.id)
             val message = "${product.name}$variantSuffix\n${priceLabel(activePrice)}\n${product.description}\n$url"
             QrShareHelper.shareLink(this, getString(R.string.share_title), message)
         }
@@ -1303,18 +1303,60 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private fun openFairDetailDialog(fair: PublicFair) {
+        val dp = resources.displayMetrics.density
         val distLine = fair.distanceKm?.let { String.format(java.util.Locale.US, "\nDistancia: %.1f km", it) }.orEmpty()
+        val orgLine = fair.organizer.takeIf { it.isNotBlank() }?.let { "\nOrganizador: $it" }.orEmpty()
         val msg = buildString {
             if (fair.description.isNotBlank()) append("${fair.description}\n\n")
             append("Lugar: ${fair.placeName.ifBlank { "Puerto Montt" }}")
+            append(orgLine)
             append("\nInicio: ${fair.startsAt.take(16).replace('T', ' ')}")
             append("\nTérmino: ${fair.endsAt.take(16).replace('T', ' ')}")
             append(distLine)
         }
+        val jsonArr = org.json.JSONArray().apply {
+            put(org.json.JSONObject().apply {
+                put("id", fair.id)
+                put("name", fair.name)
+                put("address", fair.placeName)
+                put("startsAt", fair.startsAt)
+                put("lat", fair.latitude)
+                put("lng", fair.longitude)
+                put("distanceKm", fair.distanceKm)
+            })
+        }
+        val infoView = TextView(this).apply {
+            text = msg
+            textSize = 15f
+            setTextColor(0xFF183A34.toInt())
+            setPadding(0, 0, 0, (12 * dp).toInt())
+        }
+        val miniMap = WebView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (200 * dp).toInt())
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    view?.evaluateJavascript(
+                        "if(window.setFairs){setFairs(${org.json.JSONObject.quote(jsonArr.toString())}, ${fair.latitude}, ${fair.longitude});}",
+                        null
+                    )
+                }
+            }
+            loadUrl("file:///android_asset/conectasur_map.html")
+        }
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val pad = (16 * dp).toInt()
+            setPadding(pad, (12 * dp).toInt(), pad, 0)
+            addView(infoView)
+            addView(miniMap)
+        }
         val dlg = AlertDialog.Builder(this)
             .setTitle(fair.name)
-            .setMessage(msg)
+            .setView(container)
             .setPositiveButton("Cómo llegar") { _, _ -> openGeoDirections(fair.latitude, fair.longitude, fair.name) }
             .setNeutralButton("Compartir / QR") { _, _ ->
                 QrShareHelper.showQrDialog(this, fair.name, fair.placeName.ifBlank { "Feria ConectaSur" }, QrShareHelper.fairUrl(fair.id))
