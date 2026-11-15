@@ -27,9 +27,10 @@ import java.io.FileOutputStream
 object QrShareHelper {
     fun publicWebBaseUrl(): String {
         val projectId = BuildConfig.FIREBASE_PROJECT_ID.trim()
-        return if (projectId.isNotBlank()) "https://$projectId.web.app" else "https://conectasur.web.app"
+        return if (projectId.isNotBlank()) "https://$projectId.web.app" else "https://conectasur-dev.web.app"
     }
 
+    fun productUrl(productId: String) = "${publicWebBaseUrl()}/#producto/${Uri.encode(productId)}"
     fun shopUrl(shopId: String) = "${publicWebBaseUrl()}/#tienda/${Uri.encode(shopId)}"
     fun associationUrl(associationId: String) = "${publicWebBaseUrl()}/#asociacion/${Uri.encode(associationId)}"
     fun fairUrl(fairId: String) = "${publicWebBaseUrl()}/#feria/${Uri.encode(fairId)}"
