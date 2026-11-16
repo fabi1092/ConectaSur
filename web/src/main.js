@@ -1250,13 +1250,18 @@ async function iniciar() {
     let id;
     try { id = decodeURIComponent(route.slice('#tienda/'.length)); }
     catch { id = ''; }
-       await showPublicShop(app, db, id, isCurrent);
+    await showPublicShop(app, db, id, isCurrent);
   } else if (route.startsWith('#producto/')) {
     let id;
     try { id = decodeURIComponent(route.slice('#producto/'.length)); }
     catch { id = ''; }
     await showPublicProduct(app, db, id, isCurrent);
   } else if (route.startsWith('#asociacion/')) {
+    let id;
+    try { id = decodeURIComponent(route.slice('#asociacion/'.length)); }
+    catch { id = ''; }
+    await showPublicAssociation(app, db, id, isCurrent);
+  } else if (route.startsWith('#feria/')) {
     let id;
     try { id = decodeURIComponent(route.slice('#feria/'.length)); }
     catch { id = ''; }
