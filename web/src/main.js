@@ -3,7 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import config from '../supabase-config.js';
 import { createDataLayer } from '../supabase-data.js';
 import { createFirebaseBuyerAuth } from '../firebase-buyer-auth.js';
-import { showPublicShops, showPublicShop, showPublicAssociation, showPublicFair, shopLogo, wireShopImages } from './public-shops.js';
+import { showPublicShops, showPublicShop, showPublicProduct, showPublicAssociation, showPublicFair, shopLogo, wireShopImages } from './public-shops.js';
 import { showAdminFairsAndAccess } from './fairs-admin.js';
 import { showAccountAccess } from './entrepreneur-access.js';
 import { icon, brand } from './visuals.js';
@@ -1251,6 +1251,11 @@ async function iniciar() {
     try { id = decodeURIComponent(route.slice('#tienda/'.length)); }
     catch { id = ''; }
     await showPublicShop(app, db, id, isCurrent);
+  } else if (route.startsWith('#producto/')) {
+    let id;
+    try { id = decodeURIComponent(route.slice('#producto/'.length)); }
+    catch { id = ''; }
+    await showPublicProduct(app, db, id, isCurrent);
   } else if (route.startsWith('#asociacion/')) {
     let id;
     try { id = decodeURIComponent(route.slice('#asociacion/'.length)); }

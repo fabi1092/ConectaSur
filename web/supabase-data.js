@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { OWNER_PRODUCT_COLUMNS, privateProduct, normalizeProduct, sameProduct, STOCK_MODES, SOLD_OUT_MODES } from './product-model.js';
 import { fetchWithReadRetry } from './read-retry.js';
@@ -632,6 +631,17 @@ export function createDataLayer(config, { storage, storageKey, firebaseBuyer = n
       }
       const ext = { 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp' }[file.type];
       const path = id + '/' + crypto.randomUUID() + '.' + ext;
+      unwrap(await sdk.storage.from('association-images').upload(path, file, { contentType:file.type, upsert:false }));
+      return sdk.storage.from('association-images').getPublicUrl(path).data.publicUrl;
+    },
+
+    async uploadFairImage(file) {
+      await requireAdmin();
+      if (!file || !['image/jpeg','image/png','image/webp'].includes(file.type) || file.size <= 0 || file.size > 2097152) {
+        throw Object.assign(new Error('Elige una imagen JPG, PNG o WebP de hasta 2 MiB.'), { code: 'invalid_fair_image' });
+      }
+      const ext = { 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp' }[file.type];
+      const path = 'fairs/' + crypto.randomUUID() + '.' + ext;
       unwrap(await sdk.storage.from('association-images').upload(path, file, { contentType:file.type, upsert:false }));
       return sdk.storage.from('association-images').getPublicUrl(path).data.publicUrl;
     },

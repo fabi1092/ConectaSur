@@ -302,6 +302,24 @@ export async function showPublicShop(app, db, id, isCurrent = () => true) {
   }
 }
 
+export async function showPublicProduct(app, db, id, isCurrent = () => true) {
+  document.title = 'ConectaSur | Producto';
+  app.innerHTML = shell('<section class="public-state"><p role="status">Cargando el producto…</p></section>');
+  try {
+    const product = id ? (await db.listPublicProducts()).find(item => item.id === id && isPublicProductVisible(item)) : null;
+    if (!isCurrent()) return;
+    if (!product) {
+      showStatus(app, 'Este producto no está disponible', 'Puede que el enlace haya cambiado o que la tienda ya no lo tenga publicado. Puedes conocer otros productos.');
+      return;
+    }
+    await showPublicShop(app, db, product.shopId, isCurrent);
+    if (!isCurrent()) return;
+    [...app.querySelectorAll('[data-product]')].find(button => button.dataset.product === product.id)?.click();
+  } catch {
+    if (isCurrent()) showStatus(app, 'No pudimos cargar este producto', 'Revisa tu conexión y vuelve a intentarlo.', () => showPublicProduct(app, db, id, isCurrent));
+  }
+}
+
 export async function showPublicAssociation(app, db, id, isCurrent = () => true) {
   document.title = 'ConectaSur | Asociación';
   app.innerHTML = shell('<section class="public-state"><p role="status">Cargando asociación…</p></section>');
