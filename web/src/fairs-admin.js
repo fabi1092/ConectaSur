@@ -1,4 +1,5 @@
 import { icon } from './visuals.js';
+import { prepareImage } from './prepare-image.js';
 import { renderInteractiveMap, searchAddressPuertoMontt, PUERTO_MONTT_CENTER } from './fair-map.js';
 
 function esc(value = '') {
@@ -187,7 +188,12 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
           <label for="fair-desc">Descripción</label>
           <textarea id="fair-desc" rows="3" maxlength="2000" placeholder="Qué encontrarán los visitantes…">${esc(f?.description || '')}</textarea>
 
-          <label for="fair-image">Imagen (URL HTTPS opcional)</label>
+          <label for="fair-image-file">Imagen de la feria (opcional)</label>
+          <div id="fair-image-preview">${f?.image_url ? `<img src="${esc(f.image_url)}" alt="Imagen actual de la feria" style="max-width:240px;max-height:160px;border-radius:8px">` : ''}</div>
+          <input id="fair-image-file" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="fair-image-status">
+          <p id="fair-image-status" class="hint" role="status">JPG, PNG o WebP. La reducimos antes de subirla y se guarda al presionar guardar la feria.</p>
+
+          <label for="fair-image">O pega un enlace HTTPS de la imagen (opcional)</label>
           <input id="fair-image" type="url" maxlength="2048" value="${esc(f?.image_url || '')}" placeholder="https://…">
 
           <label for="fair-organizer">Organizador</label>
@@ -279,16 +285,45 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
       }
     });
 
+    let fairImageFile = null;
+    const fairImageInput = container.querySelector('#fair-image-file');
+    const fairImageStatus = container.querySelector('#fair-image-status');
+    const fairImagePreview = container.querySelector('#fair-image-preview');
+    fairImageInput.addEventListener('change', async () => {
+      const selected = fairImageInput.files[0];
+      fairImageFile = null;
+      fairImageStatus.classList.remove('error');
+      if (!selected) return;
+      fairImageStatus.textContent = 'Preparando la imagen…';
+      try {
+        const prepared = await prepareImage(selected);
+        if (!fairImageInput.isConnected) return;
+        fairImageFile = prepared;
+        fairImagePreview.innerHTML = `<img src="${URL.createObjectURL(prepared)}" alt="Vista previa de la imagen de la feria" style="max-width:240px;max-height:160px;border-radius:8px">`;
+        fairImageStatus.textContent = 'Imagen lista. Se subirá al guardar la feria.';
+      } catch (err) {
+        if (!fairImageInput.isConnected) return;
+        fairImageInput.value = '';
+        fairImageStatus.textContent = err.message || 'No pudimos preparar la imagen.';
+        fairImageStatus.classList.add('error');
+      }
+    });
+
     container.querySelector('#fair-form').addEventListener('submit', async e => {
       e.preventDefault();
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
       try {
+        let imageUrl = container.querySelector('#fair-image').value;
+        if (fairImageFile) {
+          fairImageStatus.textContent = 'Subiendo la imagen…';
+          imageUrl = await db.uploadFairImage(fairImageFile);
+        }
         await db.saveFair({
           id: f?.id || null,
           name: container.querySelector('#fair-name').value,
           description: container.querySelector('#fair-desc').value,
-          imageUrl: container.querySelector('#fair-image').value,
+          imageUrl,
           organizer: container.querySelector('#fair-organizer').value,
           startsAt: container.querySelector('#fair-start').value,
           endsAt: container.querySelector('#fair-end').value,
@@ -313,4 +348,3 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
     requestLeave: () => true
   };
 }
-
