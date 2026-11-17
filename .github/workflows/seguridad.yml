@@ -37,7 +37,8 @@ jobs:
         working-directory: web
       - run: npm ci
         working-directory: supabase
-      - run: npm audit --audit-level=moderate
+      # picomatch GHSA-fc5q-39xc-vjpf (17-nov-2026): sin version corregida; solo afecta a vite (desarrollo), no al codigo publicado. Revisar antes del 15-dic-2026.
+      - run: npm audit --omit=dev --audit-level=moderate
         working-directory: web
       - run: npm audit --audit-level=moderate
         working-directory: supabase
