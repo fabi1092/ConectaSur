@@ -33,8 +33,8 @@ Los requisitos de la entrega 5 asignados a mi parte (A12, A13, A14 y A17 del ser
 ## Pendiente y plan
 
 - Las pantallas de mapa en Android y web, el compartir y el QR, y el panel de ferias usan estas tablas y funciones, pero se construyen en sus propias partes del grupo.
-- Aplicar las migraciones 009 a 011 en la instancia Supabase del grupo con `npm --prefix supabase run migrate`, que exige las credenciales privadas de Studio. Hasta entonces la instancia no tiene estas tablas.
-- Revisión del pull request por otro integrante.
+- Migraciones 009 a 011 aplicadas y verificadas en la instancia Supabase del grupo (`npm --prefix supabase run migrate` y `node supabase/tools/entrega6-state.mjs`). Evidencia con fecha en `security/reports/entrega6-backend/estado-servidor.json`: `public_fairs`, `upcoming_fairs` y `set_anonymous_navigation` responden con RLS activo.
+- Los cambios de esta parte se integraron directamente en `main`, sin pull request.
 
 ## Reparto del trabajo
 

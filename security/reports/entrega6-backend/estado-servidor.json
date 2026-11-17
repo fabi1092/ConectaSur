@@ -1,0 +1,147 @@
+{
+  "checkedAt": "2026-11-17T18:56:11.807Z",
+  "instance": "https://supabase-surcode.codepulse.cl",
+  "entrega": 6,
+  "summary": {
+    "total": 18,
+    "passed": 18,
+    "failed": 0
+  },
+  "migrationsRegistered": [
+    "001_conectasur",
+    "002_catalogo_ventas",
+    "003_cantidad_entera",
+    "004_venta_a_pedido",
+    "005_logos_asociaciones",
+    "006_cuentas_administradoras",
+    "007_editar_cuenta_emprendedora",
+    "008_contacto_tienda",
+    "009_ferias_mapas",
+    "010_navegacion_anonima",
+    "011_punto_de_venta"
+  ],
+  "fairsByStatus": [
+    {
+      "status": "published",
+      "filas": 1
+    }
+  ],
+  "checks": [
+    {
+      "id": "MIG-009",
+      "description": "Migracion 009_ferias_mapas registrada en la instancia",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "MIG-010",
+      "description": "Migracion 010_navegacion_anonima registrada en la instancia",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "MIG-011",
+      "description": "Migracion 011_punto_de_venta registrada en la instancia",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "OBJ-fairs",
+      "description": "Existen fairs, public_fairs y platform_settings",
+      "ok": true,
+      "detail": "{\"fairs\":true,\"public_fairs\":true,\"platform_settings\":true,\"upcoming_fairs\":true,\"set_anonymous_navigation\":true}"
+    },
+    {
+      "id": "OBJ-rpc",
+      "description": "Existen upcoming_fairs y set_anonymous_navigation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "RLS-on",
+      "description": "RLS activo en fairs y platform_settings",
+      "ok": true,
+      "detail": "[{\"tabla\":\"fairs\",\"rls\":true},{\"tabla\":\"platform_settings\",\"rls\":true}]"
+    },
+    {
+      "id": "COL-pickup",
+      "description": "Columnas pickup_* en shops y en public_shops",
+      "ok": true,
+      "detail": "[{\"table_name\":\"public_shops\",\"column_name\":\"pickup_label\"},{\"table_name\":\"public_shops\",\"column_name\":\"pickup_lat\"},{\"table_name\":\"public_shops\",\"column_name\":\"pickup_lng\"},{\"table_name\":\"shops\",\"column_name\":\"pickup_label\"},{\"table_name\":\"shops\",\"column_name\":\"pickup_lat\"},{\"table_name\":\"shops\",\"column_name\":\"pickup_lng\"}]"
+    },
+    {
+      "id": "PRIV-fairs",
+      "description": "El visitante no lee la tabla fairs, solo la vista public_fairs",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "PRIV-settings",
+      "description": "El visitante lee platform_settings pero no la modifica",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "PRIV-rpc",
+      "description": "upcoming_fairs es publica; set_anonymous_navigation solo para usuarios con sesion",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "API-public_fairs",
+      "description": "public_fairs responde sin sesion y nunca muestra borradores",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "API-upcoming-fecha",
+      "description": "upcoming_fairs sin ubicacion (permiso rechazado): ordena por fecha y sin distancia",
+      "ok": true,
+      "detail": "HTTP 200, 1 ferias"
+    },
+    {
+      "id": "API-upcoming-distancia",
+      "description": "upcoming_fairs con ubicacion: ordena de la mas cercana a la mas lejana",
+      "ok": true,
+      "detail": "HTTP 200, 1 ferias"
+    },
+    {
+      "id": "API-upcoming-invalida",
+      "description": "upcoming_fairs rechaza una ubicacion invalida",
+      "ok": true,
+      "detail": "HTTP 400"
+    },
+    {
+      "id": "API-settings",
+      "description": "platform_settings entrega una opcion valida sin sesion",
+      "ok": true,
+      "detail": "[{\"anonymous_navigation\":\"allow\"}]"
+    },
+    {
+      "id": "API-set-nav-anon",
+      "description": "Sin sesion, set_anonymous_navigation es rechazada",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "API-fairs-tabla",
+      "description": "Sin sesion, la tabla fairs no se puede leer",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "API-public_shops",
+      "description": "public_shops expone pickup_* sin sesion",
+      "ok": true,
+      "detail": "HTTP 200"
+    }
+  ],
+  "notes": [
+    "Hay 1 feria(s) futura(s) publicada(s); para A12/A13 conviene tener al menos 2 (las carga Alonso).",
+    "Ninguna tienda tiene punto de retiro todavia; para A18 la emprendedora debe marcar uno en la app."
+  ],
+  "limits": [
+    "Solo lectura. No demuestra operaciones de escritura de administrador: eso lo cubren las pruebas SQL (npm --prefix supabase test) en GitHub Actions.",
+    "Las respuestas de la API se comprobaron con la clave anon, sin sesion."
+  ]
+}
