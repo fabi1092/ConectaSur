@@ -39,8 +39,9 @@
     }
     fairs.forEach(f => {
       const m = L.marker([f.lat, f.lng], { icon: fairIcon }).addTo(layer);
+      const place = f.placeName || f.address || 'Puerto Montt';
       const dist = f.distanceKm != null ? `<br><small>A ${f.distanceKm.toFixed(1)} km</small>` : '';
-      const html = `<strong>${esc(f.name)}</strong><br>${esc(f.placeName)}${dist}<br><button class="popup-btn" onclick="AndroidMap.openFair('${esc(f.id)}')">Ver feria</button>`;
+      const html = `<strong>${esc(f.name)}</strong><br>${esc(place)}${dist}<br><button class="popup-btn" onclick="AndroidMap.openFair('${esc(f.id)}')">Ver feria</button>`;
       m.bindPopup(html);
       bounds.push([f.lat, f.lng]);
     });
@@ -75,6 +76,14 @@
         window.AndroidMap.onPickLocation(Number(p.lat.toFixed(6)), Number(p.lng.toFixed(6)));
       }
     });
+  };
+
+  window.setPickupPoint = function(lat, lng, label) {
+    layer.clearLayers();
+    if (lat === null || lng === null || Number.isNaN(lat) || Number.isNaN(lng)) return;
+    const marker = L.marker([lat, lng], { icon: fairIcon }).addTo(layer);
+    if (label) marker.bindPopup(esc(label)).openPopup();
+    map.setView([lat, lng], 15);
   };
 </script>
 </body>

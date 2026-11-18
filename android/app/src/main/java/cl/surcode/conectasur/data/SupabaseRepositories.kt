@@ -86,7 +86,22 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
     override suspend fun listPublicFairs(lat: Double?, lng: Double?): List<PublicFair> {
         val body = JSONObject().put("p_lat", lat ?: JSONObject.NULL).put("p_lng", lng ?: JSONObject.NULL)
         val rows = client.request("/rest/v1/rpc/upcoming_fairs", "POST", body, false) as JSONArray
-        return rows.rows { it.toPublicFair() }
+        val upcoming = rows.rows { it.toPublicFair() }
+        if (upcoming.isNotEmpty()) return upcoming
+        val published = (client.request("/rest/v1/public_fairs?select=*&status=eq.published&order=starts_at.desc") as JSONArray)
+            .rows { it.toPublicFair() }
+        if (lat == null || lng == null) return published
+        fun haversineKm(aLat: Double, aLng: Double, bLat: Double, bLng: Double): Double {
+            val r = 6371.0
+            val dLat = Math.toRadians(bLat - aLat)
+            val dLng = Math.toRadians(bLng - aLng)
+            val s = kotlin.math.sin(dLat / 2) * kotlin.math.sin(dLat / 2) +
+                kotlin.math.cos(Math.toRadians(aLat)) * kotlin.math.cos(Math.toRadians(bLat)) *
+                kotlin.math.sin(dLng / 2) * kotlin.math.sin(dLng / 2)
+            return r * 2.0 * kotlin.math.atan2(kotlin.math.sqrt(s), kotlin.math.sqrt(1.0 - s))
+        }
+        return published.map { it.copy(distanceKm = haversineKm(lat, lng, it.latitude, it.longitude)) }
+            .sortedBy { it.distanceKm }
     }
     override suspend fun getAnonymousNavigation(): String {
         val rows = client.request("/rest/v1/platform_settings?select=anonymous_navigation&id=eq.true") as JSONArray

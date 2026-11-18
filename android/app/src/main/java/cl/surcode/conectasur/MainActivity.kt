@@ -103,6 +103,7 @@ class MainActivity : FragmentActivity() {
         if (current.screen == "fairs") loadAndRenderFairs(granted)
     }
     private val accountAccess = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        lifecycleScope.launch { repository.refresh() }
         if (result.resultCode == RESULT_OK && result.data?.getBooleanExtra(OPEN_CATALOG, false) == true) {
             shopFilter = null
             navigate(Destination("catalog"))
@@ -275,6 +276,7 @@ class MainActivity : FragmentActivity() {
                         "home" -> renderHomeProducts()
                         "catalog" -> renderProducts()
                         "detail" -> bindDetail()
+                        "public_store" -> renderStoreProducts()
                     }
                 }
             }
@@ -315,6 +317,7 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         if (::buyerModel.isInitialized) buyerModel.refresh()
+        lifecycleScope.launch { repository.refresh() }
         scheduleEntryBiometricCheck()
     }
 
@@ -803,8 +806,7 @@ class MainActivity : FragmentActivity() {
                 page.findViewById<TextView>(R.id.product_availability).text =
                     if (product.onRequest) "A pedido" else if (product.soldOut || !v.available) "Agotado" else "Disponible"
                 val photoView = page.findViewById<ImageView>(R.id.product_photo)
-                photoView.tag = null
-                PublicImageLoader.load(lifecycleScope, photoView, v.photo ?: product.photo, BuildConfig.SUPABASE_URL)
+                bindPhoto(photoView, product.copy(photo = v.photo ?: product.photo))
             }
 
             fun refreshChipStyles() {
@@ -904,6 +906,7 @@ class MainActivity : FragmentActivity() {
             QrShareHelper.shareLink(this, getString(R.string.share_title), message)
         }
     }
+    @SuppressLint("SetJavaScriptEnabled")
     private fun bindStore() {
         page.findViewById<TextView>(R.id.page_title).setText(R.string.public_store_title)
         listOf(R.id.change_logo, R.id.remove_logo, R.id.local_logo_note, R.id.store_sales).forEach {
@@ -912,8 +915,11 @@ class MainActivity : FragmentActivity() {
         page.findViewById<Button>(R.id.store_catalog).setOnClickListener {
             shopFilter = current.productId; query = ""; navigate(Destination("catalog"))
         }
+        renderStoreProducts()
         if (RepositoryProvider.supabaseReady()) {
             page.findViewById<View>(R.id.store_demo).isVisible = false
+            page.findViewById<TextView>(R.id.store_name).text = "Cargando tienda…"
+            page.findViewById<TextView>(R.id.store_description).text = ""
             val shopId = current.productId
             lifecycleScope.launch {
                 val shop = runCatching { RepositoryProvider.shops().getShop(shopId) }.getOrNull()
@@ -924,24 +930,64 @@ class MainActivity : FragmentActivity() {
                         isVisible = true
                         setOnClickListener { startActivity(Intent(this@MainActivity, ShopContactActivity::class.java).putExtra("shop_id", shop.id)) }
                     }
+                    page.findViewById<Button>(R.id.store_share_link)?.apply {
+                        isVisible = true
+                        setOnClickListener {
+                            QrShareHelper.shareLink(this@MainActivity, shop.name, "${shop.name}\n${QrShareHelper.shopUrl(shop.id)}")
+                        }
+                    }
                     page.findViewById<Button>(R.id.store_share_qr)?.apply {
                         isVisible = true
                         setOnClickListener { QrShareHelper.showQrDialog(this@MainActivity, shop.name, shop.sector.ifBlank { "ConectaSur" }, QrShareHelper.shopUrl(shop.id)) }
                     }
-                    val hasPickup = !shop.pickupLabel.isNullOrBlank() || (shop.pickupLat != null && shop.pickupLng != null)
+                    val hasPickup = shop.pickupLabel.isNotBlank() || (shop.pickupLat != null && shop.pickupLng != null)
                     page.findViewById<View>(R.id.store_pickup_card)?.isVisible = hasPickup
                     if (hasPickup) {
-                        page.findViewById<TextView>(R.id.store_pickup_text)?.text = shop.pickupLabel ?: "Punto de entrega en mapa"
+                        val pickupLabelText = shop.pickupLabel.ifBlank { "Punto de entrega en mapa" }
+                        page.findViewById<TextView>(R.id.store_pickup_text)?.text = pickupLabelText
+                        val lat = shop.pickupLat
+                        val lng = shop.pickupLng
+                        page.findViewById<View>(R.id.store_pickup_map_container)?.isVisible = lat != null && lng != null
+                        page.findViewById<WebView>(R.id.store_pickup_map)?.apply {
+                            if (lat != null && lng != null) {
+                                settings.javaScriptEnabled = true
+                                settings.domStorageEnabled = true
+                                webViewClient = object : WebViewClient() {
+                                    override fun onPageFinished(view: WebView?, url: String?) {
+                                        view?.evaluateJavascript(
+                                            "if(window.setPickupPoint){setPickupPoint($lat, $lng, ${org.json.JSONObject.quote(pickupLabelText)});}",
+                                            null
+                                        )
+                                    }
+                                }
+                                loadUrl("file:///android_asset/conectasur_map.html")
+                            }
+                        }
                         page.findViewById<Button>(R.id.store_pickup_directions)?.apply {
-                            val lat = shop.pickupLat
-                            val lng = shop.pickupLng
                             isVisible = lat != null && lng != null
-                            setOnClickListener { if (lat != null && lng != null) openGeoDirections(lat, lng, shop.pickupLabel ?: shop.name) }
+                            setOnClickListener { if (lat != null && lng != null) openGeoDirections(lat, lng, pickupLabelText.ifBlank { shop.name }) }
                         }
                     }
                     PublicImageLoader.load(lifecycleScope, page.findViewById(R.id.store_logo), shop.logoUrl, BuildConfig.SUPABASE_URL)
                 }
             }
+        }
+    }
+    private fun renderStoreProducts() {
+        val list = page.findViewById<LinearLayout>(R.id.store_products_list) ?: return
+        val heading = page.findViewById<TextView>(R.id.store_products_heading)
+        val shopProducts = products.filter { it.shopId == current.productId }
+        if (shopProducts.isEmpty()) {
+            heading?.text = "Productos publicados"
+            list.removeAllViews()
+            list.addView(TextView(this).apply {
+                text = "Esta tienda aún no tiene productos publicados."
+                textSize = 15f
+                setTextColor(0xFF4A6560.toInt())
+            })
+        } else {
+            heading?.text = "Productos publicados (${shopProducts.size})"
+            renderProductGrid(list, shopProducts)
         }
     }
     private fun bindSettings() {
@@ -1105,12 +1151,12 @@ class MainActivity : FragmentActivity() {
         }
         if (anonymousNavMode == "invite" && navGateDismissed) return
         if (gateDialog?.isShowing == true) return
-        val inviteMessage = "Puedes iniciar sesión con tu cuenta para guardar tu perfil o explorar directamente sin cuenta."
+        val inviteMessage = "Puedes continuar con tu cuenta de Google o explorar directamente sin cuenta."
         val builder = AlertDialog.Builder(this)
             .setTitle("Bienvenida/o a ConectaSur")
             .setMessage(inviteMessage)
             .setCancelable(true)
-            .setPositiveButton("Iniciar sesión") { _, _ -> openAccount() }
+            .setPositiveButton("Continuar con Google") { _, _ -> launchDirectGoogleSignIn() }
         builder.setNegativeButton("Explorar sin cuenta") { _, _ -> navGateDismissed = true }
         gateDialog = builder.create().also { dlg ->
             dlg.setOnShowListener { applyAccessibility(dlg.window!!.decorView, prefs.read()) }
@@ -1298,34 +1344,55 @@ class MainActivity : FragmentActivity() {
         val assoc = publicAssociations.find { it.id == current.productId }
         val list = page.findViewById<LinearLayout>(R.id.dir_list)
         val status = page.findViewById<TextView>(R.id.dir_status)
-        if (assoc == null) {
-            page.findViewById<TextView>(R.id.page_title).text = "Asociación"
+        if (assoc == null || publicShops.isEmpty()) {
+            page.findViewById<TextView>(R.id.page_title).text = assoc?.name ?: "Asociación"
             status.text = "Cargando información de la asociación..."
             if (RepositoryProvider.supabaseReady()) {
                 lifecycleScope.launch {
                     publicAssociations = runCatching { RepositoryProvider.shops().listPublicAssociations() }.getOrDefault(emptyList())
                     publicShops = runCatching { RepositoryProvider.shops().listPublicShops() }.getOrDefault(emptyList())
-                    if (current.screen == "association_detail") bindAssociationDetail()
+                    if (current.screen == "association_detail" && publicAssociations.any { it.id == current.productId }) {
+                        bindAssociationDetail()
+                    }
                 }
             }
-            return
+            if (assoc == null) return
         }
         page.findViewById<TextView>(R.id.page_title).text = assoc.name
         status.text = assoc.description.ifBlank { "${assoc.shopIds.size} emprendimientos en esta asociación" }
         list.removeAllViews()
         val dp = resources.displayMetrics.density
-        list.addView(Button(this).apply {
-            text = "Compartir asociación / QR"
+        val shareRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = (16 * dp).toInt()
+            }
+        }
+        shareRow.addView(Button(this).apply {
+            text = "Compartir enlace"
             setBackgroundResource(R.drawable.button_tonal)
             setTextColor(0xFF183A34.toInt())
             minimumHeight = (48 * dp).toInt()
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = (16 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = (6 * dp).toInt()
+            }
+            setOnClickListener {
+                QrShareHelper.shareLink(this@MainActivity, assoc.name, "${assoc.name}\n${QrShareHelper.associationUrl(assoc.id)}")
+            }
+        })
+        shareRow.addView(Button(this).apply {
+            text = "Código QR"
+            setBackgroundResource(R.drawable.button_tonal)
+            setTextColor(0xFF183A34.toInt())
+            minimumHeight = (48 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = (6 * dp).toInt()
             }
             setOnClickListener {
                 QrShareHelper.showQrDialog(this@MainActivity, assoc.name, "${assoc.shopIds.size} emprendimientos", QrShareHelper.associationUrl(assoc.id))
             }
         })
+        list.addView(shareRow)
         val memberShops = publicShops.filter { it.id in assoc.shopIds }
         if (memberShops.isEmpty()) {
             list.addView(TextView(this).apply { text = "No hay tiendas visibles registradas aún."; textSize = 15f })
@@ -1392,6 +1459,7 @@ class MainActivity : FragmentActivity() {
             jsonArr.put(org.json.JSONObject().apply {
                 put("id", f.id)
                 put("name", f.name)
+                put("placeName", f.placeName)
                 put("address", f.placeName)
                 put("startsAt", f.startsAt)
                 put("lat", f.latitude)
@@ -1482,6 +1550,7 @@ class MainActivity : FragmentActivity() {
             put(org.json.JSONObject().apply {
                 put("id", fair.id)
                 put("name", fair.name)
+                put("placeName", fair.placeName)
                 put("address", fair.placeName)
                 put("startsAt", fair.startsAt)
                 put("lat", fair.latitude)
@@ -1502,7 +1571,7 @@ class MainActivity : FragmentActivity() {
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     view?.evaluateJavascript(
-                        "if(window.setFairs){setFairs(${org.json.JSONObject.quote(jsonArr.toString())}, ${fair.latitude}, ${fair.longitude});}",
+                        "if(window.setFairs){setFairs(${org.json.JSONObject.quote(jsonArr.toString())}, null, null);}",
                         null
                     )
                 }
