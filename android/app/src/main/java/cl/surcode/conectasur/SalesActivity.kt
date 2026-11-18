@@ -32,6 +32,8 @@ class SalesActivity : OwnerActivity() {
     private var initialized=false
     private var history=false
     private var pending:JSONObject?=null
+    private var selectedProductIndex=0
+    private var selectedVariantIndex=0
     private var lastSoldSnapshot:OwnerProduct?=null
     private var undoTimerJob:Job?=null
     private val platformFairs=listOf(
@@ -41,110 +43,193 @@ class SalesActivity : OwnerActivity() {
         "Feria Parque La Paloma"
     )
     override fun onOwnerReady(){if(!initialized){initialized=true;history=intent.getBooleanExtra("history",false);if(history)showHistory()else saleScreen()}}
+    private fun optionBg(selected:Boolean,radiusDp:Float=12f)=GradientDrawable().apply{
+        val dp=resources.displayMetrics.density
+        cornerRadius=radiusDp*dp
+        setColor(if(selected) 0xFFEEF6F4.toInt() else 0xFFFFFFFF.toInt())
+        setStroke(((if(selected) 2.5f else 1.5f)*dp).toInt(),if(selected) 0xFF1A7B6E.toInt() else 0xFFD3DDD9.toInt())
+    }
+    private fun productStockLabel(prod:OwnerProduct):String=when{
+        prod.variants.isNotEmpty()->{
+            val summary=when(prod.base.stockMode){
+                StockMode.ON_REQUEST->"A pedido"
+                StockMode.UNLIMITED->"Sin conteo de unidades"
+                else->{
+                    val total=prod.variants.sumOf{it.quantity.coerceAtLeast(0)}
+                    when{
+                        total>0->"Disponibles: $total"
+                        prod.base.stockMode==StockMode.UNITS && prod.base.soldOut=="ORDER"->"A pedido"
+                        else->"Agotado"
+                    }
+                }
+            }
+            "${prod.variants.size} variantes · $summary"
+        }
+        prod.base.stockMode==StockMode.ON_REQUEST->"A pedido"
+        prod.base.stockMode==StockMode.UNLIMITED->"Sin conteo de unidades"
+        (prod.base.quantity?:0)>0->"Disponibles: ${prod.base.quantity}"
+        prod.base.stockMode==StockMode.UNITS && prod.base.soldOut=="ORDER"->"A pedido"
+        else->"Agotado"
+    }
+    private fun variantStockLabel(product:OwnerProduct,variant:Variant):String=when{
+        product.base.stockMode==StockMode.ON_REQUEST->"A pedido"
+        product.base.stockMode==StockMode.UNLIMITED->"Sin conteo"
+        variant.quantity>0->"Disponibles: ${variant.quantity}"
+        product.base.stockMode==StockMode.UNITS && product.base.soldOut=="ORDER"->"A pedido"
+        else->"Agotado"
+    }
+    private fun renderProductCards(){
+        val container=findViewById<LinearLayout>(R.id.sv_product_cards)?:return
+        val dp=resources.displayMetrics.density
+        container.removeAllViews()
+        products.forEachIndexed{idx,prod->
+            val isSel=idx==selectedProductIndex
+            val stockText=productStockLabel(prod)
+            val shownPrice=prod.variants.firstOrNull()?.priceClp?:prod.base.priceClp
+            val card=LinearLayout(this).apply{
+                orientation=LinearLayout.HORIZONTAL
+                gravity=Gravity.CENTER_VERTICAL
+                minimumHeight=(52*dp).toInt()
+                setPadding((14*dp).toInt(),(10*dp).toInt(),(14*dp).toInt(),(10*dp).toInt())
+                layoutParams=LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{bottomMargin=(8*dp).toInt()}
+                background=optionBg(isSel)
+                isEnabled=pending==null
+                isClickable=true
+                isFocusable=true
+                contentDescription="${prod.base.name}, $stockText, ${priceLabel(shownPrice)}"
+            }
+            val infoCol=LinearLayout(this).apply{
+                orientation=LinearLayout.VERTICAL
+                layoutParams=LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.WRAP_CONTENT,1f).apply{marginEnd=(10*dp).toInt()}
+            }
+            val title=TextView(this).apply{
+                text=prod.base.name
+                textSize=16f
+                setTypeface(null,Typeface.BOLD)
+                setTextColor(0xFF183A34.toInt())
+            }
+            val stockInfo=TextView(this).apply{
+                text=stockText
+                textSize=13f
+                setTextColor(if(stockText.endsWith("Agotado")) 0xFFB3261E.toInt() else if(isSel) 0xFF155C43.toInt() else 0xFF4A6560.toInt())
+            }
+            infoCol.addView(title);infoCol.addView(stockInfo)
+            val price=TextView(this).apply{
+                text=priceLabel(shownPrice)
+                textSize=15f
+                setTypeface(null,Typeface.BOLD)
+                setTextColor(if(isSel) 0xFF155C43.toInt() else 0xFF1A7B6E.toInt())
+                fontFeatureSettings="tnum"
+            }
+            card.addView(infoCol);card.addView(price)
+            card.setOnClickListener{selectProduct(idx)}
+            container.addView(card)
+        }
+        applyAccessibility(container,settings)
+    }
+    private fun renderVariantChips(p:OwnerProduct?){
+        val container=findViewById<LinearLayout>(R.id.sv_variant_chips)?:return
+        val dp=resources.displayMetrics.density
+        container.removeAllViews()
+        val list=p?.variants.orEmpty()
+        list.forEachIndexed{idx,v->
+            val isSel=idx==selectedVariantIndex
+            val availLabel=p?.let{variantStockLabel(it,v)}.orEmpty()
+            val variantPrice=v.priceClp?:p?.base?.priceClp?:0L
+            val chip=LinearLayout(this).apply{
+                orientation=LinearLayout.HORIZONTAL
+                gravity=Gravity.CENTER_VERTICAL
+                minimumHeight=(56*dp).toInt()
+                setPadding((10*dp).toInt(),(8*dp).toInt(),(12*dp).toInt(),(8*dp).toInt())
+                layoutParams=LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{marginEnd=(10*dp).toInt()}
+                background=optionBg(isSel)
+                isEnabled=pending==null
+                isClickable=true
+                isFocusable=true
+                contentDescription="${v.label}, ${priceLabel(variantPrice)}, $availLabel"
+            }
+            val thumb=ImageView(this).apply{
+                layoutParams=LinearLayout.LayoutParams((40*dp).toInt(),(40*dp).toInt()).apply{marginEnd=(8*dp).toInt()}
+                scaleType=ImageView.ScaleType.CENTER_CROP
+                setImageResource(when(v.photo?:p?.base?.photo){"flores"->R.drawable.flores;"bandejas"->R.drawable.bandejas;else->R.drawable.ic_products})
+            }
+            PublicImageLoader.load(lifecycleScope,thumb,v.photo?:p?.base?.photo.orEmpty(),BuildConfig.SUPABASE_URL)
+            val col=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
+            col.addView(TextView(this).apply{text=v.label;textSize=14f;setTypeface(null,Typeface.BOLD);setTextColor(0xFF183A34.toInt());maxLines=1})
+            col.addView(TextView(this).apply{
+                text="${priceLabel(variantPrice)} · $availLabel"
+                textSize=13f
+                fontFeatureSettings="tnum"
+                setTextColor(if(availLabel=="Agotado") 0xFFB3261E.toInt() else if(isSel) 0xFF155C43.toInt() else 0xFF4A6560.toInt())
+            })
+            chip.addView(thumb);chip.addView(col)
+            chip.setOnClickListener{selectVariant(idx)}
+            container.addView(chip)
+        }
+        applyAccessibility(container,settings)
+    }
+    private fun selectProduct(idx:Int){
+        if(pending!=null || idx !in products.indices) return
+        selectedProductIndex=idx
+        val p=products[idx]
+        selectedVariantIndex=p.variants.indexOfFirst{p.saleError(it.id,1)==null}.coerceAtLeast(0)
+        findViewById<Spinner>(R.id.sv_product)?.setSelection(idx,false)
+        variants()
+    }
+    private fun selectVariant(idx:Int){
+        val p=products.getOrNull(selectedProductIndex)?:return
+        if(pending!=null || idx !in p.variants.indices) return
+        selectedVariantIndex=idx
+        findViewById<Spinner>(R.id.sv_variant)?.setSelection(idx,false)
+        renderVariantChips(p)
+        updatePrice()
+    }
+    private fun variants(){
+        val p=products.getOrNull(selectedProductIndex)
+        val hasVariants=p?.variants?.isNotEmpty()==true
+        selectedVariantIndex=if(hasVariants) selectedVariantIndex.coerceIn(0,p!!.variants.lastIndex) else 0
+        choices(R.id.sv_variant,p?.variants?.map{it.label}.orEmpty().ifEmpty{listOf("Sin variantes")},selectedVariantIndex)
+        findViewById<View>(R.id.sv_variant_section)?.isVisible=hasVariants
+        findViewById<View>(R.id.sv_variant_label)?.isVisible=hasVariants
+        renderProductCards()
+        renderVariantChips(p)
+        updatePrice()
+    }
     private fun saleScreen(){action("Cargando tus productos…"){
         products=workspace.sync(shopId).products
         pending=workspace.saleDraft(shopId)
         screen(R.layout.screen_owner_sales)
-        val dp=resources.displayMetrics.density
-        fun optionBg(selected:Boolean,radiusDp:Float=12f)=GradientDrawable().apply{
-            cornerRadius=radiusDp*dp
-            setColor(if(selected) 0xFFEEF6F4.toInt() else 0xFFFFFFFF.toInt())
-            setStroke(((if(selected) 2.5f else 1.5f)*dp).toInt(),if(selected) 0xFF1A7B6E.toInt() else 0xFFD3DDD9.toInt())
+        if(pending!=null){
+            val pIdx=products.indexOfFirst{it.base.id==pending!!.optString("productId")}
+            selectedProductIndex=if(pIdx>=0) pIdx else 0
+            val p=products.getOrNull(selectedProductIndex)
+            val vId=pending!!.nullableString("variantId")
+            selectedVariantIndex=if(vId!=null && p!=null) p.variants.indexOfFirst{it.id==vId}.coerceAtLeast(0) else 0
+        }else{
+            val availableIdx=products.indexOfFirst{prod->
+                if(prod.variants.isNotEmpty()) prod.variants.any{prod.saleError(it.id,1)==null}
+                else prod.saleError(null,1)==null
+            }
+            selectedProductIndex=if(availableIdx>=0) availableIdx else 0
+            val p=products.getOrNull(selectedProductIndex)
+            selectedVariantIndex=p?.variants?.indexOfFirst{p.saleError(it.id,1)==null}?.coerceAtLeast(0)?:0
         }
         val productSpinner=findViewById<Spinner>(R.id.sv_product)
         val variantSpinner=findViewById<Spinner>(R.id.sv_variant)
-        val productCards=findViewById<LinearLayout>(R.id.sv_product_cards)
-        val variantChips=findViewById<LinearLayout>(R.id.sv_variant_chips)
-        choices(R.id.sv_product,products.map{it.base.name})
-        pending?.let{p->productSpinner.setSelection(products.indexOfFirst{it.base.id==p.optString("productId")}.coerceAtLeast(0))}
-        fun renderProductCards(){
-            val container=productCards?:return
-            val selectedIdx=option(R.id.sv_product)
-            container.removeAllViews()
-            products.forEachIndexed{idx,prod->
-                val isSel=idx==selectedIdx
-                val card=LinearLayout(this).apply{
-                    orientation=LinearLayout.HORIZONTAL
-                    gravity=Gravity.CENTER_VERTICAL
-                    minimumHeight=(52*dp).toInt()
-                    setPadding((14*dp).toInt(),(10*dp).toInt(),(14*dp).toInt(),(10*dp).toInt())
-                    layoutParams=LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{bottomMargin=(8*dp).toInt()}
-                    background=optionBg(isSel)
-                    isEnabled=pending==null
-                    isClickable=true
-                    isFocusable=true
-                    contentDescription="${prod.base.name}, ${priceLabel(prod.base.priceClp)}"
-                }
-                val title=TextView(this).apply{
-                    text=prod.base.name
-                    textSize=16f
-                    setTypeface(null,Typeface.BOLD)
-                    setTextColor(0xFF183A34.toInt())
-                    layoutParams=LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.WRAP_CONTENT,1f).apply{marginEnd=(10*dp).toInt()}
-                }
-                val shownPrice=prod.variants.firstOrNull()?.priceClp?:prod.base.priceClp
-                val price=TextView(this).apply{
-                    text=priceLabel(shownPrice)
-                    textSize=15f
-                    setTypeface(null,Typeface.BOLD)
-                    setTextColor(if(isSel) 0xFF155C43.toInt() else 0xFF1A7B6E.toInt())
-                    fontFeatureSettings="tnum"
-                }
-                card.addView(title);card.addView(price)
-                card.setOnClickListener{
-                    if(pending!=null) return@setOnClickListener
-                    productSpinner.setSelection(idx)
-                }
-                container.addView(card)
+        choices(R.id.sv_product,products.map{it.base.name},selectedProductIndex)
+        productSpinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(p:AdapterView<*>?){}
+            override fun onItemSelected(p:AdapterView<*>?,v:View?,i:Int,id:Long){
+                if(i!=selectedProductIndex && i in products.indices && pending==null) selectProduct(i)
             }
         }
-        fun renderVariantChips(p:OwnerProduct?){
-            val container=variantChips?:return
-            container.removeAllViews()
-            val list=p?.variants.orEmpty()
-            val selectedIdx=option(R.id.sv_variant)
-            list.forEachIndexed{idx,v->
-                val isSel=idx==selectedIdx
-                val chip=LinearLayout(this).apply{
-                    orientation=LinearLayout.HORIZONTAL
-                    gravity=Gravity.CENTER_VERTICAL
-                    minimumHeight=(56*dp).toInt()
-                    setPadding((10*dp).toInt(),(8*dp).toInt(),(12*dp).toInt(),(8*dp).toInt())
-                    layoutParams=LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{marginEnd=(10*dp).toInt()}
-                    background=optionBg(isSel)
-                    isEnabled=pending==null
-                    isClickable=true
-                    isFocusable=true
-                }
-                val thumb=ImageView(this).apply{
-                    layoutParams=LinearLayout.LayoutParams((40*dp).toInt(),(40*dp).toInt()).apply{marginEnd=(8*dp).toInt()}
-                    scaleType=ImageView.ScaleType.CENTER_CROP
-                    setImageResource(when(v.photo?:p?.base?.photo){"flores"->R.drawable.flores;"bandejas"->R.drawable.bandejas;else->R.drawable.ic_products})
-                }
-                PublicImageLoader.load(lifecycleScope,thumb,v.photo?:p?.base?.photo.orEmpty(),BuildConfig.SUPABASE_URL)
-                val col=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
-                col.addView(TextView(this).apply{text=v.label;textSize=14f;setTypeface(null,Typeface.BOLD);setTextColor(0xFF183A34.toInt());maxLines=1})
-                col.addView(TextView(this).apply{text=priceLabel(v.priceClp?:p?.base?.priceClp?:0L);textSize=13f;fontFeatureSettings="tnum";setTextColor(if(isSel) 0xFF155C43.toInt() else 0xFF4A6560.toInt())})
-                chip.addView(thumb);chip.addView(col)
-                chip.setOnClickListener{
-                    if(pending!=null) return@setOnClickListener
-                    variantSpinner.setSelection(idx)
-                }
-                container.addView(chip)
+        variantSpinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(p:AdapterView<*>?){}
+            override fun onItemSelected(p:AdapterView<*>?,v:View?,i:Int,id:Long){
+                val current=products.getOrNull(selectedProductIndex)
+                if(i!=selectedVariantIndex && current!=null && i in current.variants.indices && pending==null) selectVariant(i)
             }
         }
-        fun variants(){
-            val p=products.getOrNull(option(R.id.sv_product));choices(R.id.sv_variant,p?.variants?.map{it.label}.orEmpty().ifEmpty{listOf("Sin variantes")})
-            pending?.let{d->variantSpinner.setSelection(p?.variants?.indexOfFirst{it.id==d.optString("variantId")}?.coerceAtLeast(0)?:0)}
-            val hasVariants=p?.variants?.isNotEmpty()==true
-            findViewById<View>(R.id.sv_variant_section)?.isVisible=hasVariants
-            findViewById<View>(R.id.sv_variant_label).isVisible=hasVariants
-            renderProductCards()
-            renderVariantChips(p)
-            updatePrice()
-        }
-        productSpinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){};override fun onItemSelected(p:AdapterView<*>?,v:View?,i:Int,id:Long){variants()}}
-        variantSpinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){};override fun onItemSelected(p:AdapterView<*>?,v:View?,i:Int,id:Long){renderVariantChips(products.getOrNull(option(R.id.sv_product)));updatePrice()}}
         findViewById<EditText>(R.id.sv_quantity).apply {
             setText(pending?.optString("quantity")?:"1")
             doAfterTextChanged { updatePrice() }
@@ -171,6 +256,10 @@ class SalesActivity : OwnerActivity() {
         }
         choices(R.id.sv_fair_selector,saleFairOptions,initialFairIndex)
         placeInput.setText(initialPlace)
+        placeInput.doAfterTextChanged {
+            val currentPriceText=findViewById<TextView>(R.id.sv_price)?.text?.toString().orEmpty()
+            if(!currentPriceText.startsWith("Precio por unidad:")) updatePrice()
+        }
         val startInFeria=initialPlace.isBlank()||initialPlace in platformFairs
         setPlaceMode(startInFeria)
         click(R.id.sv_place_feria){
@@ -224,19 +313,27 @@ class SalesActivity : OwnerActivity() {
         action("Devolviendo unidades al catálogo…"){
             val result=workspace.save(shopId,snapshot)
             products=result.products
-            updatePrice()
+            selectedProductIndex=products.indexOfFirst{it.base.id==snapshot.base.id}.coerceAtLeast(0)
+            choices(R.id.sv_product,products.map{it.base.name},selectedProductIndex)
+            variants()
             val msg="Venta anulada: se devolvieron las unidades de ${snapshot.base.name} a tu catálogo."
             status(msg)
         }
     }
     private fun updatePrice(){
-        val p=products.getOrNull(option(R.id.sv_product))?:return;val v=p.variants.getOrNull(option(R.id.sv_variant))
+        val priceView=findViewById<TextView>(R.id.sv_price)?:return
+        val p=products.getOrNull(selectedProductIndex)?:run{priceView.setText(R.string.e5_screen_owner_sales_8);return}
+        val v=p.variants.getOrNull(selectedVariantIndex)
         val unitPrice=v?.priceClp?:p.base.priceClp
         val qty=findViewById<EditText>(R.id.sv_quantity)?.text?.toString()?.trim()?.toIntOrNull()?.coerceAtLeast(1)?:1
         val total=unitPrice*qty
         val words=numberToSpanishWords(total).replaceFirstChar{it.uppercase()}
-        val amount=if(p.base.stockMode in listOf(StockMode.ON_REQUEST,StockMode.UNLIMITED))"Sin conteo de unidades" else "Disponibles: ${v?.quantity?:p.base.quantity?:0}"
-        findViewById<TextView>(R.id.sv_price).text="Precio por unidad: ${priceLabel(unitPrice)}. $amount\nTotal a cobrar: ${priceLabel(total)} (Escrito: $words pesos)"
+        val amount=when{
+            p.base.stockMode in listOf(StockMode.ON_REQUEST,StockMode.UNLIMITED)->"Sin conteo de unidades"
+            p.base.stockMode==StockMode.UNITS && (p.base.quantity?:0)==0 && p.base.soldOut=="ORDER"->"A pedido"
+            else->"Disponibles: ${v?.quantity?:p.base.quantity?:0}"
+        }
+        priceView.text="Precio por unidad: ${priceLabel(unitPrice)}. $amount\nTotal a cobrar: ${priceLabel(total)} (Escrito: $words pesos)"
     }
     private fun lockPending(){
         val editable=pending==null
@@ -247,15 +344,24 @@ class SalesActivity : OwnerActivity() {
         }
         findViewById<Button>(R.id.sv_register).text=if(editable)"Guardar venta" else "Reintentar y confirmar venta"
     }
+    private fun showSaleError(message:String){
+        status(message)
+        Toast.makeText(this,message,Toast.LENGTH_LONG).show()
+        findViewById<TextView>(R.id.sv_price)?.text=message
+    }
     private fun confirmSale(){
-        val product=products.getOrNull(option(R.id.sv_product))?:run{status("Primero agrega un producto.");return}
-        val variant=product.variants.getOrNull(option(R.id.sv_variant))
+        val product=pending?.let{d->products.find{it.base.id==d.optString("productId")}}?:products.getOrNull(selectedProductIndex)
+        if(product==null){
+            if(pending!=null){workspace.clearSaleDraft(shopId);pending=null;lockPending()}
+            showSaleError("Primero agrega un producto.");return
+        }
+        val variant=pending?.nullableString("variantId")?.let{vId->product.variants.find{it.id==vId}}?:product.variants.getOrNull(selectedVariantIndex)
         val amount=pending?.optInt("quantity")?:text(R.id.sv_quantity).toIntOrNull()
         val place=pending?.optString("place")?:text(R.id.sv_place)
-        if(place.length>240){status("El lugar puede tener hasta 240 letras.");return}
-        if(pending==null){product.saleError(variant?.id,amount)?.let{status(it);return}}
-        else if(amount==null||amount<=0){status("Escribe una cantidad mayor que cero.");return}
-        AlertDialog.Builder(this).setTitle(if(pending==null)"Confirmar venta" else "Confirmar venta pendiente")
+        if(place.length>240){showSaleError("El lugar puede tener hasta 240 letras.");return}
+        if(pending==null){product.saleError(variant?.id,amount)?.let{showSaleError(it);return}}
+        else if(amount==null||amount<=0){showSaleError("Escribe una cantidad mayor que cero.");return}
+        val dialog=AlertDialog.Builder(this).setTitle(if(pending==null)"Confirmar venta" else "Confirmar venta pendiente")
             .setMessage("$amount × ${product.base.name}${variant?.let{" · ${it.label}"}?:""}\nPrecio por unidad: ${priceLabel(variant?.priceClp?:product.base.priceClp)}\nLugar: ${place.ifBlank{"No indicado"}}\nEl servidor verificará el stock.")
             .setNegativeButton("Volver",null).setPositiveButton("Confirmar"){_,_->
                 action("Confirmando venta…"){
@@ -263,18 +369,41 @@ class SalesActivity : OwnerActivity() {
                     pending=data;workspace.saveSaleDraft(shopId,data);lockPending()
                     try{
                         val soldQty=data.getInt("quantity")
-                        val unitClp=variant?.priceClp?:product.base.priceClp
-                        RepositoryProvider.sales().registerSale(shopId,data.getString("productId"),data.nullableString("variantId"),soldQty,data.getString("place"))
+                        val soldProductId=data.getString("productId")
+                        val soldVariantId=data.nullableString("variantId")
+                        RepositoryProvider.sales().registerSale(shopId,soldProductId,soldVariantId,soldQty,data.getString("place"))
                         workspace.clearSaleDraft(shopId);pending=null
                         products=workspace.sync(shopId).products
-                        lockPending();updatePrice();status("Venta registrada. El stock fue actualizado. Puedes registrar otra venta.")
+                        selectedProductIndex=products.indexOfFirst{it.base.id==soldProductId}.coerceAtLeast(0)
+                        val updatedProd=products.getOrNull(selectedProductIndex)
+                        selectedVariantIndex=if(soldVariantId!=null && updatedProd!=null) updatedProd.variants.indexOfFirst{it.id==soldVariantId}.coerceAtLeast(0) else 0
+                        choices(R.id.sv_product,products.map{it.base.name},selectedProductIndex)
+                        variants()
+                        lockPending()
+                        status("Venta registrada. El stock fue actualizado. Puedes registrar otra venta.")
+                        Toast.makeText(this@SalesActivity,"Venta registrada en tu tienda.",Toast.LENGTH_SHORT).show()
                         showUndoBanner(product,soldQty)
                         findViewById<EditText>(R.id.sv_quantity).setText("1")
                     }catch(e:BackendException){
-                        if(e.status in 400..499 && e.status !in listOf(408,429)){workspace.clearSaleDraft(shopId);pending=null;lockPending()};throw e
-                    }catch(_:IOException){status("No tenemos confirmación de esta venta. Conservamos los datos. Pulsa Reintentar cuando vuelva la conexión; no se duplicará.")}
+                        if(e.status in 400..499 && e.status !in listOf(408,429)){workspace.clearSaleDraft(shopId);pending=null;lockPending()}
+                        val msg=e.message?:"No pudimos completar la venta."
+                        Toast.makeText(this@SalesActivity,msg,Toast.LENGTH_LONG).show()
+                        findViewById<TextView>(R.id.sv_price)?.text=msg
+                        throw e
+                    }catch(_:IOException){
+                        val msg="No tenemos confirmación de esta venta. Conservamos los datos. Pulsa Reintentar cuando vuelva la conexión; no se duplicará."
+                        Toast.makeText(this@SalesActivity,msg,Toast.LENGTH_LONG).show()
+                        status(msg)
+                    }
                 }
-            }.show()
+            }
+        if(pending!=null){
+            dialog.setNeutralButton("Descartar pendiente"){_,_->
+                workspace.clearSaleDraft(shopId);pending=null;lockPending();variants()
+                status("Venta pendiente descartada. Elige producto, variante y cantidad.")
+            }
+        }
+        dialog.show()
     }
     private fun showHistory(){action("Cargando historial…"){
         sales=workspace.sales(shopId);products=workspace.sync(shopId).products;screen(R.layout.screen_owner_history)
