@@ -138,6 +138,19 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp" />
 
+            <FrameLayout
+                android:id="@+id/store_pickup_map_container"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_marginTop="8dp"
+                android:visibility="gone">
+
+                <WebView
+                    android:id="@+id/store_pickup_map"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </FrameLayout>
+
             <Button
                 android:id="@+id/store_pickup_directions"
                 style="@style/ConectaSur.Button.Tonal"
@@ -157,15 +170,35 @@
             android:text="Contactar a la tienda"
             android:visibility="gone" />
 
-        <Button
-            android:id="@+id/store_share_qr"
-            style="@style/ConectaSur.Button.Tonal"
+        <LinearLayout
+            android:id="@+id/store_share_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_sm"
-            android:minHeight="48dp"
-            android:text="Compartir tienda / QR"
-            android:visibility="gone" />
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/store_share_link"
+                style="@style/ConectaSur.Button.Tonal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/space_xs"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="Compartir enlace"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/store_share_qr"
+                style="@style/ConectaSur.Button.Tonal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_xs"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="Código QR"
+                android:visibility="gone" />
+        </LinearLayout>
 
         <Button
             android:id="@+id/store_catalog"
@@ -182,5 +215,20 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_sm"
             android:text="@string/store_sales" />
+
+        <TextView
+            android:id="@+id/store_products_heading"
+            style="@style/ConectaSur.Section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:text="Productos publicados" />
+
+        <LinearLayout
+            android:id="@+id/store_products_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:orientation="vertical" />
     </LinearLayout>
 </ScrollView>
