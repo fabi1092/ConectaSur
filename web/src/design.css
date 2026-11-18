@@ -371,6 +371,9 @@ html[data-contrast='high'] .spec-row { background: #fff; color: #000; border: 1p
 .fair-address-row input { flex: 1 1 240px; }
 .fair-addr-results { display: grid; gap: 6px; margin-top: 8px; }
 .fair-addr-choice { text-align: left; justify-content: flex-start !important; width: 100%; }
+.public-shop-assoc { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: .95rem; color: var(--navy); }
+.public-shop-assoc a { color: var(--green); text-decoration: underline; font-weight: 600; }
+.fair-logo-cover { border-radius: 14px; object-fit: cover; }
 @media (max-width: 900px) {
   .public-associations-grid, .public-fairs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

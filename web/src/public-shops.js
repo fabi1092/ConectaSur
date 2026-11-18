@@ -254,12 +254,18 @@ export async function showPublicShop(app, db, id, isCurrent = () => true) {
   document.title = 'ConectaSur | Tienda';
   app.innerHTML = shell('<section class="public-state"><p role="status">Cargando la tienda…</p></section>');
   try {
-    const shop = id ? await db.getShop(id) : null;
+    const [shop, associations, shopAssocs] = await Promise.all([
+      id ? db.getShop(id) : null,
+      db.listPublicAssociations().catch(() => []),
+      db.listPublicShopAssociations().catch(() => [])
+    ]);
     if (!isCurrent()) return;
     if (!shop) {
       showStatus(app, 'Esta tienda no está disponible', 'Puede que el enlace haya cambiado o que la tienda ya no esté activa. Puedes conocer otros emprendimientos.');
       return;
     }
+    const memberAssocIds = new Set(shopAssocs.filter(sa => sa.shop_id === shop.id).map(sa => sa.association_id));
+    const shopAssociations = associations.filter(a => memberAssocIds.has(a.id));
     document.title = `${shop.name} | ConectaSur`;
     app.innerHTML = shell(`<div class="public-shop-page">
       <a class="public-back" href="#inicio">← Volver a las tiendas</a>
@@ -267,12 +273,13 @@ export async function showPublicShop(app, db, id, isCurrent = () => true) {
         ${logo(shop, true)}
         <div><p class="public-eyebrow">Emprendimiento local</p><h1 id="shop-title" tabindex="-1">${escape(shop.name)}</h1>
           <p class="public-category">${escape(shop.entrepreneurType || 'Tipo por informar')}</p>
-          <p class="public-sector">${icon('pin')} ${escape(shop.sector || 'Sector por informar')}</p></div>
+          <p class="public-sector">${icon('pin')} ${escape(shop.sector || 'Sector por informar')}</p>
+          ${shopAssociations.length ? `<p class="public-shop-assoc">${icon('people')} <strong>Asociación:</strong> ${shopAssociations.map(a => `<a class="public-text-link" href="${escape(associationLink(a.id))}">${escape(a.name)}</a>`).join(', ')}</p>` : ''}</div>
       </section>
       <div class="public-shop-details">
         <section class="public-about" aria-labelledby="about-title"><p class="public-eyebrow">Detrás de este emprendimiento</p><h2 id="about-title">Conoce nuestra tienda</h2><p class="public-description">${escape(shop.description || 'Esta tienda aún no ha agregado una descripción.')}</p></section>
         <section class="public-contact" aria-labelledby="contact-title"><p class="public-eyebrow">Conversemos</p><h2 id="contact-title">Contacta a la tienda</h2><p>Consulta directamente por sus productos y disponibilidad.</p>
-          <dl><dt>Datos de contacto</dt><dd class="public-description">${escape(shop.contact || 'La tienda aún no ha agregado sus datos de contacto.')}</dd><dt>Sector</dt><dd>${escape(shop.sector || 'Por informar')}</dd>${shop.pickupLat != null && shop.pickupLng != null ? `<dt>Punto de retiro o venta</dt><dd>${escape(shop.pickupLabel || 'Ubicación marcada en mapa')}<br><a class="public-text-link" target="_blank" rel="noopener noreferrer" href="${escape(directionsUrl(shop.pickupLat, shop.pickupLng))}">Cómo llegar en mapa ${icon('arrow')}</a></dd>` : ''}</dl>
+          <dl><dt>Datos de contacto</dt><dd class="public-description">${escape(shop.contact || 'La tienda aún no ha agregado sus datos de contacto.')}</dd><dt>Sector</dt><dd>${escape(shop.sector || 'Por informar')}</dd>${shopAssociations.length ? `<dt>Asociación</dt><dd>${shopAssociations.map(a => `<a class="public-text-link" href="${escape(associationLink(a.id))}">${escape(a.name)}</a>`).join(', ')}</dd>` : ''}${shop.pickupLat != null && shop.pickupLng != null ? `<dt>Punto de retiro o venta</dt><dd>${escape(shop.pickupLabel || 'Ubicación marcada en mapa')}<br><a class="public-text-link" target="_blank" rel="noopener noreferrer" href="${escape(directionsUrl(shop.pickupLat, shop.pickupLng))}">Cómo llegar en mapa ${icon('arrow')}</a></dd>` : ''}</dl>
           ${contactMarkup(shop)}
         </section>
       </div>
@@ -324,10 +331,11 @@ export async function showPublicAssociation(app, db, id, isCurrent = () => true)
   document.title = 'ConectaSur | Asociación';
   app.innerHTML = shell('<section class="public-state"><p role="status">Cargando asociación…</p></section>');
   try {
-    const [associations, shops, shopAssocs] = await Promise.all([
+    const [associations, shops, shopAssocs, products] = await Promise.all([
       db.listPublicAssociations(),
       db.listPublicShops(),
-      db.listPublicShopAssociations()
+      db.listPublicShopAssociations(),
+      db.listPublicProducts().catch(() => [])
     ]);
     if (!isCurrent()) return;
     const assoc = associations.find(a => a.id === id);
@@ -355,10 +363,11 @@ export async function showPublicAssociation(app, db, id, isCurrent = () => true)
       </div>
       <section class="shop-catalog" aria-labelledby="assoc-members-title">
         <div class="section-title-row"><div><p class="public-eyebrow">Tiendas participantes</p><h2 id="assoc-members-title">Integrantes (${members.length})</h2></div></div>
-        <div class="public-shop-grid">${members.length ? members.map(s => card(s, [])).join('') : '<div class="public-empty"><p>Aún no hay tiendas activas asignadas a esta asociación.</p></div>'}</div>
+        <div class="public-shop-grid">${members.length ? members.map(s => card(s, products)).join('') : '<div class="public-empty"><p>Aún no hay tiendas activas asignadas a esta asociación.</p></div>'}</div>
       </section>
     </div>`);
     imageFallbacks(app);
+    wirePhotos(app);
     app.querySelector('#assoc-title').focus({ preventScroll: true });
     window.scrollTo(0, 0);
   } catch {
@@ -384,7 +393,7 @@ export async function showPublicFair(app, db, id, isCurrent = () => true) {
     app.innerHTML = shell(`<div class="public-shop-page">
       <a class="public-back" href="#ferias">← Volver a las ferias</a>
       <section class="public-shop-banner" aria-labelledby="fair-title">
-        ${imgSrc ? `<img class="shop-logo shop-logo-large" src="${escape(imgSrc)}" alt="${escape(fair.name)}">` : `<div class="shop-logo shop-logo-large"><span class="shop-logo-fallback">${icon('pin')}</span></div>`}
+        ${imgSrc ? `<img class="shop-logo shop-logo-large fair-logo-cover" src="${escape(imgSrc)}" alt="${escape(fair.name)}">` : `<div class="shop-logo shop-logo-large"><span class="shop-logo-fallback">${icon('pin')}</span></div>`}
         <div>
           <p class="public-eyebrow">${cancelled ? 'Feria cancelada' : 'Feria presencial'}</p>
           <h1 id="fair-title" tabindex="-1">${escape(fair.name)}</h1>

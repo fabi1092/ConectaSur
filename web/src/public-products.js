@@ -85,8 +85,18 @@ export function wireProducts(root, products, shops) {
         }
       : product;
 
+    const variantStatusText = v => {
+      if (v?.available === false) return product.onRequest ? 'A pedido · hecho por encargo' : 'Agotado · consulta a la tienda';
+      return availabilityText(product);
+    };
+    const variantTone = v => {
+      if (v?.available === false) return product.onRequest ? 'badge-order' : 'badge-soldout';
+      return availabilityTone(product);
+    };
+
     const initialPrice = priceLabel(displayedProduct);
-    const statusText = availabilityText(product);
+    const statusText = variantStatusText(selectedVariant);
+    const initialTone = variantTone(selectedVariant);
     const unavailableVariantSuffix = product.onRequest ? ' · A pedido' : ' · Agotado';
 
     const variantSelector = variants.length
@@ -126,7 +136,7 @@ export function wireProducts(root, products, shops) {
         <div class="dialog-content">
           <div class="dialog-badges">
             <span class="catalog-category">${escape(product.category || 'Producto local')}</span>
-            <span class="catalog-badge ${availabilityTone(product)}" data-availability-status>${escape(statusText)}</span>
+            <span class="catalog-badge ${initialTone}" data-availability-status>${escape(statusText)}</span>
           </div>
           <h2>${escape(product.name)}</h2>
           <p class="dialog-price" aria-live="polite">${escape(initialPrice)}</p>
@@ -150,11 +160,15 @@ export function wireProducts(root, products, shops) {
           }
         : displayedProduct;
 
+      const variantStatus = variant?.available === false
+        ? (product.onRequest ? 'A pedido. Hecho por encargo.' : 'Agotado. Consulta a la tienda.')
+        : (product.soldOut ? 'Agotado. Consulta a la tienda.' : product.onRequest ? 'A pedido. Hecho por encargo.' : '');
+
       dialog.dataset.voiceGuide =
         `${product.name}. ${priceLabel(currentProduct)}. ` +
         `${product.description || 'Consulta los detalles con la tienda.'} ` +
         `${variant ? `Opción seleccionada: ${variant.label}. ` : ''}` +
-        `${product.soldOut ? 'Agotado. Consulta a la tienda.' : product.onRequest ? 'A pedido. Hecho por encargo.' : ''} ` +
+        `${variantStatus ? variantStatus + ' ' : ''}` +
         `De ${shop?.name || 'un emprendimiento local'}.`;
     };
 
@@ -178,6 +192,12 @@ export function wireProducts(root, products, shops) {
 
       dialog.querySelector('.dialog-price').textContent =
         priceLabel(currentProduct);
+
+      const badge = dialog.querySelector('[data-availability-status]');
+      if (badge) {
+        badge.textContent = variantStatusText(variant);
+        badge.className = `catalog-badge ${variantTone(variant)}`;
+      }
 
       const currentPhoto = variant.photo || product.photo;
       dialog.querySelector('.dialog-photo').outerHTML =
