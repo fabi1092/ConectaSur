@@ -87,6 +87,11 @@ interface SalesRepository {
     fun history(shopId: String): Flow<List<Sale>>
 }
 
+interface PushRepository {
+    suspend fun registerDeviceToken(token: String, platform: String = "android") {}
+    suspend fun unregisterDeviceToken(token: String) {}
+}
+
 /**
  * Logica pura de venta; el servidor vuelve a validar y descontar en una transaccion.
  * Lanza IllegalArgumentException / IllegalStateException si la venta no es valida.
