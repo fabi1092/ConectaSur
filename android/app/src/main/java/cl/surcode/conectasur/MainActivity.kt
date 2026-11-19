@@ -102,6 +102,11 @@ class MainActivity : FragmentActivity() {
     private val locationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (current.screen == "fairs") loadAndRenderFairs(granted)
     }
+    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        FirebasePushManager.onPermissionResult(this, granted) {
+            if (current.screen == "settings") refreshPushSettingsCard()
+        }
+    }
     private val accountAccess = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         lifecycleScope.launch { repository.refresh() }
         if (result.resultCode == RESULT_OK && result.data?.getBooleanExtra(OPEN_CATALOG, false) == true) {
@@ -247,6 +252,7 @@ class MainActivity : FragmentActivity() {
         products = repository.publicProducts.value
         handleOAuthIntent(intent)
         showScreen()
+        handlePushIntent(intent)
         if (RepositoryProvider.supabaseReady()) {
             lifecycleScope.launch {
                 anonymousNavMode = runCatching { RepositoryProvider.shops().getAnonymousNavigation() }.getOrDefault("allow")
@@ -286,9 +292,24 @@ class MainActivity : FragmentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleOAuthIntent(intent)
+        handlePushIntent(intent)
         when (intent.getStringExtra("screen")) {
             "help" -> navigate(Destination("help"))
             "home" -> navigate(Destination("home"), clear = true)
+        }
+    }
+    private fun handlePushIntent(intent: Intent?) {
+        val pushType = intent?.getStringExtra(FirebasePushManager.EXTRA_PUSH_TYPE)
+        val fairId = intent?.getStringExtra(FirebasePushManager.EXTRA_FAIR_ID)
+        val shopId = intent?.getStringExtra(FirebasePushManager.EXTRA_SHOP_ID)
+        if (pushType.isNullOrBlank() && fairId.isNullOrBlank() && shopId.isNullOrBlank()) return
+        intent?.removeExtra(FirebasePushManager.EXTRA_PUSH_TYPE)
+        intent?.removeExtra(FirebasePushManager.EXTRA_FAIR_ID)
+        intent?.removeExtra(FirebasePushManager.EXTRA_FAIR_NAME)
+        intent?.removeExtra(FirebasePushManager.EXTRA_SHOP_ID)
+        when {
+            !fairId.isNullOrBlank() || pushType in listOf("fair_invitation", "followed_fair") -> navigate(Destination("fairs"))
+            !shopId.isNullOrBlank() -> navigate(Destination("public_store", shopId))
         }
     }
     private fun handleOAuthIntent(intent: Intent?) {
@@ -1010,7 +1031,29 @@ class MainActivity : FragmentActivity() {
         speed.check(if (settings.slowVoice) R.id.speed_slow else R.id.speed_normal)
         speed.setOnCheckedChangeListener { _, id -> prefs.save(prefs.read().copy(slowVoice = id == R.id.speed_slow)) }
         page.findViewById<Button>(R.id.try_voice).setOnClickListener { reader.read(getString(R.string.voice_example), prefs.read().slowVoice) }
+        page.findViewById<Button>(R.id.notifications_enable)?.setOnClickListener {
+            FirebasePushManager.requestConsentAndEnable(this, notificationPermissionLauncher) {
+                refreshPushSettingsCard()
+            }
+        }
+        page.findViewById<Button>(R.id.notifications_opt_out)?.setOnClickListener {
+            FirebasePushManager.optOut(this) {
+                runOnUiThread {
+                    refreshPushSettingsCard()
+                    Toast.makeText(this, "Te diste de baja de las notificaciones.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        refreshPushSettingsCard()
         page.findViewById<Button>(R.id.reset_settings).setOnClickListener { prefs.save(AccessibilitySettings()); recreate() }
+    }
+    private fun refreshPushSettingsCard() {
+        val statusView = page.findViewById<TextView>(R.id.notifications_status) ?: return
+        val consented = NotificationConsentStore(this).isConsented()
+        statusView.text = FirebasePushManager.statusSummary(this)
+        page.findViewById<Button>(R.id.notifications_enable)?.text =
+            if (consented && FirebasePushManager.hasSystemPermission(this)) "Actualizar registro de avisos" else "Activar avisos con mi permiso"
+        page.findViewById<Button>(R.id.notifications_opt_out)?.isEnabled = consented
     }
     private fun screenSpeech(): String = when(current.screen) {
             "home" -> "ConectaSur. Tu tienda, más cerca. Puedes ver productos sin una cuenta. En Ingresar, usa tu correo y contraseña para abrir tu cuenta de comprador o tu tienda, según tu perfil. También puedes ajustar letras y botones."
