@@ -1,13 +1,19 @@
 package cl.surcode.conectasur
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.location.LocationManager
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
@@ -36,12 +42,18 @@ class SalesActivity : OwnerActivity() {
     private var selectedVariantIndex=0
     private var lastSoldSnapshot:OwnerProduct?=null
     private var undoTimerJob:Job?=null
+    private var ownerFairCalendar=emptyList<OwnerFairCalendarItem>()
+    private var currentFairSuggestion:FairSaleSuggestion?=null
+    private var activeFairNames=emptyList<String>()
     private val platformFairs=listOf(
         "Feria Artesanal de Alerce",
         "Feria Costanera Puerto Montt",
         "Feria Municipal Presidente Ibáñez",
         "Feria Parque La Paloma"
     )
+    private val gpsPermissionLauncher=registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){
+        refreshFairSuggestion(autoApply=true, userInitiated=true)
+    }
     override fun onOwnerReady(){if(!initialized){initialized=true;history=intent.getBooleanExtra("history",false);if(history)showHistory()else saleScreen()}}
     private fun optionBg(selected:Boolean,radiusDp:Float=12f)=GradientDrawable().apply{
         val dp=resources.displayMetrics.density
@@ -198,6 +210,7 @@ class SalesActivity : OwnerActivity() {
     private fun saleScreen(){action("Cargando tus productos…"){
         products=workspace.sync(shopId).products
         pending=workspace.saleDraft(shopId)
+        ownerFairCalendar=runCatching{RepositoryProvider.shops().listOwnerFairCalendar(shopId)}.getOrDefault(emptyList())
         screen(R.layout.screen_owner_sales)
         if(pending!=null){
             val pIdx=products.indexOfFirst{it.base.id==pending!!.optString("productId")}
@@ -243,7 +256,8 @@ class SalesActivity : OwnerActivity() {
         click(R.id.sv_qty_plus){stepSaleQty(1)}
         click(R.id.sv_undo_button){undoLastSale()}
         val initialPlace=pending?.optString("place")?:""
-        val saleFairOptions=listOf("Otro lugar (escribir abajo)")+platformFairs
+        activeFairNames=(ownerFairCalendar.map{it.fair.name}+platformFairs).distinct()
+        val saleFairOptions=listOf("Otro lugar (escribir abajo)")+activeFairNames
         val initialFairIndex=saleFairOptions.indexOf(initialPlace).coerceAtLeast(0)
         val fairSpinner=findViewById<Spinner>(R.id.sv_fair_selector)
         val placeInput=findViewById<EditText>(R.id.sv_place)
@@ -260,20 +274,20 @@ class SalesActivity : OwnerActivity() {
             val currentPriceText=findViewById<TextView>(R.id.sv_price)?.text?.toString().orEmpty()
             if(!currentPriceText.startsWith("Precio por unidad:")) updatePrice()
         }
-        val startInFeria=initialPlace.isBlank()||initialPlace in platformFairs
+        val startInFeria=initialPlace.isBlank()||initialPlace in activeFairNames
         setPlaceMode(startInFeria)
         click(R.id.sv_place_feria){
             if(pending!=null) return@click
             setPlaceMode(true)
-            if(fairSpinner.selectedItemPosition<=0){
+            if(fairSpinner.selectedItemPosition<=0 && activeFairNames.isNotEmpty()){
                 fairSpinner.setSelection(1)
-                placeInput.setText(platformFairs.first())
+                placeInput.setText(activeFairNames.first())
             }
         }
         click(R.id.sv_place_particular){
             if(pending!=null) return@click
             setPlaceMode(false)
-            if(placeInput.text.toString().trim() in platformFairs||placeInput.text.isNullOrBlank()){
+            if(placeInput.text.toString().trim() in activeFairNames||placeInput.text.isNullOrBlank()){
                 placeInput.setText("Particular / Entrega directa")
             }
         }
@@ -283,9 +297,19 @@ class SalesActivity : OwnerActivity() {
                 if(pending!=null) return
                 if(i>0){
                     placeInput.setText(saleFairOptions[i])
-                }else if(placeInput.text.toString().trim() in platformFairs){
+                }else if(placeInput.text.toString().trim() in activeFairNames){
                     placeInput.setText("")
                 }
+            }
+        }
+        refreshFairSuggestion(autoApply=(pending==null && initialPlace.isBlank()), userInitiated=false)
+        findViewById<Button>(R.id.sv_detect_gps_fair)?.setOnClickListener {
+            if(pending!=null) return@setOnClickListener
+            val hasLoc=hasLocationPermission()
+            if(!hasLoc){
+                gpsPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION))
+            }else{
+                refreshFairSuggestion(autoApply=true, userInitiated=true)
             }
         }
         variants();lockPending()
@@ -293,6 +317,64 @@ class SalesActivity : OwnerActivity() {
         click(R.id.sv_history){history=true;showHistory()}
         status(if(pending!=null)"Hay una venta sin respuesta confirmada. Reintenta con los mismos datos para consultar su resultado sin duplicarla." else if(products.isEmpty())"Primero agrega un producto a tu catálogo." else "Elige producto, variante y cantidad. El stock se descuenta al confirmar.")
     }}
+    private fun hasLocationPermission():Boolean=
+        ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION)==PackageManager.PERMISSION_GRANTED
+    @SuppressLint("MissingPermission")
+    private fun readDeviceLocationOrNull():Pair<Double,Double>?{
+        if(!hasLocationPermission()) return null
+        val lm=getSystemService(LOCATION_SERVICE) as? LocationManager ?: return null
+        val best=listOf(LocationManager.GPS_PROVIDER,LocationManager.NETWORK_PROVIDER,LocationManager.PASSIVE_PROVIDER)
+            .mapNotNull{provider->runCatching{lm.getLastKnownLocation(provider)}.getOrNull()}
+            .maxByOrNull{it.time} ?: return null
+        return best.latitude to best.longitude
+    }
+    private fun applyFairToPlaceForm(fairName:String){
+        if(pending!=null) return
+        val saleFairOptions=listOf("Otro lugar (escribir abajo)")+activeFairNames
+        val targetIndex=saleFairOptions.indexOf(fairName)
+        findViewById<Button>(R.id.sv_place_feria)?.apply{background=optionBg(true,12f);setTextColor(0xFF155C43.toInt())}
+        findViewById<Button>(R.id.sv_place_particular)?.apply{background=optionBg(false,12f);setTextColor(0xFF4A6560.toInt())}
+        findViewById<Spinner>(R.id.sv_fair_selector)?.apply{
+            isVisible=true
+            if(targetIndex>0) setSelection(targetIndex)
+        }
+        findViewById<EditText>(R.id.sv_place)?.setText(fairName)
+    }
+    private fun refreshFairSuggestion(autoApply:Boolean,userInitiated:Boolean){
+        val suggestionBox=findViewById<View>(R.id.sv_fair_suggestion_box)?:return
+        val suggestionText=findViewById<TextView>(R.id.sv_fair_suggestion_text)?:return
+        val applyButton=findViewById<Button>(R.id.sv_fair_suggestion_apply)?:return
+        val gps=readDeviceLocationOrNull()
+        val suggestion=suggestFairForSale(
+            calendar=ownerFairCalendar,
+            now=Instant.now(),
+            userLat=gps?.first,
+            userLng=gps?.second
+        )
+        currentFairSuggestion=suggestion
+        if(suggestion!=null){
+            suggestionBox.isVisible=true
+            suggestionText.text=suggestion.label
+            applyButton.setOnClickListener {
+                applyFairToPlaceForm(suggestion.fair.name)
+                status("Lugar fijado en ${suggestion.fair.name}.")
+            }
+            if(autoApply && pending==null){
+                applyFairToPlaceForm(suggestion.fair.name)
+                if(userInitiated) status("Feria detectada: ${suggestion.fair.name}.")
+            }
+        }else{
+            suggestionBox.isVisible=false
+            if(userInitiated){
+                status(
+                    if(!hasLocationPermission())"Otorga permiso de ubicación para detectar ferias cercanas en curso."
+                    else if(gps==null)"No obtuvimos tu ubicación GPS actual. Puedes elegir la feria de la lista."
+                    else "No hay ferias confirmadas para hoy ni en curso a menos de 3 km."
+                )
+            }
+        }
+    }
     private fun showUndoBanner(previousProduct:OwnerProduct,soldQty:Int){
         lastSoldSnapshot=previousProduct
         undoTimerJob?.cancel()
@@ -337,7 +419,7 @@ class SalesActivity : OwnerActivity() {
     }
     private fun lockPending(){
         val editable=pending==null
-        listOf(R.id.sv_product,R.id.sv_variant,R.id.sv_quantity,R.id.sv_place,R.id.sv_fair_selector,R.id.sv_qty_minus,R.id.sv_qty_plus,R.id.sv_place_feria,R.id.sv_place_particular).forEach{findViewById<View>(it)?.isEnabled=editable}
+        listOf(R.id.sv_product,R.id.sv_variant,R.id.sv_quantity,R.id.sv_place,R.id.sv_fair_selector,R.id.sv_qty_minus,R.id.sv_qty_plus,R.id.sv_place_feria,R.id.sv_place_particular,R.id.sv_fair_suggestion_apply,R.id.sv_detect_gps_fair).forEach{findViewById<View>(it)?.isEnabled=editable}
         listOf(R.id.sv_product_cards,R.id.sv_variant_chips).forEach{id->
             val g=findViewById<LinearLayout>(id)?:return@forEach
             for(i in 0 until g.childCount) g.getChildAt(i).isEnabled=editable

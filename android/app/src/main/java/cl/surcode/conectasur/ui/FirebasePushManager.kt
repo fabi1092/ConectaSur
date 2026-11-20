@@ -89,9 +89,9 @@ object FirebasePushManager {
         }
         val tokenReady = store.lastToken() != null
         return if (tokenReady) {
-            "Avisos activados con tu permiso. Puedes darte de baja cuando quieras."
+            "Avisos activados con tu permiso. Horario: ${store.formatScheduleLabel()}. Puedes darte de baja cuando quieras."
         } else {
-            "Avisos activados. Registrando dispositivo para recibir notificaciones."
+            "Avisos activados. Horario: ${store.formatScheduleLabel()}. Registrando dispositivo para recibir notificaciones."
         }
     }
 
@@ -169,7 +169,8 @@ object FirebasePushManager {
         shopId: String?
     ) {
         val appContext = context.applicationContext
-        if (!NotificationConsentStore(appContext).isConsented()) return
+        val consentStore = NotificationConsentStore(appContext)
+        if (!consentStore.shouldDeliverNotificationNow()) return
         if (!hasSystemPermission(appContext)) return
         createChannels(appContext)
 

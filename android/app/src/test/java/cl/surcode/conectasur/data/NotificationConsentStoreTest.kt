@@ -71,4 +71,28 @@ class NotificationConsentStoreTest {
         assertEquals("Invitación a feria", invTitle)
         assertTrue(invBody.contains("Feria Plaza de Armas"))
     }
+
+    @Test
+    fun a15NotificationScheduleFiltersDeliveryByConfiguredHoursAndConsent() {
+        val store = NotificationConsentStore(FakeConsentStorage())
+        assertEquals(9, store.allowedStartHour())
+        assertEquals(20, store.allowedEndHour())
+        assertFalse(store.shouldDeliverNotificationAt(12))
+
+        store.grantConsent(nowMs = 5000L)
+        assertTrue(store.shouldDeliverNotificationAt(9))
+        assertTrue(store.shouldDeliverNotificationAt(19))
+        assertFalse(store.shouldDeliverNotificationAt(20))
+        assertFalse(store.shouldDeliverNotificationAt(7))
+
+        store.setNotificationSchedule(startHour = 10, endHour = 18, enabled = true)
+        assertEquals("10:00 a 18:00 hrs", store.formatScheduleLabel())
+        assertFalse(store.shouldDeliverNotificationAt(9))
+        assertTrue(store.shouldDeliverNotificationAt(10))
+        assertTrue(store.shouldDeliverNotificationAt(17))
+        assertFalse(store.shouldDeliverNotificationAt(18))
+
+        store.revokeConsent()
+        assertFalse(store.shouldDeliverNotificationAt(12))
+    }
 }

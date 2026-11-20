@@ -18,6 +18,7 @@ data class StoreState(
     val associationsError: Boolean = false,
     val choices: ShopChoices = ShopChoices(),
     val choicesError: Boolean = false,
+    val fairCalendar: List<OwnerFairCalendarItem> = emptyList(),
     val busy: Boolean = false,
     val locked: Boolean = false,
     val googleUrl: String? = null,
@@ -85,9 +86,10 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
         check(shop.id == session.shopId) { "La tienda consultada no coincide con tu cuenta. Vuelve a ingresar." }
         // Un borrador en memoria no reemplaza los datos confirmados por el servidor.
         if (draft?.id != shop.id) draft = shop
-        mutable.value = mutable.value.copy(session = session, shop = shop, associations = emptyList(), associationsError = false, message = "", error = false)
+        mutable.value = mutable.value.copy(session = session, shop = shop, associations = emptyList(), associationsError = false, fairCalendar = emptyList(), message = "", error = false)
         readAssociations(shop.id, session.uid)
         readChoices()
+        readFairCalendar(shop.id, session.uid)
     }
 
     fun beginGoogle() {
@@ -146,6 +148,36 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
             if (error is BackendException && error.status in listOf(401, 403)) throw error
             // Una consulta fallida no demuestra que la tienda no tenga asociación.
             if (sameAccount()) mutable.value = mutable.value.copy(associations = emptyList(), associationsError = true)
+        }
+    }
+
+    private suspend fun readFairCalendar(shopId: String, uid: String) {
+        fun sameAccount() = mutable.value.shop?.id == shopId && mutable.value.session?.uid == uid
+        try {
+            val items = shops.listOwnerFairCalendar(shopId)
+            if (sameAccount()) mutable.value = mutable.value.copy(fairCalendar = items)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) {
+            if (error is BackendException && error.status in listOf(401, 403)) throw error
+            if (sameAccount()) mutable.value = mutable.value.copy(fairCalendar = emptyList())
+        }
+    }
+
+    fun respondToFair(fairId: String, participate: Boolean) {
+        val current = mutable.value
+        val shopId = current.shop?.id ?: return
+        if (!canEdit()) return
+        val fairName = current.fairCalendar.find { it.fair.id == fairId }?.fair?.name ?: "la feria"
+        runOperation(if (participate) "Confirmando participación en $fairName…" else "Registrando respuesta en $fairName…") {
+            val nextStatus = shops.respondToFairInvitation(shopId, fairId, participate)
+            val updated = mutable.value.fairCalendar.map { item ->
+                if (item.fair.id == fairId) item.copy(status = nextStatus) else item
+            }
+            mutable.value = mutable.value.copy(
+                fairCalendar = updated,
+                message = if (participate) "Confirmaste tu participación en $fairName." else "Indicaste que no participarás en $fairName.",
+                error = false
+            )
         }
     }
 

@@ -1,6 +1,9 @@
 package cl.surcode.conectasur.data
 
 import android.content.Context
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.util.Locale
 
 interface ConsentStorage {
     fun getBoolean(key: String, defaultValue: Boolean): Boolean
@@ -57,11 +60,61 @@ class NotificationConsentStore(private val storage: ConsentStorage) {
         return previous
     }
 
+    fun isScheduleEnabled(): Boolean = storage.getBoolean(KEY_SCHEDULE_ENABLED, true)
+
+    fun allowedStartHour(): Int =
+        storage.getLong(KEY_SCHEDULE_START_HOUR, DEFAULT_START_HOUR.toLong()).toInt().coerceIn(0, 23)
+
+    fun allowedEndHour(): Int =
+        storage.getLong(KEY_SCHEDULE_END_HOUR, DEFAULT_END_HOUR.toLong()).toInt().coerceIn(0, 23)
+
+    fun setNotificationSchedule(startHour: Int, endHour: Int, enabled: Boolean = true) {
+        require(startHour in 0..23 && endHour in 0..23 && startHour != endHour) {
+            "El horario de inicio y término debe usar horas distintas entre 00:00 y 23:00."
+        }
+        storage.putBoolean(KEY_SCHEDULE_ENABLED, enabled)
+        storage.putLong(KEY_SCHEDULE_START_HOUR, startHour.toLong())
+        storage.putLong(KEY_SCHEDULE_END_HOUR, endHour.toLong())
+    }
+
+    fun shouldDeliverNotificationAt(hourOfDay: Int): Boolean {
+        if (!isConsented()) return false
+        if (!isScheduleEnabled()) return true
+        val h = hourOfDay.coerceIn(0, 23)
+        val start = allowedStartHour()
+        val end = allowedEndHour()
+        return when {
+            start < end -> h in start until end
+            start > end -> h >= start || h < end
+            else -> true
+        }
+    }
+
+    fun shouldDeliverNotificationNow(zoneId: ZoneId = ZoneId.systemDefault()): Boolean =
+        shouldDeliverNotificationAt(ZonedDateTime.now(zoneId).hour)
+
+    fun formatScheduleLabel(): String =
+        "${formatHour(allowedStartHour())} a ${formatHour(allowedEndHour())} hrs"
+
+    fun formatScheduleSummary(): String = when {
+        !isConsented() -> "Avisos desactivados en este teléfono (horario guardado: ${formatScheduleLabel()})."
+        !isScheduleEnabled() -> "Avisos activos sin restricción de horario."
+        else -> "Avisos activos · Horario permitido: ${formatScheduleLabel()}"
+    }
+
     companion object {
         private const val KEY_CONSENT_GIVEN = "consent_given"
         private const val KEY_CONSENT_AT = "consent_at_ms"
         private const val KEY_OPT_OUT_AT = "opt_out_at_ms"
         private const val KEY_FCM_TOKEN = "last_fcm_token"
+        private const val KEY_SCHEDULE_ENABLED = "schedule_enabled"
+        private const val KEY_SCHEDULE_START_HOUR = "schedule_start_hour"
+        private const val KEY_SCHEDULE_END_HOUR = "schedule_end_hour"
+        const val DEFAULT_START_HOUR = 9
+        const val DEFAULT_END_HOUR = 20
+
+        fun formatHour(hour: Int): String =
+            String.format(Locale.ROOT, "%02d:00", hour.coerceIn(0, 23))
 
         fun extractGcmSenderId(firebaseAppId: String): String? {
             val candidate = firebaseAppId.trim().split(":").getOrNull(1)?.trim().orEmpty()

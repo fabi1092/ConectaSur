@@ -461,6 +461,34 @@ class StoreViewModelTest {
         assertFalse(shops.saved.showPrices)
     }
 
+    @Test fun fairCalendarAndAllowRatingsSwitchPersistAndUpdateInOneTap() = runTest(dispatcher) {
+        auth.session = owner
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        assertEquals(1, vm.state.value.fairCalendar.size)
+        assertEquals(FairParticipantStatus.INVITED, vm.state.value.fairCalendar.first().status)
+
+        vm.respondToFair("f1", participate = true)
+        advanceUntilIdle()
+        assertEquals(FairParticipantStatus.CONFIRMED, vm.state.value.fairCalendar.first().status)
+
+        vm.respondToFair("f1", participate = false)
+        advanceUntilIdle()
+        assertEquals(FairParticipantStatus.REJECTED, vm.state.value.fairCalendar.first().status)
+
+        vm.edit(vm.draft!!.copy(allowRatings = false))
+        vm.save()
+        advanceUntilIdle()
+        assertFalse(shops.saved.allowRatings)
+        assertFalse(vm.state.value.shop!!.allowRatings)
+
+        val reopened = model()
+        reopened.start(false)
+        advanceUntilIdle()
+        assertFalse(reopened.draft!!.allowRatings)
+    }
+
     private inner class FakeAuth : AuthRepository {
         var session: Session? = null
         var nextSession = owner
@@ -485,12 +513,33 @@ class StoreViewModelTest {
         var updateFailure: Exception? = null
         var readFailure: Exception? = null
         var gate: CompletableDeferred<Unit>? = null
+        var fairStatuses = mutableMapOf("f1" to FairParticipantStatus.INVITED)
         override suspend fun getShop(shopId: String): Shop { reads++; gate?.await(); readFailure?.let { throw it }; assertEquals("shop", shopId); return saved }
         override suspend fun listShopAssociations(shopId: String): List<String> {
             associationQueries.add(shopId)
             associationGate?.await()
             associationFailure?.let { throw it }
             return associations
+        }
+        override suspend fun listOwnerFairCalendar(shopId: String): List<OwnerFairCalendarItem> {
+            val fair = PublicFair(
+                id = "f1",
+                name = "Feria Costanera",
+                description = "",
+                imageUrl = null,
+                placeName = "Costanera",
+                latitude = -41.4717,
+                longitude = -72.9369,
+                startsAt = "2026-11-20T09:00:00",
+                endsAt = "2026-11-20T19:00:00",
+                organizer = "ConectaSur"
+            )
+            return listOf(OwnerFairCalendarItem(fair, shopId, fairStatuses[fair.id] ?: FairParticipantStatus.INVITED))
+        }
+        override suspend fun respondToFairInvitation(shopId: String, fairId: String, participate: Boolean): FairParticipantStatus {
+            val next = applyOneTapFairDecision(participate)
+            fairStatuses[fairId] = next
+            return next
         }
         override suspend fun updateShop(shop: Shop) { writes++; updateFailure?.let { throw it }; saved = shop }
         override suspend fun uploadLogo(shopId: String, jpegBytes: ByteArray): String {

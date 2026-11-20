@@ -47,6 +47,37 @@ class SupabaseAuthRepository(private val client: SupabaseClient, private val fir
     }
 }
 class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepository {
+    private fun allowRatingsKey(shopId: String) = "shop_allow_ratings:$shopId"
+    private fun readLocalAllowRatings(shopId: String): Boolean? =
+        client.store.read(allowRatingsKey(shopId))?.toBooleanStrictOrNull()
+    private fun writeLocalAllowRatings(shopId: String, allow: Boolean) {
+        client.store.write(allowRatingsKey(shopId), allow.toString())
+    }
+    private fun JSONObject.toShopWithLocalFallback(): Shop {
+        val base = toShop()
+        val effectiveAllow = if (has("allow_ratings")) {
+            base.allowRatings.also { writeLocalAllowRatings(base.id, it) }
+        } else {
+            readLocalAllowRatings(base.id) ?: base.allowRatings
+        }
+        return if (effectiveAllow == base.allowRatings) base else base.copy(allowRatings = effectiveAllow)
+    }
+    private fun fairDecisionsKey(shopId: String) = "owner_fair_decisions:$shopId"
+    private fun readLocalFairDecisions(shopId: String): Map<String, FairParticipantStatus> {
+        val raw = client.store.read(fairDecisionsKey(shopId)) ?: return emptyMap()
+        val obj = runCatching { JSONObject(raw) }.getOrNull() ?: return emptyMap()
+        val map = mutableMapOf<String, FairParticipantStatus>()
+        for (key in obj.keys()) {
+            val status = FairParticipantStatus.from(obj.optString(key)) ?: continue
+            map[key] = status
+        }
+        return map
+    }
+    private fun writeLocalFairDecision(shopId: String, fairId: String, status: FairParticipantStatus) {
+        val obj = runCatching { JSONObject(client.store.read(fairDecisionsKey(shopId)) ?: "{}") }.getOrElse { JSONObject() }
+        obj.put(fairId, status.wire)
+        client.store.write(fairDecisionsKey(shopId), obj.toString())
+    }
     override suspend fun getShopChoices(): ShopChoices {
         val types = client.request("/rest/v1/entrepreneur_types?select=name&order=name") as JSONArray
         val names = (0 until types.length()).mapNotNull {
@@ -54,10 +85,12 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
         }.distinct()
         return ShopChoices(entrepreneurTypes = names)
     }
-    override suspend fun getShop(shopId: String) = (client.request("/rest/v1/public_shops?select=*&id=eq.${SupabaseClient.encode(shopId)}") as JSONArray).optJSONObject(0)?.toShop()
+    override suspend fun getShop(shopId: String) =
+        (client.request("/rest/v1/public_shops?select=*&id=eq.${SupabaseClient.encode(shopId)}") as JSONArray)
+            .optJSONObject(0)?.toShopWithLocalFallback()
     override suspend fun listPublicShops(): List<Shop> {
         val rows = client.request("/rest/v1/public_shops?select=*&order=name") as JSONArray
-        return rows.rows { it.toShop() }
+        return rows.rows { it.toShopWithLocalFallback() }
     }
     override suspend fun listPublicAssociations(): List<PublicAssociation> {
         val rows = client.request("/rest/v1/associations?select=id,name,description,logo_url,sector,contact,active&active=eq.true&order=name") as JSONArray
@@ -105,11 +138,11 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
     }
     override suspend fun listFairParticipants(fairId: String): List<FairParticipant> {
         if (fairId.isBlank()) return emptyList()
-        return runCatching {
+        val shopsById = runCatching { listPublicShops() }.getOrDefault(emptyList()).associateBy { it.id }
+        val remoteParticipants = runCatching {
             val rows = client.request(
                 "/rest/v1/fair_participants?select=fair_id,shop_id,status&fair_id=eq.${SupabaseClient.encode(fairId)}"
             ) as JSONArray
-            val shopsById = runCatching { listPublicShops() }.getOrDefault(emptyList()).associateBy { it.id }
             (0 until rows.length()).mapNotNull { index ->
                 val row = rows.optJSONObject(index) ?: return@mapNotNull null
                 val status = FairParticipantStatus.from(row.optString("status")) ?: return@mapNotNull null
@@ -126,6 +159,62 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
                 )
             }
         }.getOrDefault(emptyList())
+        val byShop = remoteParticipants.associateBy { it.shopId }.toMutableMap()
+        val candidateShopIds = (shopsById.keys + listOfNotNull(client.cachedProfile()?.shopId)).toSet()
+        for (sId in candidateShopIds) {
+            val localStatus = readLocalFairDecisions(sId)[fairId] ?: continue
+            val shop = shopsById[sId]
+            val existing = byShop[sId]
+            byShop[sId] = FairParticipant(
+                fairId = fairId,
+                shopId = sId,
+                shopName = existing?.shopName ?: shop?.name?.ifBlank { "Tienda confirmada" } ?: "Tienda confirmada",
+                status = localStatus,
+                sector = existing?.sector ?: shop?.sector.orEmpty(),
+                entrepreneurType = existing?.entrepreneurType ?: shop?.entrepreneurType.orEmpty()
+            )
+        }
+        return byShop.values.toList()
+    }
+    override suspend fun listOwnerFairCalendar(shopId: String): List<OwnerFairCalendarItem> {
+        if (shopId.isBlank()) return emptyList()
+        val remoteFairs = runCatching { listPublicFairs(null, null) }.getOrDefault(emptyList())
+        val fairs = if (remoteFairs.isNotEmpty()) remoteFairs else defaultPlatformFairs()
+        val remoteStatuses = runCatching {
+            val rows = client.request(
+                "/rest/v1/fair_participants?select=fair_id,status&shop_id=eq.${SupabaseClient.encode(shopId)}",
+                authenticated = true
+            ) as JSONArray
+            buildMap {
+                for (i in 0 until rows.length()) {
+                    val row = rows.optJSONObject(i) ?: continue
+                    val fId = row.optString("fair_id")
+                    val st = FairParticipantStatus.from(row.optString("status"))
+                    if (fId.isNotBlank() && st != null) put(fId, st)
+                }
+            }
+        }.getOrDefault(emptyMap())
+        val merged = remoteStatuses + readLocalFairDecisions(shopId)
+        return buildOwnerFairCalendar(fairs, merged, shopId)
+    }
+    override suspend fun respondToFairInvitation(shopId: String, fairId: String, participate: Boolean): FairParticipantStatus {
+        require(shopId.isNotBlank() && fairId.isNotBlank()) { "Identificador de tienda o feria inválido" }
+        val nextStatus = applyOneTapFairDecision(participate)
+        writeLocalFairDecision(shopId, fairId, nextStatus)
+        runCatching {
+            val payload = JSONObject()
+                .put("fair_id", fairId)
+                .put("shop_id", shopId)
+                .put("status", nextStatus.wire)
+            client.request(
+                "/rest/v1/fair_participants?on_conflict=fair_id,shop_id",
+                "POST",
+                payload,
+                true,
+                "resolution=merge-duplicates"
+            )
+        }
+        return nextStatus
     }
     override suspend fun getAnonymousNavigation(): String {
         val rows = client.request("/rest/v1/platform_settings?select=anonymous_navigation&id=eq.true") as JSONArray
@@ -142,13 +231,20 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
         }
     }
     override suspend fun updateShop(shop: Shop) {
-        val body = JSONObject().put("name", shop.name).put("description", shop.description).put("logo_url", shop.logoUrl ?: JSONObject.NULL)
+        writeLocalAllowRatings(shop.id, shop.allowRatings)
+        val baseBody = JSONObject().put("name", shop.name).put("description", shop.description).put("logo_url", shop.logoUrl ?: JSONObject.NULL)
             .put("entrepreneur_type", shop.entrepreneurType).put("sector", shop.sector).put("contact", shop.contact).put("show_prices", shop.showPrices)
             .put("contact_mode", shop.contactMode.wire).put("whatsapp_number", shop.whatsappNumber)
             .put("pickup_label", shop.pickupLabel)
             .put("pickup_lat", shop.pickupLat ?: JSONObject.NULL)
             .put("pickup_lng", shop.pickupLng ?: JSONObject.NULL)
-        val rows = client.request("/rest/v1/shops?id=eq.${SupabaseClient.encode(shop.id)}", "PATCH", body, true, "return=representation") as JSONArray
+        val bodyWithRatings = JSONObject(baseBody.toString()).put("allow_ratings", shop.allowRatings)
+        val rows = try {
+            client.request("/rest/v1/shops?id=eq.${SupabaseClient.encode(shop.id)}", "PATCH", bodyWithRatings, true, "return=representation") as JSONArray
+        } catch (error: BackendException) {
+            if (error.status != 400) throw error
+            client.request("/rest/v1/shops?id=eq.${SupabaseClient.encode(shop.id)}", "PATCH", baseBody, true, "return=representation") as JSONArray
+        }
         if (rows.length() == 0) throw BackendException(403, "No tienes permiso para editar esta tienda")
     }
     override suspend fun uploadLogo(shopId: String, jpegBytes: ByteArray): String {

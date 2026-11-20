@@ -112,6 +112,9 @@ interface ShopRepository {
     suspend fun listPublicAssociations(): List<PublicAssociation> = emptyList()
     suspend fun listPublicFairs(lat: Double? = null, lng: Double? = null): List<PublicFair> = emptyList()
     suspend fun listFairParticipants(fairId: String): List<FairParticipant> = emptyList()
+    suspend fun listOwnerFairCalendar(shopId: String): List<OwnerFairCalendarItem> = emptyList()
+    suspend fun respondToFairInvitation(shopId: String, fairId: String, participate: Boolean): FairParticipantStatus =
+        applyOneTapFairDecision(participate)
     suspend fun getAnonymousNavigation(): String = "allow"
     suspend fun updateShop(shop: Shop)
     /** Sube el logo (JPEG ya comprimido), guarda su URL en la tienda y la devuelve. */

@@ -205,6 +205,44 @@
                     android:text="4. Lugar de venta" />
 
                 <LinearLayout
+                    android:id="@+id/sv_fair_suggestion_box"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/status_banner_bg"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/sv_fair_suggestion_text"
+                        style="@style/ConectaSur.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:textColor="@color/conectasur_forest_dark"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/sv_fair_suggestion_apply"
+                        style="@style/ConectaSur.Button.Tonal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="0dp"
+                        android:minHeight="52dp"
+                        android:text="Usar feria sugerida" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/sv_detect_gps_fair"
+                    style="@style/ConectaSur.Button.Tonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:minHeight="52dp"
+                    android:text="Sugerir feria en curso por GPS" />
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="10dp"

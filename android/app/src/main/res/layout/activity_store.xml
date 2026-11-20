@@ -640,6 +640,39 @@
                         android:text="Mensajes recibidos" />
                 </LinearLayout>
 
+                <!-- TARJETA FERIAS: CALENDARIO DE FERIAS INVITADAS Y CONFIRMADAS (A02-A04) -->
+                <LinearLayout
+                    android:id="@+id/shop_fairs_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/card_surface_owner"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        style="@style/ConectaSur.Section"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="0dp"
+                        android:text="Calendario de ferias" />
+
+                    <TextView
+                        android:id="@+id/shop_fairs_summary"
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:accessibilityLiveRegion="polite"
+                        android:text="Revisa tus ferias invitadas o confirmadas y responde en 1 toque." />
+
+                    <LinearLayout
+                        android:id="@+id/shop_fairs_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="vertical" />
+                </LinearLayout>
+
                 <!-- TARJETA 2: FICHA Y DATOS DE TU TIENDA -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -800,6 +833,16 @@
                         android:minHeight="56dp"
                         android:saveEnabled="false"
                         android:text="@string/shop_prices_label"
+                        android:textSize="18sp" />
+
+                    <CheckBox
+                        android:id="@+id/shop_allow_ratings"
+                        style="@style/ConectaSur.Check"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:saveEnabled="false"
+                        android:text="Permitir calificaciones y comentarios de compradores en mi tienda y productos"
                         android:textSize="18sp" />
                 </LinearLayout>
 
@@ -967,6 +1010,78 @@
                         android:layout_marginTop="8dp"
                         android:minHeight="64dp"
                         android:text="@string/save_shop" />
+                </LinearLayout>
+
+                <!-- TARJETA AVISOS: AVISOS Y HORARIO DE NOTIFICACIONES (A15) -->
+                <LinearLayout
+                    android:id="@+id/shop_notifications_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/card_surface_owner"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        style="@style/ConectaSur.Section"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="0dp"
+                        android:text="Avisos y horario de atención" />
+
+                    <TextView
+                        style="@style/ConectaSur.Label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Activa o silencia los avisos de ferias y define el horario en que deseas recibir notificaciones." />
+
+                    <CheckBox
+                        android:id="@+id/shop_notifications_enabled"
+                        style="@style/ConectaSur.Check"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="56dp"
+                        android:saveEnabled="false"
+                        android:text="Recibir avisos y notificaciones en este teléfono"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/shop_notifications_schedule_status"
+                        style="@style/ConectaSur.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:layout_marginBottom="10dp"
+                        android:accessibilityLiveRegion="polite"
+                        android:text="Avisos desactivados en este teléfono." />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/shop_notifications_start_hour"
+                            style="@style/ConectaSur.Button.Tonal"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_marginBottom="0dp"
+                            android:layout_weight="1"
+                            android:minHeight="56dp"
+                            android:text="Desde: 09:00" />
+
+                        <Button
+                            android:id="@+id/shop_notifications_end_hour"
+                            style="@style/ConectaSur.Button.Tonal"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:layout_marginBottom="0dp"
+                            android:layout_weight="1"
+                            android:minHeight="56dp"
+                            android:text="Hasta: 20:00" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- TARJETA 4: CUENTA Y SEGURIDAD -->

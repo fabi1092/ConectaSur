@@ -1,9 +1,13 @@
 package cl.surcode.conectasur
 
+import android.Manifest
 import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.graphics.BitmapFactory
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Bundle
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
@@ -31,6 +35,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import cl.surcode.conectasur.data.*
 import cl.surcode.conectasur.domain.ContactMode
+import cl.surcode.conectasur.domain.FairParticipantStatus
 import cl.surcode.conectasur.domain.Role
 import cl.surcode.conectasur.ui.*
 import kotlinx.coroutines.CancellationException
@@ -39,6 +44,7 @@ import kotlinx.coroutines.launch
 class StoreActivity : FragmentActivity() {
     private val presentation by lazy { AccessibilityPreferences(applicationContext).read() }
     private val biometric by lazy { BiometricStoreLock(applicationContext) }
+    private val notificationConsent by lazy { NotificationConsentStore(applicationContext) }
     private lateinit var model: StoreViewModel
     private lateinit var reader: SpeechReader
     private lateinit var prompt: BiometricPrompt
@@ -47,8 +53,20 @@ class StoreActivity : FragmentActivity() {
     private var shouldOfferBiometricAfterSignIn = false
     private var offerBiometricDialog: AlertDialog? = null
     private var binding = false
+    private var bindingNotifications = false
     private var choosingLogo = false
     private var choosingGoogle = false
+    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        FirebasePushManager.onPermissionResult(this, granted) {
+            renderOwnerNotificationsCard()
+        }
+        if (::model.isInitialized) {
+            model.message(
+                if (granted) "Avisos activados en horario ${notificationConsent.formatScheduleLabel()}."
+                else "Autoriza el permiso de notificaciones en los ajustes del teléfono para recibir avisos."
+            )
+        }
+    }
     private val fields = listOf(R.id.shop_edit_name, R.id.shop_edit_description, R.id.shop_edit_contact, R.id.shop_whatsapp)
     private val picker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         BiometricStoreLock.clearBackgroundLockSuppression()
@@ -255,6 +273,34 @@ class StoreActivity : FragmentActivity() {
         }
         fields.forEach { id -> findViewById<EditText>(id).doAfterTextChanged { if (!binding) captureDraft() } }
         findViewById<CheckBox>(R.id.shop_show_prices).setOnCheckedChangeListener { _, _ -> if (!binding) captureDraft() }
+        findViewById<CheckBox>(R.id.shop_allow_ratings)?.setOnCheckedChangeListener { _, _ -> if (!binding) captureDraft() }
+        findViewById<CheckBox>(R.id.shop_notifications_enabled)?.setOnCheckedChangeListener { _, isChecked ->
+            if (bindingNotifications) return@setOnCheckedChangeListener
+            if (isChecked) {
+                notificationConsent.grantConsent()
+                notificationConsent.setNotificationSchedule(
+                    notificationConsent.allowedStartHour(),
+                    notificationConsent.allowedEndHour(),
+                    enabled = true
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !FirebasePushManager.hasSystemPermission(this)) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    FirebasePushManager.fetchAndStoreToken(this) { renderOwnerNotificationsCard() }
+                }
+                if (::model.isInitialized) {
+                    model.message("Avisos activados en horario ${notificationConsent.formatScheduleLabel()}.")
+                }
+            } else {
+                FirebasePushManager.optOut(this) { renderOwnerNotificationsCard() }
+                if (::model.isInitialized) {
+                    model.message("Avisos desactivados en este teléfono.")
+                }
+            }
+            renderOwnerNotificationsCard()
+        }
+        findViewById<Button>(R.id.shop_notifications_start_hour)?.setOnClickListener { chooseNotificationHour(isStart = true) }
+        findViewById<Button>(R.id.shop_notifications_end_hour)?.setOnClickListener { chooseNotificationHour(isStart = false) }
         findViewById<Button>(R.id.shop_contact_mode).setOnClickListener {
             captureDraft()
             val current = model.draft ?: return@setOnClickListener
@@ -395,11 +441,14 @@ class StoreActivity : FragmentActivity() {
                 findViewById<EditText>(fields[index]).let { if (it.text.toString() != value) it.setText(value) }
             }
             findViewById<CheckBox>(R.id.shop_show_prices).isChecked = draft.showPrices
+            findViewById<CheckBox>(R.id.shop_allow_ratings)?.isChecked = draft.allowRatings
             findViewById<EditText>(R.id.shop_pickup_label)?.let {
                 val targetLabel = draft.pickupLabel.orEmpty()
                 if (it.text.toString() != targetLabel) it.setText(targetLabel)
             }
             binding = false
+            renderOwnerNotificationsCard()
+            renderOwnerFairCalendar(state)
             findViewById<TextView>(R.id.shop_pickup_coords)?.text =
                 if (draft.pickupLat != null && draft.pickupLng != null)
                     String.format(java.util.Locale.US, "Ubicación guardada: %.5f, %.5f", draft.pickupLat, draft.pickupLng)
@@ -459,7 +508,145 @@ class StoreActivity : FragmentActivity() {
         val values = fields.map { findViewById<EditText>(it).text.toString() }
         val pickupText = findViewById<EditText>(R.id.shop_pickup_label)?.text?.toString()?.trim().orEmpty()
         model.edit(base.copy(name = values[0], description = values[1], contact = values[2], whatsappNumber = values[3],
-            showPrices = findViewById<CheckBox>(R.id.shop_show_prices).isChecked, pickupLabel = pickupText))
+            showPrices = findViewById<CheckBox>(R.id.shop_show_prices).isChecked,
+            allowRatings = findViewById<CheckBox>(R.id.shop_allow_ratings)?.isChecked ?: base.allowRatings,
+            pickupLabel = pickupText))
+    }
+
+    private fun renderOwnerNotificationsCard() {
+        bindingNotifications = true
+        findViewById<CheckBox>(R.id.shop_notifications_enabled)?.isChecked = notificationConsent.isConsented()
+        bindingNotifications = false
+        findViewById<TextView>(R.id.shop_notifications_schedule_status)?.text = notificationConsent.formatScheduleSummary()
+        findViewById<Button>(R.id.shop_notifications_start_hour)?.text =
+            "Desde: ${NotificationConsentStore.formatHour(notificationConsent.allowedStartHour())}"
+        findViewById<Button>(R.id.shop_notifications_end_hour)?.text =
+            "Hasta: ${NotificationConsentStore.formatHour(notificationConsent.allowedEndHour())}"
+    }
+
+    private fun chooseNotificationHour(isStart: Boolean) {
+        val hours = (0..23).toList()
+        val labels = hours.map { NotificationConsentStore.formatHour(it) }.toTypedArray()
+        val currentHour = if (isStart) notificationConsent.allowedStartHour() else notificationConsent.allowedEndHour()
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(if (isStart) "Hora de inicio de avisos" else "Hora de término de avisos")
+            .setSingleChoiceItems(labels, currentHour.coerceIn(0, 23)) { dlg, which ->
+                val chosenHour = hours[which]
+                val newStart = if (isStart) chosenHour else notificationConsent.allowedStartHour()
+                val newEnd = if (isStart) notificationConsent.allowedEndHour() else chosenHour
+                if (newStart == newEnd) {
+                    if (::model.isInitialized) model.message("El horario de inicio y término debe usar horas distintas.", true)
+                } else {
+                    notificationConsent.setNotificationSchedule(newStart, newEnd, enabled = true)
+                    renderOwnerNotificationsCard()
+                    if (::model.isInitialized) {
+                        model.message("Horario de avisos actualizado: ${notificationConsent.formatScheduleLabel()}.")
+                    }
+                }
+                dlg.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+        dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, presentation) }
+        dialog.show()
+    }
+
+    private fun renderOwnerFairCalendar(state: StoreState) {
+        val summaryView = findViewById<TextView>(R.id.shop_fairs_summary) ?: return
+        val listView = findViewById<LinearLayout>(R.id.shop_fairs_list) ?: return
+        val items = state.fairCalendar
+        if (items.isEmpty()) {
+            summaryView.text = "No hay ferias próximas disponibles por ahora."
+            listView.removeAllViews()
+            return
+        }
+        val confirmedCount = items.count { it.status.isPubliclyConfirmed }
+        val invitedCount = items.count { it.status == FairParticipantStatus.INVITED }
+        val rejectedCount = items.count { it.status == FairParticipantStatus.REJECTED }
+        summaryView.text = "$confirmedCount confirmadas · $invitedCount invitaciones · $rejectedCount rechazadas"
+
+        val dp = resources.displayMetrics.density
+        val pad = (14 * dp).toInt()
+        listView.removeAllViews()
+        items.forEach { item ->
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(pad, pad, pad, pad)
+                background = GradientDrawable().apply {
+                    cornerRadius = 12 * dp
+                    setColor(if (item.status.isPubliclyConfirmed) 0xFFEEF6F4.toInt() else 0xFFFFFFFF.toInt())
+                    setStroke(
+                        ((if (item.status.isPubliclyConfirmed) 2f else 1f) * dp).toInt(),
+                        if (item.status.isPubliclyConfirmed) 0xFF1A7B6E.toInt() else 0xFFD3DDD9.toInt()
+                    )
+                }
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    bottomMargin = (10 * dp).toInt()
+                }
+            }
+            card.addView(TextView(this).apply {
+                text = item.fair.name
+                textSize = 17f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(0xFF183A34.toInt())
+            })
+            val scheduleText = "${item.fair.placeName.ifBlank { "Puerto Montt" }}\n" +
+                "${item.fair.startsAt.take(16).replace('T', ' ')} a ${item.fair.endsAt.take(16).replace('T', ' ')}"
+            card.addView(TextView(this).apply {
+                text = scheduleText
+                textSize = 14f
+                setTextColor(0xFF4A6560.toInt())
+                setPadding(0, (4 * dp).toInt(), 0, (4 * dp).toInt())
+            })
+            card.addView(TextView(this).apply {
+                text = item.statusLabel
+                textSize = 14f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(
+                    when {
+                        item.status.isPubliclyConfirmed -> 0xFF155C43.toInt()
+                        item.status == FairParticipantStatus.REJECTED -> 0xFF8C1D18.toInt()
+                        else -> 0xFF8F5400.toInt()
+                    }
+                )
+            })
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = (10 * dp).toInt()
+                }
+            }
+            val interactive = !state.busy && !choosingLogo
+            val participateSelected = item.status.isPubliclyConfirmed
+            row.addView(Button(this).apply {
+                text = "Participo"
+                minimumHeight = (56 * dp).toInt()
+                isEnabled = interactive
+                setBackgroundResource(if (participateSelected) R.drawable.button_primary else R.drawable.button_tonal)
+                setTextColor(if (participateSelected) 0xFFFFFFFF.toInt() else 0xFF183A34.toInt())
+                contentDescription = if (participateSelected) "Participo en ${item.fair.name} (confirmada)" else "Confirmar participación en ${item.fair.name}"
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = (6 * dp).toInt()
+                }
+                setOnClickListener { model.respondToFair(item.fair.id, true) }
+            })
+            val rejectSelected = item.status == FairParticipantStatus.REJECTED
+            row.addView(Button(this).apply {
+                text = "No participo"
+                minimumHeight = (56 * dp).toInt()
+                isEnabled = interactive
+                setBackgroundResource(if (rejectSelected) R.drawable.button_danger_tonal else R.drawable.button_tonal)
+                setTextColor(if (rejectSelected) 0xFF8C1D18.toInt() else 0xFF183A34.toInt())
+                contentDescription = if (rejectSelected) "No participo en ${item.fair.name} (seleccionado)" else "Rechazar invitación a ${item.fair.name}"
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = (6 * dp).toInt()
+                }
+                setOnClickListener { model.respondToFair(item.fair.id, false) }
+            })
+            card.addView(row)
+            listView.addView(card)
+        }
+        applyAccessibility(listView, presentation)
     }
     private fun bindChoice(id: Int, current: String, choices: List<String>, action: Int, state: StoreState) {
         findViewById<Button>(id).apply {
