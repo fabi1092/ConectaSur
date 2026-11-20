@@ -161,6 +161,33 @@
                 android:text="Cómo llegar en mapa" />
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/store_follow_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/store_follow_status"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sigue esta tienda para enterarte cuando confirme ferias." />
+
+            <Button
+                android:id="@+id/store_follow_button"
+                style="@style/ConectaSur.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:minHeight="48dp"
+                android:text="Seguir tienda" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/store_contact"
             style="@style/ConectaSur.Button.Primary"
@@ -215,6 +242,91 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_sm"
             android:text="@string/store_sales" />
+
+        <LinearLayout
+            android:id="@+id/store_ratings_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/ConectaSur.Section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Calificaciones de la tienda" />
+
+            <TextView
+                android:id="@+id/store_rating_summary"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="Sin calificaciones aún." />
+
+            <TextView
+                android:id="@+id/store_rating_disabled_note"
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="Esta tienda desactivó las calificaciones."
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/store_rating_form"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/ConectaSur.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tu puntuación (1 a 5):"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/store_rating_scores"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:orientation="horizontal" />
+
+                <EditText
+                    android:id="@+id/store_rating_comment"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:background="@drawable/input_field"
+                    android:hint="Comentario opcional"
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:maxLength="240"
+                    android:minHeight="48dp"
+                    android:padding="12dp" />
+
+                <Button
+                    android:id="@+id/store_rating_submit"
+                    style="@style/ConectaSur.Button.Tonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:minHeight="48dp"
+                    android:text="Enviar calificación" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/store_rating_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:orientation="vertical" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/store_products_heading"

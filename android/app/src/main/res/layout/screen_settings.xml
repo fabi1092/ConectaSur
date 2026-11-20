@@ -213,6 +213,39 @@
                 android:text="Darme de baja de los avisos" />
         </LinearLayout>
 
+        <!-- Followed Shops & Associations Card (A11 / A14) -->
+        <LinearLayout
+            android:id="@+id/following_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md">
+
+            <TextView
+                android:id="@+id/following_heading"
+                style="@style/ConectaSur.Section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tiendas y asociaciones que sigues" />
+
+            <TextView
+                android:id="@+id/following_status"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="Inicia sesión para gestionar tus seguimientos." />
+
+            <LinearLayout
+                android:id="@+id/following_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:orientation="vertical" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/reset_settings"
             style="@style/ConectaSur.Button.Danger"

@@ -13,7 +13,8 @@ data class Shop(
     val id: String, val name: String, val description: String, val logoUrl: String?,
     val entrepreneurType: String, val sector: String, val contact: String, val showPrices: Boolean,
     val contactMode: ContactMode = ContactMode.FORM, val whatsappNumber: String = "",
-    val pickupLabel: String = "", val pickupLat: Double? = null, val pickupLng: Double? = null
+    val pickupLabel: String = "", val pickupLat: Double? = null, val pickupLng: Double? = null,
+    val allowRatings: Boolean = true
 )
 
 data class PublicAssociation(
@@ -90,6 +91,75 @@ interface SalesRepository {
 interface PushRepository {
     suspend fun registerDeviceToken(token: String, platform: String = "android") {}
     suspend fun unregisterDeviceToken(token: String) {}
+}
+
+enum class FollowTargetType(val wire: String) {
+    SHOP("shop"),
+    ASSOCIATION("association");
+
+    companion object {
+        fun from(value: String?): FollowTargetType? = entries.firstOrNull { it.wire == value?.lowercase() }
+    }
+}
+
+data class FollowedTarget(
+    val targetType: FollowTargetType,
+    val targetId: String,
+    val targetName: String = "",
+    val followedAtMillis: Long = 0L
+)
+
+data class PendingFollowAction(
+    val targetType: FollowTargetType,
+    val targetId: String,
+    val targetName: String,
+    val destinationScreen: String,
+    val destinationId: String
+)
+
+enum class RatingTargetType(val wire: String) {
+    SHOP("shop"),
+    PRODUCT("product");
+
+    companion object {
+        fun from(value: String?): RatingTargetType? = entries.firstOrNull { it.wire == value?.lowercase() }
+    }
+}
+
+data class RatingEntry(
+    val id: String,
+    val targetType: RatingTargetType,
+    val targetId: String,
+    val score: Int,
+    val comment: String = "",
+    val authorLabel: String = "",
+    val createdAtMillis: Long = 0L
+)
+
+data class RatingSummary(
+    val average: Double,
+    val count: Int,
+    val userRating: RatingEntry? = null,
+    val recent: List<RatingEntry> = emptyList()
+)
+
+interface FollowRepository {
+    suspend fun listFollows(buyerId: String): List<FollowedTarget>
+    suspend fun follow(buyerId: String, type: FollowTargetType, id: String, name: String): FollowedTarget
+    suspend fun unfollow(buyerId: String, type: FollowTargetType, id: String): Boolean
+}
+
+interface RatingRepository {
+    suspend fun summary(type: RatingTargetType, targetId: String, buyerId: String?): RatingSummary
+    suspend fun submit(
+        type: RatingTargetType,
+        targetId: String,
+        score: Int,
+        comment: String,
+        buyerId: String?,
+        authorLabel: String,
+        ratingsAllowed: Boolean
+    ): RatingEntry
 }
 
 /**
