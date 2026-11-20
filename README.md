@@ -109,6 +109,7 @@ En Android: Inicio → Mi tienda → ingresar con una cuenta de emprendedora →
 - [Requisitos y criterios de aceptación](docs/entrega-5/requisitos.md).
 - [Informe de seguridad y hallazgos](docs/entrega-5/seguridad.md).
 - [Cambios respecto del prototipo](docs/entrega-5/cambios-prototipo.md).
+- [Pruebas Android y matriz final de requisitos (Fabián)](docs/fabian/pruebas-android-matriz-requisitos.md).
 
 Migraciones: npm run migrate desde supabase con las variables privadas del desarrollador. El migrador comprueba hashes y aplica solo las pendientes; no se edita una migración aplicada.
 
