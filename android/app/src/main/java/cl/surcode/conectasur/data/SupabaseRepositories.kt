@@ -103,6 +103,30 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
         return published.map { it.copy(distanceKm = haversineKm(lat, lng, it.latitude, it.longitude)) }
             .sortedBy { it.distanceKm }
     }
+    override suspend fun listFairParticipants(fairId: String): List<FairParticipant> {
+        if (fairId.isBlank()) return emptyList()
+        return runCatching {
+            val rows = client.request(
+                "/rest/v1/fair_participants?select=fair_id,shop_id,status&fair_id=eq.${SupabaseClient.encode(fairId)}"
+            ) as JSONArray
+            val shopsById = runCatching { listPublicShops() }.getOrDefault(emptyList()).associateBy { it.id }
+            (0 until rows.length()).mapNotNull { index ->
+                val row = rows.optJSONObject(index) ?: return@mapNotNull null
+                val status = FairParticipantStatus.from(row.optString("status")) ?: return@mapNotNull null
+                val shopId = row.optString("shop_id")
+                if (shopId.isBlank()) return@mapNotNull null
+                val shop = shopsById[shopId]
+                FairParticipant(
+                    fairId = row.optString("fair_id", fairId),
+                    shopId = shopId,
+                    shopName = shop?.name?.ifBlank { "Tienda confirmada" } ?: "Tienda confirmada",
+                    status = status,
+                    sector = shop?.sector.orEmpty(),
+                    entrepreneurType = shop?.entrepreneurType.orEmpty()
+                )
+            }
+        }.getOrDefault(emptyList())
+    }
     override suspend fun getAnonymousNavigation(): String {
         val rows = client.request("/rest/v1/platform_settings?select=anonymous_navigation&id=eq.true") as JSONArray
         return rows.optJSONObject(0)?.optString("anonymous_navigation")?.takeIf { it in listOf("allow", "invite", "require") } ?: "allow"
