@@ -29,6 +29,50 @@ data class PublicFair(
     val status: String = "published", val distanceKm: Double? = null
 )
 
+enum class FairParticipantStatus(val wire: String) {
+    INVITED("invited"),
+    CONFIRMED("confirmed"),
+    REJECTED("rejected"),
+    ADDED_BY_ADMIN("added_by_admin");
+
+    val isPubliclyConfirmed: Boolean
+        get() = this == CONFIRMED || this == ADDED_BY_ADMIN
+
+    companion object {
+        fun from(value: String?): FairParticipantStatus? =
+            entries.firstOrNull { it.wire == value?.trim()?.lowercase() }
+    }
+}
+
+data class FairParticipant(
+    val fairId: String,
+    val shopId: String,
+    val shopName: String,
+    val status: FairParticipantStatus,
+    val sector: String = "",
+    val entrepreneurType: String = "",
+    val sampleProducts: List<PublicProduct> = emptyList()
+)
+
+fun buildPublicFairShowcase(
+    participants: List<FairParticipant>,
+    publicProducts: List<PublicProduct>,
+    maxProductsPerShop: Int = 3
+): List<FairParticipant> {
+    if (participants.isEmpty()) return emptyList()
+    val byShop = publicProducts.groupBy { it.shopId }
+    return participants
+        .filter { it.status.isPubliclyConfirmed && it.shopId.isNotBlank() }
+        .distinctBy { it.shopId }
+        .map { participant ->
+            val mergedProducts = (participant.sampleProducts + byShop[participant.shopId].orEmpty())
+                .distinctBy { it.id }
+                .take(maxProductsPerShop.coerceAtLeast(0))
+            participant.copy(sampleProducts = mergedProducts)
+        }
+        .sortedBy { it.shopName.lowercase() }
+}
+
 /** Una opcion de un producto (talla, color...), con su propio stock. */
 data class Variant(val id: String, val label: String, val quantity: Int, val priceClp: Long? = null, val photo: String? = null)
 
@@ -67,6 +111,7 @@ interface ShopRepository {
     suspend fun listPublicShops(): List<Shop> = emptyList()
     suspend fun listPublicAssociations(): List<PublicAssociation> = emptyList()
     suspend fun listPublicFairs(lat: Double? = null, lng: Double? = null): List<PublicFair> = emptyList()
+    suspend fun listFairParticipants(fairId: String): List<FairParticipant> = emptyList()
     suspend fun getAnonymousNavigation(): String = "allow"
     suspend fun updateShop(shop: Shop)
     /** Sube el logo (JPEG ya comprimido), guarda su URL en la tienda y la devuelve. */

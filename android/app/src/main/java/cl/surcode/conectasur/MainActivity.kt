@@ -1601,7 +1601,21 @@ class MainActivity : FragmentActivity() {
         page.findViewById<Button>(R.id.fairs_enable_gps)?.isVisible = !locationGranted
 
         if (!RepositoryProvider.supabaseReady()) {
-            page.findViewById<TextView>(R.id.fairs_status)?.text = "Conecta Supabase para consultar ferias."
+            publicFairs = listOf(
+                PublicFair(
+                    id = "feria-demo",
+                    name = "Feria Costumbrista Puerto Montt",
+                    description = "Encuentro local de emprendedoras y artesanías de la zona.",
+                    imageUrl = null,
+                    placeName = "Costanera de Puerto Montt",
+                    latitude = -41.4717,
+                    longitude = -72.9369,
+                    startsAt = "2026-11-23T10:00:00",
+                    endsAt = "2026-11-23T18:00:00",
+                    organizer = "Red ConectaSur"
+                )
+            )
+            renderFairsScreen()
             return
         }
         lifecycleScope.launch {
@@ -1741,24 +1755,185 @@ class MainActivity : FragmentActivity() {
             }
             loadUrl("file:///android_asset/conectasur_map.html")
         }
+        val participantsHeader = TextView(this).apply {
+            text = "Participantes confirmadas"
+            textSize = 17f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(0xFF183A34.toInt())
+            setPadding(0, (14 * dp).toInt(), 0, (6 * dp).toInt())
+        }
+        val participantsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        participantsContainer.addView(TextView(this).apply {
+            text = "Cargando participantes confirmadas..."
+            textSize = 14f
+            setTextColor(0xFF4A6560.toInt())
+        })
+        val shareActionsRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = (12 * dp).toInt()
+            }
+        }
+        shareActionsRow.addView(Button(this).apply {
+            text = "Compartir enlace"
+            setBackgroundResource(R.drawable.button_tonal)
+            setTextColor(0xFF183A34.toInt())
+            minimumHeight = (48 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = (6 * dp).toInt()
+            }
+            setOnClickListener {
+                QrShareHelper.shareLink(this@MainActivity, fair.name, "${fair.name}\n${QrShareHelper.fairUrl(fair.id)}")
+            }
+        })
+        shareActionsRow.addView(Button(this).apply {
+            text = "Código QR"
+            setBackgroundResource(R.drawable.button_tonal)
+            setTextColor(0xFF183A34.toInt())
+            minimumHeight = (48 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = (6 * dp).toInt()
+            }
+            setOnClickListener {
+                QrShareHelper.showQrDialog(this@MainActivity, fair.name, fair.placeName.ifBlank { "Feria ConectaSur" }, QrShareHelper.fairUrl(fair.id))
+            }
+        })
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val pad = (16 * dp).toInt()
-            setPadding(pad, (12 * dp).toInt(), pad, 0)
+            setPadding(pad, (12 * dp).toInt(), pad, (12 * dp).toInt())
             addView(infoView)
             addView(miniMap)
+            addView(shareActionsRow)
+            addView(participantsHeader)
+            addView(participantsContainer)
+        }
+        val scroll = ScrollView(this).apply {
+            addView(container)
         }
         val dlg = AlertDialog.Builder(this)
             .setTitle(fair.name)
-            .setView(container)
+            .setView(scroll)
             .setPositiveButton("Cómo llegar") { _, _ -> openGeoDirections(fair.latitude, fair.longitude, fair.name) }
-            .setNeutralButton("Compartir / QR") { _, _ ->
-                QrShareHelper.showQrDialog(this, fair.name, fair.placeName.ifBlank { "Feria ConectaSur" }, QrShareHelper.fairUrl(fair.id))
-            }
             .setNegativeButton("Cerrar", null)
             .create()
         dlg.setOnShowListener { applyAccessibility(dlg.window!!.decorView, prefs.read()) }
         dlg.show()
+
+        lifecycleScope.launch {
+            val rawParticipants = if (RepositoryProvider.supabaseReady()) {
+                runCatching { RepositoryProvider.shops().listFairParticipants(fair.id) }.getOrDefault(emptyList())
+            } else {
+                listOf(
+                    FairParticipant(
+                        fairId = fair.id,
+                        shopId = "demo",
+                        shopName = getString(R.string.store_name),
+                        status = FairParticipantStatus.CONFIRMED,
+                        sector = "Puerto Montt Centro",
+                        entrepreneurType = "Artesanías"
+                    )
+                )
+            }
+            val showcase = buildPublicFairShowcase(rawParticipants, products)
+            if (dlg.isShowing) {
+                renderFairParticipantsShowcase(participantsContainer, showcase, dlg, dp)
+            }
+        }
+    }
+
+    private fun renderFairParticipantsShowcase(
+        container: LinearLayout,
+        participants: List<FairParticipant>,
+        dialog: AlertDialog,
+        dp: Float
+    ) {
+        container.removeAllViews()
+        if (participants.isEmpty()) {
+            container.addView(TextView(this).apply {
+                text = "Aún no hay participantes confirmadas para esta feria."
+                textSize = 14f
+                setTextColor(0xFF4A6560.toInt())
+            })
+            applyAccessibility(container, prefs.read())
+            return
+        }
+        participants.forEach { participant ->
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setBackgroundResource(R.drawable.card_surface)
+                val p = (12 * dp).toInt()
+                setPadding(p, p, p, p)
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    bottomMargin = (10 * dp).toInt()
+                }
+            }
+            card.addView(TextView(this).apply {
+                text = participant.shopName
+                textSize = 16f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(0xFF183A34.toInt())
+            })
+            val meta = listOf(participant.entrepreneurType, participant.sector).filter { it.isNotBlank() }.joinToString(" · ")
+            if (meta.isNotBlank()) {
+                card.addView(TextView(this).apply {
+                    text = meta
+                    textSize = 13f
+                    setTextColor(0xFF1A7B6E.toInt())
+                    setPadding(0, (2 * dp).toInt(), 0, 0)
+                })
+            }
+            if (participant.sampleProducts.isEmpty()) {
+                card.addView(TextView(this).apply {
+                    text = "Sin productos públicos destacados aún."
+                    textSize = 13f
+                    setTextColor(0xFF4A6560.toInt())
+                    setPadding(0, (6 * dp).toInt(), 0, 0)
+                })
+            } else {
+                card.addView(TextView(this).apply {
+                    text = "Muestra de catálogo público:"
+                    textSize = 13f
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                    setTextColor(0xFF4A6560.toInt())
+                    setPadding(0, (6 * dp).toInt(), 0, (4 * dp).toInt())
+                })
+                participant.sampleProducts.forEach { product ->
+                    card.addView(Button(this).apply {
+                        text = "${product.name} · ${priceLabel(product.priceClp)}"
+                        contentDescription = "${product.name}, ${spokenPrice(product.priceClp)}"
+                        setBackgroundResource(R.drawable.button_tonal)
+                        setTextColor(0xFF183A34.toInt())
+                        isAllCaps = false
+                        minimumHeight = (48 * dp).toInt()
+                        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                            bottomMargin = (6 * dp).toInt()
+                        }
+                        setOnClickListener {
+                            dialog.dismiss()
+                            navigate(Destination("detail", product.id))
+                        }
+                    })
+                }
+            }
+            card.addView(Button(this).apply {
+                text = "Ver tienda"
+                setBackgroundResource(R.drawable.button_primary)
+                setTextColor(0xFFFFFFFF.toInt())
+                minimumHeight = (48 * dp).toInt()
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = (2 * dp).toInt()
+                }
+                setOnClickListener {
+                    dialog.dismiss()
+                    navigate(Destination("public_store", participant.shopId))
+                }
+            })
+            container.addView(card)
+        }
+        applyAccessibility(container, prefs.read())
     }
 
     private fun openGeoDirections(lat: Double, lng: Double, label: String) {
