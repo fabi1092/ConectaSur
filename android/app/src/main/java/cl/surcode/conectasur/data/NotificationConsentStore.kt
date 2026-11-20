@@ -11,8 +11,8 @@ interface ConsentStorage {
     fun putString(key: String, value: String?)
 }
 
-class SharedPreferencesConsentStorage(context: Context) : ConsentStorage {
-    private val prefs = context.getSharedPreferences("conectasur_push_prefs", Context.MODE_PRIVATE)
+class SharedPreferencesConsentStorage(context: Context, prefsName: String = "conectasur_push_prefs") : ConsentStorage {
+    private val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
     override fun getBoolean(key: String, defaultValue: Boolean) = prefs.getBoolean(key, defaultValue)
     override fun putBoolean(key: String, value: Boolean) { prefs.edit().putBoolean(key, value).apply() }
     override fun getLong(key: String, defaultValue: Long) = prefs.getLong(key, defaultValue)

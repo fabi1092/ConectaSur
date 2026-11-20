@@ -34,4 +34,6 @@ object RepositoryProvider {
     fun ownerWorkspace() = OwnerWorkspaceRepository(client())
     fun products(): ProductRepository = SupabaseProductRepository(client())
     fun sales(): SalesRepository = SupabaseSalesRepository(client())
+    fun follows(context: Context): FollowRepository = BuyerEngagementStore(context)
+    fun ratings(context: Context): RatingRepository = BuyerEngagementStore(context)
 }

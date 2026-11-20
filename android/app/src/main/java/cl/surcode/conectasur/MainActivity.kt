@@ -55,6 +55,7 @@ class MainActivity : FragmentActivity() {
     }
     private val prefs by lazy { AccessibilityPreferences(applicationContext) }
     private val biometric by lazy { BiometricStoreLock(applicationContext) }
+    private val engagementStore by lazy { BuyerEngagementStore(applicationContext) }
     private val repository: CatalogRepository by lazy { RepositoryProvider.catalog(applicationContext) }
     private var products = emptyList<PublicProduct>()
     private var current = Destination("catalog")
@@ -89,6 +90,7 @@ class MainActivity : FragmentActivity() {
     private var navGateDismissed = false
     private var publicShops = emptyList<Shop>()
     private var publicAssociations = emptyList<PublicAssociation>()
+    private val shopAllowRatingsCache = mutableMapOf<String, Boolean>()
     private var dirTabShops = true
     private var dirQuery = ""
     private var dirTypeFilter = ""
@@ -269,6 +271,8 @@ class MainActivity : FragmentActivity() {
                         renderAccountAccess(state)
                         checkAnonymousGate(state)
                         if (current.screen == "home") renderHomeBuyerState(state)
+                        if (current.screen == "settings") refreshFollowingSettingsCard()
+                        state.session?.let { session -> applyPendingFollowIfNeeded(session) }
                         state.launchUrl?.let { url ->
                             buyerModel.browserLaunched()
                             try { reader.stop(); startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
@@ -926,6 +930,18 @@ class MainActivity : FragmentActivity() {
             val message = "${product.name}$variantSuffix\n${priceLabel(activePrice)}\n${product.description}\n$url"
             QrShareHelper.shareLink(this, getString(R.string.share_title), message)
         }
+        val cachedAllow = if (!RepositoryProvider.supabaseReady()) true else shopAllowRatingsCache[product.shopId]
+        bindDetailRatings(product, cachedAllow)
+        if (RepositoryProvider.supabaseReady() && product.shopId.isNotBlank()) {
+            val expectedProductId = product.id
+            lifecycleScope.launch {
+                val shop = runCatching { RepositoryProvider.shops().getShop(product.shopId) }.getOrNull()
+                if (shop != null) shopAllowRatingsCache[shop.id] = shop.allowRatings
+                if (current.screen == "detail" && current.productId == expectedProductId) {
+                    bindDetailRatings(product, shop?.allowRatings ?: cachedAllow ?: true)
+                }
+            }
+        }
     }
     @SuppressLint("SetJavaScriptEnabled")
     private fun bindStore() {
@@ -937,6 +953,13 @@ class MainActivity : FragmentActivity() {
             shopFilter = current.productId; query = ""; navigate(Destination("catalog"))
         }
         renderStoreProducts()
+        val storeId = current.productId.ifBlank { "demo" }
+        val knownShop = publicShops.firstOrNull { it.id == storeId }
+        bindStoreFollowAndRatings(
+            shopId = storeId,
+            shopName = knownShop?.name ?: if (RepositoryProvider.supabaseReady()) "esta tienda" else getString(R.string.store_name),
+            ratingsAllowed = if (!RepositoryProvider.supabaseReady()) true else knownShop?.allowRatings ?: shopAllowRatingsCache[storeId]
+        )
         if (RepositoryProvider.supabaseReady()) {
             page.findViewById<View>(R.id.store_demo).isVisible = false
             page.findViewById<TextView>(R.id.store_name).text = "Cargando tienda…"
@@ -945,8 +968,10 @@ class MainActivity : FragmentActivity() {
             lifecycleScope.launch {
                 val shop = runCatching { RepositoryProvider.shops().getShop(shopId) }.getOrNull()
                 if (shop != null && current.screen == "public_store" && current.productId == shopId) {
+                    shopAllowRatingsCache[shop.id] = shop.allowRatings
                     page.findViewById<TextView>(R.id.store_name).text = shop.name
                     page.findViewById<TextView>(R.id.store_description).text = shop.description
+                    bindStoreFollowAndRatings(shop.id, shop.name, shop.allowRatings)
                     page.findViewById<Button>(R.id.store_contact).apply {
                         isVisible = true
                         setOnClickListener { startActivity(Intent(this@MainActivity, ShopContactActivity::class.java).putExtra("shop_id", shop.id)) }
@@ -990,6 +1015,8 @@ class MainActivity : FragmentActivity() {
                         }
                     }
                     PublicImageLoader.load(lifecycleScope, page.findViewById(R.id.store_logo), shop.logoUrl, BuildConfig.SUPABASE_URL)
+                } else if (current.screen == "public_store" && current.productId == shopId) {
+                    bindStoreFollowAndRatings(shopId, knownShop?.name ?: "esta tienda", knownShop?.allowRatings ?: shopAllowRatingsCache[shopId] ?: true)
                 }
             }
         }
@@ -1045,6 +1072,7 @@ class MainActivity : FragmentActivity() {
             }
         }
         refreshPushSettingsCard()
+        refreshFollowingSettingsCard()
         page.findViewById<Button>(R.id.reset_settings).setOnClickListener { prefs.save(AccessibilitySettings()); recreate() }
     }
     private fun refreshPushSettingsCard() {
@@ -1054,6 +1082,57 @@ class MainActivity : FragmentActivity() {
         page.findViewById<Button>(R.id.notifications_enable)?.text =
             if (consented && FirebasePushManager.hasSystemPermission(this)) "Actualizar registro de avisos" else "Activar avisos con mi permiso"
         page.findViewById<Button>(R.id.notifications_opt_out)?.isEnabled = consented
+    }
+    private fun refreshFollowingSettingsCard() {
+        val statusView = page.findViewById<TextView>(R.id.following_status) ?: return
+        val list = page.findViewById<LinearLayout>(R.id.following_list) ?: return
+        list.removeAllViews()
+        val buyerId = currentBuyerId()
+        if (buyerId == null) {
+            statusView.text = "Inicia sesión con Google para seguir tiendas o asociaciones y gestionarlas aquí."
+            return
+        }
+        val follows = engagementStore.currentFollows(buyerId)
+        if (follows.isEmpty()) {
+            statusView.text = "No sigues tiendas ni asociaciones por ahora."
+            return
+        }
+        statusView.text = if (follows.size == 1) "Sigues 1 espacio:" else "Sigues ${follows.size} espacios:"
+        val dp = resources.displayMetrics.density
+        follows.forEach { item ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setBackgroundColor(0xFFF5F8F6.toInt())
+                val p = (12 * dp).toInt()
+                setPadding(p, p, p, p)
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    bottomMargin = (8 * dp).toInt()
+                }
+            }
+            val kindLabel = if (item.targetType == FollowTargetType.SHOP) "Tienda" else "Asociación"
+            row.addView(TextView(this).apply {
+                text = "$kindLabel: ${item.targetName.ifBlank { item.targetId }}"
+                textSize = 15f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(0xFF183A34.toInt())
+            })
+            row.addView(Button(this).apply {
+                text = "Dejar de seguir"
+                setBackgroundResource(R.drawable.button_tonal)
+                setTextColor(0xFF183A34.toInt())
+                minimumHeight = (48 * dp).toInt()
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = (6 * dp).toInt()
+                }
+                setOnClickListener {
+                    engagementStore.unfollowLocal(buyerId, item.targetType, item.targetId)
+                    Toast.makeText(this@MainActivity, "Dejaste de seguir a ${item.targetName.ifBlank { kindLabel }}.", Toast.LENGTH_SHORT).show()
+                    refreshFollowingSettingsCard()
+                }
+            })
+            list.addView(row)
+        }
+        applyAccessibility(list, prefs.read())
     }
     private fun screenSpeech(): String = when(current.screen) {
             "home" -> "ConectaSur. Tu tienda, más cerca. Puedes ver productos sin una cuenta. En Ingresar, usa tu correo y contraseña para abrir tu cuenta de comprador o tu tienda, según tu perfil. También puedes ajustar letras y botones."
@@ -1333,6 +1412,15 @@ class MainActivity : FragmentActivity() {
                     setTextColor(0xFF1A7B6E.toInt())
                     setPadding(0, (8 * dp).toInt(), 0, 0)
                 })
+                if (engagementStore.isFollowing(currentBuyerId(), FollowTargetType.ASSOCIATION, assoc.id)) {
+                    card.addView(TextView(this).apply {
+                        text = "Siguiendo esta asociación"
+                        textSize = 13f
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                        setTextColor(0xFF183A34.toInt())
+                        setPadding(0, (4 * dp).toInt(), 0, 0)
+                    })
+                }
                 list.addView(card)
             }
         }
@@ -1374,6 +1462,15 @@ class MainActivity : FragmentActivity() {
                 maxLines = 2
                 setTextColor(0xFF4A6560.toInt())
                 setPadding(0, (4 * dp).toInt(), 0, 0)
+            })
+        }
+        if (engagementStore.isFollowing(currentBuyerId(), FollowTargetType.SHOP, shop.id)) {
+            card.addView(TextView(this).apply {
+                text = "Siguiendo esta tienda"
+                textSize = 13f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(0xFF183A34.toInt())
+                setPadding(0, (6 * dp).toInt(), 0, 0)
             })
         }
         return card
@@ -1436,6 +1533,29 @@ class MainActivity : FragmentActivity() {
             }
         })
         list.addView(shareRow)
+        val followCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.card_surface)
+            val p = (16 * dp).toInt()
+            setPadding(p, p, p, p)
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = (16 * dp).toInt()
+            }
+        }
+        val followStatus = TextView(this).apply {
+            textSize = 15f
+            setTextColor(0xFF183A34.toInt())
+        }
+        val followButton = Button(this).apply {
+            minimumHeight = (48 * dp).toInt()
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = (8 * dp).toInt()
+            }
+        }
+        followCard.addView(followStatus)
+        followCard.addView(followButton)
+        list.addView(followCard)
+        bindFollowViews(followCard, followStatus, followButton, FollowTargetType.ASSOCIATION, assoc.id, assoc.name)
         val memberShops = publicShops.filter { it.id in assoc.shopIds }
         if (memberShops.isEmpty()) {
             list.addView(TextView(this).apply { text = "No hay tiendas visibles registradas aún."; textSize = 15f })
@@ -1648,6 +1768,251 @@ class MainActivity : FragmentActivity() {
         } catch (_: android.content.ActivityNotFoundException) {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=$lat,$lng")))
         }
+    }
+
+    private fun currentBuyerId(): String? = buyerModel.state.value.session?.uid
+
+    private fun currentBuyerLabel(): String =
+        buyerModel.state.value.session?.email?.takeIf { it.isNotBlank() } ?: "Comprador"
+
+    private fun bindStoreFollowAndRatings(shopId: String, shopName: String, ratingsAllowed: Boolean?) {
+        if (!::page.isInitialized || shopId.isBlank()) return
+        val followCard = page.findViewById<View>(R.id.store_follow_card) ?: return
+        val followStatus = page.findViewById<TextView>(R.id.store_follow_status) ?: return
+        val followButton = page.findViewById<Button>(R.id.store_follow_button) ?: return
+        bindFollowViews(followCard, followStatus, followButton, FollowTargetType.SHOP, shopId, shopName)
+
+        val ratingsCard = page.findViewById<View>(R.id.store_ratings_card) ?: return
+        bindRatingsSection(
+            card = ratingsCard,
+            summaryView = page.findViewById(R.id.store_rating_summary),
+            disabledNote = page.findViewById(R.id.store_rating_disabled_note),
+            form = page.findViewById(R.id.store_rating_form),
+            scoresRow = page.findViewById(R.id.store_rating_scores),
+            commentInput = page.findViewById(R.id.store_rating_comment),
+            submitButton = page.findViewById(R.id.store_rating_submit),
+            listContainer = page.findViewById(R.id.store_rating_list),
+            targetType = RatingTargetType.SHOP,
+            targetId = shopId,
+            ratingsAllowed = ratingsAllowed
+        )
+    }
+
+    private fun bindDetailRatings(product: PublicProduct, ratingsAllowed: Boolean?) {
+        if (!::page.isInitialized) return
+        val card = page.findViewById<View>(R.id.detail_ratings_card) ?: return
+        bindRatingsSection(
+            card = card,
+            summaryView = page.findViewById(R.id.detail_rating_summary),
+            disabledNote = page.findViewById(R.id.detail_rating_disabled_note),
+            form = page.findViewById(R.id.detail_rating_form),
+            scoresRow = page.findViewById(R.id.detail_rating_scores),
+            commentInput = page.findViewById(R.id.detail_rating_comment),
+            submitButton = page.findViewById(R.id.detail_rating_submit),
+            listContainer = page.findViewById(R.id.detail_rating_list),
+            targetType = RatingTargetType.PRODUCT,
+            targetId = product.id,
+            ratingsAllowed = ratingsAllowed
+        )
+    }
+
+    private fun bindFollowViews(
+        card: View,
+        statusView: TextView,
+        button: Button,
+        type: FollowTargetType,
+        targetId: String,
+        targetName: String
+    ) {
+        card.isVisible = targetId.isNotBlank()
+        if (targetId.isBlank()) return
+        val buyerId = currentBuyerId()
+        val following = engagementStore.isFollowing(buyerId, type, targetId)
+        val kindLabel = if (type == FollowTargetType.SHOP) "esta tienda" else "esta asociación"
+        val cleanName = targetName.ifBlank { kindLabel }
+        statusView.text = if (following) {
+            "Estás siguiendo a $cleanName. Recibirás avisos según tu permiso en Ajustes."
+        } else {
+            "Sigue $kindLabel para enterarte cuando confirme participación en ferias."
+        }
+        button.text = if (following) "Dejar de seguir" else if (type == FollowTargetType.SHOP) "Seguir tienda" else "Seguir asociación"
+        button.setBackgroundResource(if (following) R.drawable.button_tonal else R.drawable.button_primary)
+        button.setTextColor(if (following) 0xFF183A34.toInt() else 0xFFFFFFFF.toInt())
+        button.setOnClickListener {
+            val activeBuyer = currentBuyerId()
+            if (activeBuyer == null) {
+                promptGoogleSignInForFollow(type, targetId, cleanName)
+                return@setOnClickListener
+            }
+            if (engagementStore.isFollowing(activeBuyer, type, targetId)) {
+                engagementStore.unfollowLocal(activeBuyer, type, targetId)
+                Toast.makeText(this, "Dejaste de seguir a $cleanName.", Toast.LENGTH_SHORT).show()
+            } else {
+                engagementStore.followLocal(activeBuyer, type, targetId, cleanName)
+                Toast.makeText(this, "Ahora sigues a $cleanName.", Toast.LENGTH_SHORT).show()
+            }
+            bindFollowViews(card, statusView, button, type, targetId, cleanName)
+        }
+        applyAccessibility(card, prefs.read())
+    }
+
+    private fun promptGoogleSignInForFollow(type: FollowTargetType, targetId: String, targetName: String) {
+        engagementStore.savePendingFollow(
+            PendingFollowAction(
+                targetType = type,
+                targetId = targetId,
+                targetName = targetName,
+                destinationScreen = current.screen,
+                destinationId = current.productId
+            )
+        )
+        val builder = AlertDialog.Builder(this)
+            .setTitle("Inicia sesión con Google")
+            .setMessage("Para seguir a $targetName, inicia sesión con Google. Al volver quedarás siguiendo automáticamente sin repetir la acción.")
+            .setPositiveButton("Continuar con Google") { _, _ -> launchDirectGoogleSignIn() }
+            .setNegativeButton("Ahora no") { _, _ -> engagementStore.clearPendingFollow() }
+        if (buyerModel.demoAvailable) {
+            builder.setNeutralButton("Modo demostración") { _, _ -> buyerModel.enterDemo() }
+        }
+        val dlg = builder.create()
+        dlg.setOnShowListener { applyAccessibility(dlg.window!!.decorView, prefs.read()) }
+        dlg.show()
+    }
+
+    private fun applyPendingFollowIfNeeded(session: Session) {
+        val pending = engagementStore.peekPendingFollow() ?: return
+        val completed = engagementStore.completePendingFollowIfSignedIn(session.uid) ?: return
+        val label = completed.targetName.ifBlank { "este espacio" }
+        Toast.makeText(this, "Ahora sigues a $label.", Toast.LENGTH_LONG).show()
+        val sameDestination = current.screen == pending.destinationScreen && current.productId == pending.destinationId
+        if (!sameDestination && pending.destinationScreen.isNotBlank()) {
+            navigate(Destination(pending.destinationScreen, pending.destinationId))
+            return
+        }
+        if (!::page.isInitialized) return
+        when (current.screen) {
+            "public_store" -> bindFollowViews(
+                page.findViewById(R.id.store_follow_card),
+                page.findViewById(R.id.store_follow_status),
+                page.findViewById(R.id.store_follow_button),
+                FollowTargetType.SHOP,
+                completed.targetId,
+                completed.targetName
+            )
+            "association_detail" -> bindAssociationDetail()
+            "directory" -> bindDirectory()
+        }
+    }
+
+    private fun bindRatingsSection(
+        card: View,
+        summaryView: TextView,
+        disabledNote: TextView,
+        form: View,
+        scoresRow: LinearLayout,
+        commentInput: EditText,
+        submitButton: Button,
+        listContainer: LinearLayout,
+        targetType: RatingTargetType,
+        targetId: String,
+        ratingsAllowed: Boolean?
+    ) {
+        card.isVisible = targetId.isNotBlank()
+        if (targetId.isBlank()) return
+        val buyerId = currentBuyerId()
+        val summary = engagementStore.summaryLocal(targetType, targetId, buyerId)
+        summaryView.text = BuyerEngagementStore.formatSummaryText(summary)
+
+        val dp = resources.displayMetrics.density
+        listContainer.removeAllViews()
+        summary.recent.forEach { entry ->
+            listContainer.addView(TextView(this).apply {
+                text = BuyerEngagementStore.formatEntryLabel(entry)
+                textSize = 14f
+                setTextColor(0xFF183A34.toInt())
+                setBackgroundColor(0xFFF5F8F6.toInt())
+                val pad = (10 * dp).toInt()
+                setPadding(pad, pad, pad, pad)
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = (6 * dp).toInt()
+                }
+            })
+        }
+
+        when (ratingsAllowed) {
+            null -> {
+                form.isVisible = false
+                disabledNote.isVisible = true
+                disabledNote.text = "Comprobando disponibilidad de calificaciones..."
+            }
+            false -> {
+                form.isVisible = false
+                disabledNote.isVisible = true
+                disabledNote.text = "Esta tienda desactivó las calificaciones."
+            }
+            true -> {
+                disabledNote.isVisible = false
+                form.isVisible = true
+                var selectedScore = summary.userRating?.score ?: 5
+                if (commentInput.text.isNullOrBlank() && !summary.userRating?.comment.isNullOrBlank()) {
+                    commentInput.setText(summary.userRating?.comment)
+                }
+                fun renderScoreButtons() {
+                    scoresRow.removeAllViews()
+                    (1..5).forEach { value ->
+                        val active = value == selectedScore
+                        scoresRow.addView(Button(this).apply {
+                            text = value.toString()
+                            contentDescription = "$value de 5 puntos"
+                            textSize = 15f
+                            setTextColor(if (active) 0xFF183A34.toInt() else 0xFF4A6560.toInt())
+                            background = GradientDrawable().apply {
+                                cornerRadius = 10 * dp
+                                setColor(if (active) 0xFFEEF6F4.toInt() else 0xFFFFFFFF.toInt())
+                                setStroke(
+                                    ((if (active) 2f else 1f) * dp).toInt(),
+                                    if (active) 0xFF1A7B6E.toInt() else 0xFFD3DDD9.toInt()
+                                )
+                            }
+                            minimumHeight = (48 * dp).toInt()
+                            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                                if (value > 1) marginStart = (4 * dp).toInt()
+                            }
+                            setOnClickListener {
+                                selectedScore = value
+                                renderScoreButtons()
+                            }
+                        })
+                    }
+                    applyAccessibility(scoresRow, prefs.read())
+                }
+                renderScoreButtons()
+                submitButton.text = if (summary.userRating != null) "Actualizar calificación" else "Enviar calificación"
+                submitButton.setOnClickListener {
+                    runCatching {
+                        engagementStore.submitRatingLocal(
+                            type = targetType,
+                            targetId = targetId,
+                            score = selectedScore,
+                            comment = commentInput.text?.toString().orEmpty(),
+                            buyerId = currentBuyerId(),
+                            authorLabel = currentBuyerLabel(),
+                            ratingsAllowed = true
+                        )
+                    }.onSuccess {
+                        Toast.makeText(this, "Calificación guardada.", Toast.LENGTH_SHORT).show()
+                        bindRatingsSection(
+                            card, summaryView, disabledNote, form, scoresRow,
+                            commentInput, submitButton, listContainer,
+                            targetType, targetId, true
+                        )
+                    }.onFailure { err ->
+                        Toast.makeText(this, err.message ?: "No pudimos guardar la calificación.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+        applyAccessibility(card, prefs.read())
     }
 
     override fun onDestroy() {

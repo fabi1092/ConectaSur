@@ -38,7 +38,8 @@ internal fun OwnerProduct.toSupabase(): JSONObject = JSONObject().apply {
 internal fun JSONObject.toShop() = Shop(getString("id"), getString("name"), optString("description"), nullableString("logo_url"),
     optString("entrepreneur_type"), optString("sector"), optString("contact"), getBoolean("show_prices"),
     ContactMode.from(optString("contact_mode")), optString("whatsapp_number"),
-    optString("pickup_label", ""), nullableDouble("pickup_lat"), nullableDouble("pickup_lng"))
+    optString("pickup_label", ""), nullableDouble("pickup_lat"), nullableDouble("pickup_lng"),
+    optBoolean("allow_ratings", true))
 internal fun JSONObject.toPublicFair() = PublicFair(
     getString("id"), getString("name"), optString("description"), nullableString("image_url"),
     optString("place_name"), getDouble("latitude"), getDouble("longitude"),
