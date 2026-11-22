@@ -600,6 +600,47 @@ export function createDataLayer(config, { storage, storageKey, firebaseBuyer = n
       unwrap(await sdk.from('fairs').delete().eq('id', id));
     },
 
+    async setFairStatus(id, status) {
+      await requireAdmin();
+      if (!['draft', 'published', 'cancelled'].includes(status)) throw new Error('Estado de feria no válido.');
+      return unwrap(await sdk.from('fairs').update({ status }).eq('id', id).select('*').single());
+    },
+
+    async fairChecklist(fairId) {
+      await requireAdmin();
+      return unwrap(await sdk.rpc('admin_fair_checklist', { p_fair_id: fairId }));
+    },
+
+    async inviteFairParticipant(fairId, { shopId = null, associationId = null } = {}) {
+      await requireAdmin();
+      return unwrap(await sdk.rpc('admin_invite_participant', { p_fair_id: fairId, p_shop_id: shopId, p_association_id: associationId }));
+    },
+
+    async addFairParticipant(fairId, { shopId = null, associationId = null } = {}) {
+      await requireAdmin();
+      return unwrap(await sdk.rpc('admin_add_participant', { p_fair_id: fairId, p_shop_id: shopId, p_association_id: associationId }));
+    },
+
+    async setFairParticipantStatus(participantId, status) {
+      await requireAdmin();
+      unwrap(await sdk.rpc('admin_set_participant_status', { p_participant_id: participantId, p_status: status }));
+    },
+
+    async removeFairParticipant(participantId) {
+      await requireAdmin();
+      unwrap(await sdk.rpc('admin_remove_participant', { p_participant_id: participantId }));
+    },
+
+    async setFairAttendance(participantId, attendance = null) {
+      await requireAdmin();
+      unwrap(await sdk.rpc('admin_set_attendance', { p_participant_id: participantId, p_attendance: attendance || null }));
+    },
+
+    async sendFairNotice(fairId, audience, message = null) {
+      await requireAdmin();
+      return unwrap(await sdk.rpc('admin_send_fair_notice', { p_fair_id: fairId, p_audience: audience, p_message: message ? String(message).trim() || null : null }));
+    },
+
     async updateShop(id, changes) {
       const mapped = {};
 
