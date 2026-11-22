@@ -108,3 +108,23 @@ Migraciones 009–011 (backend de ferias, mapas y navegación anónima). No modi
 - **Navegación anónima (RF-ACC-06, RF-ADM-02):** la app lee platform_settings al abrir y aplica allow (permitir), invite (invitar con opción de omitir) o require (obligar el ingreso con Google). El cliente no puede modificar la tabla; solo set_anonymous_navigation, que exige administrador activo y deja registro en admin_actions.
 - **Punto de venta (RF-MAP-04, Importante; RNF-PRI-03):** es opcional y por defecto no hay coordenadas; la dueña lo borra dejándolo en null. La vista public_shops lo añade al final para no romper a los clientes existentes.
 - **Imagen de la feria:** image_url guarda una URL HTTPS; la subida usa el bucket association-images, cuyas escrituras ya exigen administrador activo.
+
+## Entrega 7: ferias con participantes, seguidores, avisos y calificaciones
+
+Migraciones 012–014. No modifican las anteriores. Detalle de uso en [entrega-7-api.md](entrega-7-api.md).
+
+| Tabla / objeto | Clave y relación | Lectura | Escritura |
+|---|---|---|---|
+| fair_participants | fair_id → fairs; shop_id → shops o association_id → associations; status (invited, confirmed, declined, added); attendance | Administrador y la dueña de su propia fila | Solo funciones (invitar, agregar, responder, asistencia) |
+| follows | (subject, target_type, target_id); subject es el UUID de Supabase o `firebase:UID` | Solo la propia persona, mediante `my_follows` | `follow_target` y `unfollow_target` |
+| ratings | Una por (subject, tienda, producto); stars 1 a 5 | Solo promedios públicos (`public_ratings`) | `rate_target`, solo si `shops.allow_ratings` |
+| notification_consents | subject | La propia persona, mediante `get_notification_consent` | `set_notification_consent` |
+| device_tokens | token FCM único; subject; plataforma | Ninguna desde clientes | `register_device` (exige consentimiento) |
+| notifications | Bandeja y cola de envío push por subject | La propia persona, mediante `my_notifications` | Solo triggers y funciones del servidor |
+| shops.allow_ratings, contact_notifications, notify_from, notify_until | Configuración de la tienda | `allow_ratings` es pública vía `public_shops` | La dueña, como el resto de su ficha |
+| app_private.firebase_keys, settings | Claves públicas de Google y proyecto Firebase | Ninguna desde clientes | `tools/fcm-worker.mjs keys` |
+
+- **Identidad de compradores Google (RF-ACC-08):** la base verifica el ID token de Firebase (firma RS256, proyecto, emisor, vigencia, proveedor google.com y correo verificado) con las claves públicas de Google. Un token válido solo identifica a la persona en las funciones de seguidores, avisos y calificaciones; nunca concede otro rol. Es el equivalente en servidor de lo que `firebase-buyer-session.js` ya exige en el cliente. Limitación: una cuenta de Google deshabilitada deja de funcionar cuando vence su token (hasta una hora).
+- **Consentimiento (RNF-PRI-02):** sin consentimiento no se registra ningún dispositivo ni se crean avisos para seguidores; retirarlo borra los dispositivos.
+- **Avisos a seguidores:** un trigger crea el aviso cuando una tienda o asociación queda confirmada o agregada a una feria publicada, una sola vez por participación. `app_private.claim_push_batch` entrega los pendientes al servicio `tools/fcm-worker.mjs`.
+- **Horario de contacto (RF-CFG-04):** `send_shop_message` siempre guarda el mensaje; avisa solo si la tienda tiene los avisos activos y la hora de Santiago está dentro de `notify_from`–`notify_until`.

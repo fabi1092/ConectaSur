@@ -1,0 +1,205 @@
+{
+  "checkedAt": "2026-11-22T04:10:01.910Z",
+  "instance": "https://supabase-surcode.codepulse.cl",
+  "entrega": 7,
+  "summary": {
+    "total": 28,
+    "passed": 28,
+    "failed": 0
+  },
+  "migrationsRegistered": [
+    "001_conectasur",
+    "002_catalogo_ventas",
+    "003_cantidad_entera",
+    "004_venta_a_pedido",
+    "005_logos_asociaciones",
+    "006_cuentas_administradoras",
+    "007_editar_cuenta_emprendedora",
+    "008_contacto_tienda",
+    "009_ferias_mapas",
+    "010_navegacion_anonima",
+    "011_punto_de_venta",
+    "012_identidad_notificaciones",
+    "013_seguidores_calificaciones",
+    "014_participantes_ferias"
+  ],
+  "firebaseKeys": 2,
+  "checks": [
+    {
+      "id": "MIG-012",
+      "description": "Migracion 012_identidad_notificaciones registrada en la instancia",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "MIG-013",
+      "description": "Migracion 013_seguidores_calificaciones registrada en la instancia",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "MIG-014",
+      "description": "Migracion 014_participantes_ferias registrada en la instancia",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "OBJ-tablas",
+      "description": "Existen fair_participants, follows, ratings, device_tokens, notification_consents y notifications",
+      "ok": true,
+      "detail": "{\"fair_participants\":true,\"follows\":true,\"ratings\":true,\"device_tokens\":true,\"notification_consents\":true,\"notifications\":true,\"public_ratings\":true,\"verify_buyer_identity\":true,\"verify_firebase_token\":true,\"follow_target\":true,\"respond_fair_invitation\":true,\"fair_public_detail\":true,\"rate_target\":true,\"register_device\":true,\"admin_fair_checklist\":true,\"claim_push_batch\":true}"
+    },
+    {
+      "id": "OBJ-funciones",
+      "description": "Existen las funciones de identidad, seguidores, ferias, calificaciones y cola",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "RLS-on",
+      "description": "RLS activo en las seis tablas nuevas",
+      "ok": true,
+      "detail": "[{\"tabla\":\"device_tokens\",\"rls\":true},{\"tabla\":\"fair_participants\",\"rls\":true},{\"tabla\":\"follows\",\"rls\":true},{\"tabla\":\"notification_consents\",\"rls\":true},{\"tabla\":\"notifications\",\"rls\":true},{\"tabla\":\"ratings\",\"rls\":true}]"
+    },
+    {
+      "id": "COL-shops",
+      "description": "shops tiene allow_ratings, contact_notifications y el horario; public_shops expone allow_ratings",
+      "ok": true,
+      "detail": "[{\"table_name\":\"public_shops\",\"column_name\":\"allow_ratings\"},{\"table_name\":\"shops\",\"column_name\":\"allow_ratings\"},{\"table_name\":\"shops\",\"column_name\":\"contact_notifications\"},{\"table_name\":\"shops\",\"column_name\":\"notify_from\"},{\"table_name\":\"shops\",\"column_name\":\"notify_until\"}]"
+    },
+    {
+      "id": "PRIV-tablas",
+      "description": "El visitante no lee ninguna tabla privada (seguidores, dispositivos, avisos, calificaciones, participantes)",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "id": "PRIV-publico",
+      "description": "El visitante lee los promedios publicos, la ficha de feria y puede identificarse con token",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "PRIV-admin",
+      "description": "Invitar, responder y ver mis ferias exigen sesion; la cola y el verificador no son publicos",
+      "ok": true,
+      "detail": "{\"anon_lee_follows\":false,\"anon_lee_device_tokens\":false,\"anon_lee_notifications\":false,\"anon_lee_notification_consents\":false,\"anon_lee_ratings\":false,\"anon_lee_fair_participants\":false,\"anon_lee_public_ratings\":true,\"anon_ejecuta_follow\":true,\"anon_ejecuta_verify\":true,\"anon_ejecuta_ficha\":true,\"anon_ejecuta_invitar\":false,\"anon_ejecuta_responder\":false,\"anon_ejecuta_mis_ferias\":false,\"auth_ejecuta_responder\":true,\"auth_ejecuta_cola\":false,\"anon_ejecuta_verificador\":false}"
+    },
+    {
+      "id": "FIREBASE-claves",
+      "description": "La base tiene las claves publicas de Firebase y el proyecto configurado",
+      "ok": true,
+      "detail": "2 clave(s), proyecto conectasur-dev"
+    },
+    {
+      "id": "API-ficha-inexistente",
+      "description": "La ficha publica de una feria inexistente responde vacia, sin error",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "API-seguir-sin-sesion",
+      "description": "Sin sesion ni token, seguir se rechaza (la app pide iniciar sesion)",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "API-token-invalido",
+      "description": "Un token de Google falso o ausente se rechaza",
+      "ok": true,
+      "detail": "HTTP 403 / 403"
+    },
+    {
+      "id": "API-admin-anon",
+      "description": "Sin sesion, invitar y responder a ferias se rechazan",
+      "ok": true,
+      "detail": "HTTP 401 / 401"
+    },
+    {
+      "id": "API-tablas-privadas",
+      "description": "Sin sesion, ninguna tabla privada se puede leer por la API",
+      "ok": true,
+      "detail": "follows:401 device_tokens:401 notifications:401 notification_consents:401 ratings:401 fair_participants:401"
+    },
+    {
+      "id": "API-public_ratings",
+      "description": "public_ratings responde sin sesion y solo con promedios",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "API-public_shops",
+      "description": "public_shops informa si la tienda acepta calificaciones",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "E2E-W17_deja_de_seguir",
+      "description": "Recorrido real (se deshace): W17 deja de seguir",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E2E-W05_agregada_directa",
+      "description": "Recorrido real (se deshace): W05 agregada directa",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E2E-A17_califica_la_tienda",
+      "description": "Recorrido real (se deshace): A17 califica la tienda",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E2E-W07_checklist_confirmada",
+      "description": "Recorrido real (se deshace): W07 checklist confirmada",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E2E-A02_participo_con_un_toque",
+      "description": "Recorrido real (se deshace): A02 participo con un toque",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E2E-A04_calendario_de_la_duena",
+      "description": "Recorrido real (se deshace): A04 calendario de la duena",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E2E-W16_sin_sesion_se_pide_login",
+      "description": "Recorrido real (se deshace): W16 sin sesion se pide login",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E2E-A01_invitacion_llega_a_la_duena",
+      "description": "Recorrido real (se deshace): A01 invitacion llega a la duena",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E2E-W12_ficha_publica_con_confirmadas",
+      "description": "Recorrido real (se deshace): W12 ficha publica con confirmadas",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E2E-A13_aviso_al_seguidor_con_nombre_de_feria",
+      "description": "Recorrido real (se deshace): A13 aviso al seguidor con nombre de feria",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "notes": [
+    "No se probo un ID token real de Google. Para hacerlo: copia un token vigente desde la app y ejecuta con FIREBASE_TEST_ID_TOKEN."
+  ],
+  "limits": [
+    "El recorrido E2E usa las cuentas existentes dentro de una transaccion que se deshace siempre: no deja ferias, avisos ni calificaciones.",
+    "La entrega real de un push a un telefono depende del servicio fcm-worker y de la configuracion Firebase de la app; esta verificacion no envia ninguno.",
+    "Las respuestas de la API se comprobaron con la clave anon, sin sesion."
+  ]
+}
