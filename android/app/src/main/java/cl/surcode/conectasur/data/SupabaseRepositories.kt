@@ -564,20 +564,27 @@ class SupabaseRatingRepository(
             val average = avgObj?.optDouble("average", 0.0) ?: 0.0
             val total = avgObj?.optInt("total", 0) ?: 0
 
-            val commentsBody = JSONObject().put("p_shop_id", resolvedShop).put("p_limit", 5)
+            val commentsBody = JSONObject().put("p_shop_id", resolvedShop).put("p_limit", 10)
                 .put("p_product_id", if (type == RatingTargetType.PRODUCT) targetId else JSONObject.NULL)
-            val commentRows = client.request("/rest/v1/rpc/rating_comments", "POST", commentsBody, false) as? JSONArray ?: JSONArray()
+            val commentRows = runCatching {
+                client.request("/rest/v1/rpc/rating_comments_named", "POST", commentsBody, false) as? JSONArray
+            }.getOrNull()
+                ?: (client.request("/rest/v1/rpc/rating_comments", "POST", commentsBody, false) as? JSONArray)
+                ?: JSONArray()
             val recent = (0 until commentRows.length()).mapNotNull { i ->
                 val row = commentRows.optJSONObject(i) ?: return@mapNotNull null
                 val stars = row.optInt("stars", 0)
                 if (stars !in 1..5) return@mapNotNull null
+                val author = BuyerEngagementStore.formatPublicReviewerName(row.optString("author_name"))
+                val createdAt = BuyerEngagementStore.parseIsoTimestampMillis(row.optString("created_at"))
                 RatingEntry(
                     id = row.optString("id", "$i"),
                     targetType = type,
                     targetId = targetId,
                     score = stars,
                     comment = row.optString("comment"),
-                    authorLabel = "Comprador"
+                    authorLabel = author,
+                    createdAtMillis = createdAt
                 )
             }
             val userRating = if (buyerId != null) {
@@ -614,15 +621,18 @@ class SupabaseRatingRepository(
         shopId: String
     ): RatingEntry {
         check(ratingsAllowed) { "Esta tienda desactivó las calificaciones." }
+        check(!buyerId.isNullOrBlank()) { "Inicia sesión con Google para dejar tu calificación." }
         val resolvedShop = if (type == RatingTargetType.SHOP) targetId else shopId
+        val publicAuthor = BuyerEngagementStore.formatPublicReviewerName(authorLabel)
         val body = JSONObject()
             .put("p_shop_id", resolvedShop)
             .put("p_product_id", if (type == RatingTargetType.PRODUCT) targetId else JSONObject.NULL)
             .put("p_stars", score)
             .put("p_comment", comment.trim().takeIf { it.isNotEmpty() } ?: JSONObject.NULL)
+            .put("p_author_name", publicAuthor)
         if (resolvedShop.isNotBlank()) {
-            callBuyerRpc(client, firebaseToken, "rate_target", body)
+            callBuyerRpc(client, firebaseToken, "rate_target_named", body)
         }
-        return local.submitRatingLocal(type, targetId, score, comment, buyerId, authorLabel, ratingsAllowed)
+        return local.submitRatingLocal(type, targetId, score, comment, buyerId, publicAuthor, ratingsAllowed)
     }
 }

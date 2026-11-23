@@ -293,6 +293,15 @@
                 android:text="Ingresar como comprador" />
 
             <Button
+                android:id="@+id/home_notifications_follows"
+                style="@style/ConectaSur.Button.Tonal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:minHeight="48dp"
+                android:text="Avisos y tiendas seguidas" />
+
+            <Button
                 android:id="@+id/buyer_cancel_login"
                 style="@style/ConectaSur.Button"
                 android:layout_width="match_parent"

@@ -11,6 +11,10 @@ import cl.surcode.conectasur.domain.RatingSummary
 import cl.surcode.conectasur.domain.RatingTargetType
 import java.nio.charset.StandardCharsets
 import java.text.NumberFormat
+import java.time.Instant
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Base64
 import java.util.Locale
 
@@ -150,9 +154,7 @@ class BuyerEngagementStore(private val storage: ConsentStorage) : FollowReposito
         val reviewerKey = buyerId?.trim()?.takeIf { it.isNotBlank() } ?: ANONYMOUS_REVIEWER
         val entryId = "${type.wire}:$cleanTarget:$reviewerKey"
         val cleanComment = comment.trim().take(MAX_COMMENT_LENGTH)
-        val cleanAuthor = authorLabel.trim().take(60).ifBlank {
-            if (reviewerKey == ANONYMOUS_REVIEWER) "Visitante" else "Comprador"
-        }
+        val cleanAuthor = formatPublicReviewerName(authorLabel)
         val entry = RatingEntry(
             id = entryId,
             targetType = type,
@@ -275,6 +277,62 @@ class BuyerEngagementStore(private val storage: ConsentStorage) : FollowReposito
         private const val PENDING_TTL_MS = 15 * 60 * 1000L
         private const val MAX_COMMENT_LENGTH = 240
         private const val MAX_RECENT_RATINGS = 5
+        private val CHILE_ZONE: ZoneId = ZoneId.of("America/Santiago")
+        private val GENERIC_REVIEWER_NAMES = setOf(
+            "comprador",
+            "visitante",
+            "usuario",
+            "admin",
+            "administrador",
+            "comprador verificado"
+        )
+
+        fun formatPublicReviewerName(vararg candidates: String?): String {
+            for (raw in candidates) {
+                val collapsed = raw?.trim()?.replace(Regex("\\s+"), " ").orEmpty()
+                if (collapsed.length < 2) continue
+                if (collapsed.contains('@') || collapsed.contains(':') || collapsed.contains('/')) continue
+                if (collapsed.startsWith("http", ignoreCase = true)) continue
+                if (collapsed.lowercase(Locale.ROOT) in GENERIC_REVIEWER_NAMES) continue
+                val words = collapsed.split(' ').filter { it.isNotBlank() }
+                if (words.isEmpty()) continue
+                val formatted = if (words.size >= 2) {
+                    val secondInitial = words[1].firstOrNull { it.isLetterOrDigit() }
+                    if (secondInitial != null) "${words[0]} ${secondInitial.uppercaseChar()}." else words[0]
+                } else {
+                    words[0]
+                }
+                val clipped = formatted.take(60).trim()
+                if (clipped.length >= 2) return clipped
+            }
+            return "Comprador verificado"
+        }
+
+        fun parseIsoTimestampMillis(raw: String?): Long {
+            val text = raw?.trim().orEmpty()
+            if (text.isBlank()) return 0L
+            val iso = text.replace(' ', 'T').let { normalized ->
+                when {
+                    normalized.endsWith("Z", ignoreCase = true) -> normalized
+                    Regex("[+-]\\d{2}$").containsMatchIn(normalized) -> "$normalized:00"
+                    Regex("[+-]\\d{4}$").containsMatchIn(normalized) ->
+                        normalized.dropLast(2) + ":" + normalized.takeLast(2)
+                    else -> normalized
+                }
+            }
+            return runCatching { OffsetDateTime.parse(iso).toInstant().toEpochMilli() }
+                .recoverCatching { Instant.parse(iso).toEpochMilli() }
+                .getOrDefault(0L)
+        }
+
+        fun formatRatingDate(epochMillis: Long, nowMillis: Long = System.currentTimeMillis()): String {
+            if (epochMillis <= 0L) return ""
+            val date = Instant.ofEpochMilli(epochMillis).atZone(CHILE_ZONE).toLocalDate()
+            val currentYear = Instant.ofEpochMilli(nowMillis).atZone(CHILE_ZONE).year
+            val locale = Locale.forLanguageTag("es-CL")
+            val pattern = if (date.year == currentYear) "d MMM" else "d MMM yyyy"
+            return DateTimeFormatter.ofPattern(pattern, locale).format(date).replace(".", "")
+        }
 
         fun formatSummaryText(summary: RatingSummary): String {
             if (summary.count <= 0) return "Sin calificaciones aún."
@@ -287,7 +345,12 @@ class BuyerEngagementStore(private val storage: ConsentStorage) : FollowReposito
         }
 
         fun formatEntryLabel(entry: RatingEntry): String {
-            val base = "${entry.score} de 5 · ${entry.authorLabel.ifBlank { "Comprador" }}"
+            val author = formatPublicReviewerName(entry.authorLabel)
+            val date = formatRatingDate(entry.createdAtMillis)
+            val base = buildString {
+                append("${entry.score} de 5 · $author")
+                if (date.isNotBlank()) append(" · $date")
+            }
             return if (entry.comment.isBlank()) base else "$base\n${entry.comment}"
         }
     }

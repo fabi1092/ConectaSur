@@ -67,6 +67,7 @@ class FirebaseBuyerAuth(private val context: Context) {
     suspend fun currentIdToken(): String? = runCatching {
         auth.currentUser?.getIdToken(false)?.await()?.token?.takeIf { it.isNotBlank() }
     }.getOrNull()
+    fun currentDisplayName(): String? = auth.currentUser?.displayName?.trim()?.takeIf { it.isNotBlank() }
     suspend fun clearCredentialState() {
         try { CredentialManager.create(context).clearCredentialState(ClearCredentialStateRequest()) }
         catch (cancelled: CancellationException) { throw cancelled }

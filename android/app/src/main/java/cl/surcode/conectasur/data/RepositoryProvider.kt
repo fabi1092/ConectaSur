@@ -45,4 +45,5 @@ object RepositoryProvider {
         val local = BuyerEngagementStore(context)
         return if (supabaseReady()) SupabaseRatingRepository(client(), { firebaseBuyer?.currentIdToken() }, local) else local
     }
+    fun currentDisplayName(): String? = firebaseBuyer?.currentDisplayName() ?: backend?.cachedDisplayName()
 }
