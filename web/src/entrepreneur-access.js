@@ -7,6 +7,7 @@ import { setAccountNavigation } from './account-navigation.js';
 import { dashboardMetrics, dashboardPanels, loadDashboard } from './owner-dashboard.js';
 import { icon, communityPhoto } from './visuals.js';
 import { showBuyerRegistration, showBuyerHome } from './buyer-access.js';
+import { peekPendingFollow, completePendingFollow, setFollowFlash } from './buyer-engagement.js';
 
 function messageFor(error) {
   if (error.code === 'google_not_configured') return 'El acceso con Google todavía no está disponible. Puedes ingresar con correo o intentarlo más tarde.';
@@ -44,6 +45,10 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     if (!alive()) return;
     mode = 'login';
     busy = false;
+    const pendingFollow = !message ? peekPendingFollow() : null;
+    const effectiveMessage = message || (pendingFollow
+      ? `Inicia sesión para seguir a ${pendingFollow.targetName || 'este espacio'}. Al volver quedarás siguiendo automáticamente.`
+      : '');
     document.title = 'Ingresar | ConectaSur';
     app.innerHTML = publicShell(`<section class="owner-access" aria-labelledby="owner-title">
       <div class="owner-intro"><p class="public-eyebrow">Tu espacio en ConectaSur</p><h1 id="owner-title" tabindex="-1">Ingresa a tu cuenta.</h1>
@@ -56,7 +61,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
           <label for="owner-password">Contraseña</label><input id="owner-password" type="password" autocomplete="current-password" required aria-describedby="owner-password-help">
           <label class="owner-show-password"><input id="owner-show-password" type="checkbox">Mostrar contraseña</label>
           <p id="owner-password-help" class="owner-hint">Escribe la contraseña de tu cuenta.</p>
-          <p id="owner-access-status" class="owner-status${error ? ' owner-error' : ''}" role="${error ? 'alert' : 'status'}">${escape(message)}</p>
+          <p id="owner-access-status" class="owner-status${error ? ' owner-error' : ''}" role="${error ? 'alert' : 'status'}">${escape(effectiveMessage)}</p>
           <button class="public-primary" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
         </form>
         <p class="auth-divider">O usa tu cuenta de Google</p>
@@ -238,6 +243,17 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     if (!alive()) return;
     accountUid = user.uid;
     setAccountNavigation(user);
+    if (peekPendingFollow()) {
+      const completed = await completePendingFollow(db);
+      if (!alive()) return;
+      if (completed) {
+        setFollowFlash(completed.ok
+          ? `Ahora sigues a ${completed.targetName || 'este espacio'}.`
+          : (completed.error?.message || 'No pudimos completar el seguimiento.'));
+        window.location.hash = completed.returnHash || '#inicio';
+        return;
+      }
+    }
     if (user.role === 'admin') {
       mode = 'admin';
       busy = false;
@@ -248,7 +264,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
     } else if (user.role === 'comprador') {
       mode = 'buyer';
       busy = false;
-      showBuyerHome(app, user, logout);
+      showBuyerHome(app, user, logout, '', db);
     } else {
       await db.logout();
       login(messageFor({ code: 'entrepreneur_required' }), true);
@@ -294,7 +310,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
           onSignedIn: async account => {
             editor?.(); editor = null;
             await openAccount(account);
-            if (alive() && mode === 'buyer') showBuyerHome(app, account, logout, 'Tu cuenta está creada. Ya puedes explorar nuestra comunidad.');
+            if (alive() && mode === 'buyer') showBuyerHome(app, account, logout, 'Tu cuenta está creada. Ya puedes explorar nuestra comunidad.', db);
           },
           onLogin: message => { editor?.(); editor = null; history.replaceState(null, '', '#ingresar'); login(message); }
         });

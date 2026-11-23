@@ -49,6 +49,11 @@ export function createFirebaseBuyerSession({driver,projectId}) {
       }
     },
     async logout(){generation++;checking++;pending=false;await driver.signOut();emit(null);},
+    async idToken(){
+      await driver.ready();
+      const user=driver.user();
+      return user && driver.token ? driver.token(user) : null;
+    },
     onSession(callback){listeners.add(callback);return()=>listeners.delete(callback);},
     dispose(){unsubscribe();listeners.clear();}
   };

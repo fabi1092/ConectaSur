@@ -114,6 +114,12 @@ export function createDataLayer(config, { storage, storageKey, firebaseBuyer = n
     location: typeof window === 'undefined' ? null : window.location,
     history: typeof window === 'undefined' ? null : window.history });
 
+  async function buyerToken() {
+    const hasSupa = !!unwrap(await sdk.auth.getSession())?.session;
+    if (hasSupa) return null;
+    return firebaseBuyer?.idToken ? await firebaseBuyer.idToken() : null;
+  }
+
   async function profile() {
     const local=unwrap(await sdk.auth.getSession())?.session;
     if(!local && firebaseBuyer){const buyer=await firebaseBuyer.currentSession();if(buyer)return buyer;}
@@ -645,6 +651,57 @@ export function createDataLayer(config, { storage, storageKey, firebaseBuyer = n
       return unwrap(await sdk.rpc('admin_send_fair_notice', { p_fair_id: fairId, p_audience: audience, p_message: message ? String(message).trim() || null : null }));
     },
 
+    async hasBuyerOrUserSession() {
+      const hasSupa = !!unwrap(await sdk.auth.getSession())?.session;
+      if (hasSupa) return true;
+      return Boolean(firebaseBuyer?.idToken && await firebaseBuyer.idToken());
+    },
+
+    async myFollows() {
+      return unwrap(await sdk.rpc('my_follows', { p_token: await buyerToken() })) || [];
+    },
+
+    async followTarget(targetType, targetId) {
+      unwrap(await sdk.rpc('follow_target', {
+        p_target_type: targetType,
+        p_target_id: targetId,
+        p_token: await buyerToken()
+      }));
+    },
+
+    async unfollowTarget(targetType, targetId) {
+      unwrap(await sdk.rpc('unfollow_target', {
+        p_target_type: targetType,
+        p_target_id: targetId,
+        p_token: await buyerToken()
+      }));
+    },
+
+    async getNotificationConsent() {
+      return Boolean(unwrap(await sdk.rpc('get_notification_consent', { p_token: await buyerToken() })));
+    },
+
+    async setNotificationConsent(granted) {
+      return Boolean(unwrap(await sdk.rpc('set_notification_consent', {
+        p_granted: Boolean(granted),
+        p_token: await buyerToken()
+      })));
+    },
+
+    async myNotifications(limit = 30) {
+      return unwrap(await sdk.rpc('my_notifications', {
+        p_limit: limit,
+        p_token: await buyerToken()
+      })) || [];
+    },
+
+    async markNotificationsRead(ids) {
+      return unwrap(await sdk.rpc('mark_notifications_read', {
+        p_ids: ids,
+        p_token: await buyerToken()
+      }));
+    },
+
     async updateShop(id, changes) {
       const mapped = {};
 
@@ -1022,3 +1079,11 @@ export const listPublicFairs = (...a) => current().listPublicFairs(...a);
 export const upcomingFairs = (...a) => current().upcomingFairs(...a);
 export const getPublicFairDetail = (...a) => current().getPublicFairDetail(...a);
 export const getAnonymousNavigation = (...a) => current().getAnonymousNavigation(...a);
+export const hasBuyerOrUserSession = (...a) => current().hasBuyerOrUserSession(...a);
+export const myFollows = (...a) => current().myFollows(...a);
+export const followTarget = (...a) => current().followTarget(...a);
+export const unfollowTarget = (...a) => current().unfollowTarget(...a);
+export const getNotificationConsent = (...a) => current().getNotificationConsent(...a);
+export const setNotificationConsent = (...a) => current().setNotificationConsent(...a);
+export const myNotifications = (...a) => current().myNotifications(...a);
+export const markNotificationsRead = (...a) => current().markNotificationsRead(...a);
