@@ -332,16 +332,22 @@ class MainActivity : FragmentActivity() {
     }
     private fun handlePushIntent(intent: Intent?) {
         val pushType = intent?.getStringExtra(FirebasePushManager.EXTRA_PUSH_TYPE)
+            ?: intent?.getStringExtra("kind")
+            ?: intent?.getStringExtra("type")
         val fairId = intent?.getStringExtra(FirebasePushManager.EXTRA_FAIR_ID)
         val shopId = intent?.getStringExtra(FirebasePushManager.EXTRA_SHOP_ID)
         if (pushType.isNullOrBlank() && fairId.isNullOrBlank() && shopId.isNullOrBlank()) return
         intent?.removeExtra(FirebasePushManager.EXTRA_PUSH_TYPE)
+        intent?.removeExtra("kind")
+        intent?.removeExtra("type")
         intent?.removeExtra(FirebasePushManager.EXTRA_FAIR_ID)
         intent?.removeExtra(FirebasePushManager.EXTRA_FAIR_NAME)
         intent?.removeExtra(FirebasePushManager.EXTRA_SHOP_ID)
         when {
             pushType in listOf("invitation", "fair_invitation", "fair_notice", "fair_cancelled") -> {
-                accountAccess.launch(Intent(this, StoreActivity::class.java))
+                accountAccess.launch(
+                    Intent(this, StoreActivity::class.java).putExtra(StoreActivity.EXTRA_FOCUS_FAIRS, true)
+                )
             }
             pushType == "contact" -> {
                 startActivity(Intent(this, ShopInboxActivity::class.java))
