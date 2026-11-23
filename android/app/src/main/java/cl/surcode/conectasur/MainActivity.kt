@@ -962,7 +962,7 @@ class MainActivity : FragmentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun bindStore() {
         page.findViewById<TextView>(R.id.page_title).setText(R.string.public_store_title)
-        listOf(R.id.change_logo, R.id.remove_logo, R.id.local_logo_note, R.id.store_sales).forEach {
+        listOf(R.id.store_logo_actions_card, R.id.change_logo, R.id.remove_logo, R.id.local_logo_note, R.id.store_sales).forEach {
             page.findViewById<View>(it).isVisible = false
         }
         page.findViewById<Button>(R.id.store_catalog).setOnClickListener {

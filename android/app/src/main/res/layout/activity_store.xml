@@ -976,7 +976,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
+                        android:layout_marginBottom="4dp"
                         android:orientation="horizontal">
 
                         <Button
@@ -1001,15 +1001,6 @@
                             android:text="Quitar punto"
                             android:textSize="15sp" />
                     </LinearLayout>
-
-                    <Button
-                        android:id="@+id/shop_save"
-                        style="@style/ConectaSur.Button.Primary"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:minHeight="64dp"
-                        android:text="@string/save_shop" />
                 </LinearLayout>
 
                 <!-- TARJETA AVISOS: AVISOS Y HORARIO DE NOTIFICACIONES (A15) -->
@@ -1027,13 +1018,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="0dp"
-                        android:text="Avisos y horario de atención" />
+                        android:text="Avisos y horario de contacto" />
 
                     <TextView
                         style="@style/ConectaSur.Label"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Activa o silencia los avisos de ferias y define el horario en que deseas recibir notificaciones." />
+                        android:text="Activa o silencia los avisos de contacto y define el horario en que deseas recibir notificaciones." />
 
                     <CheckBox
                         android:id="@+id/shop_notifications_enabled"
@@ -1042,7 +1033,7 @@
                         android:layout_height="wrap_content"
                         android:minHeight="56dp"
                         android:saveEnabled="false"
-                        android:text="Recibir avisos y notificaciones en este teléfono"
+                        android:text="Recibir avisos de contacto en este teléfono"
                         android:textSize="18sp" />
 
                     <TextView
@@ -1069,7 +1060,7 @@
                             android:layout_marginBottom="0dp"
                             android:layout_weight="1"
                             android:minHeight="56dp"
-                            android:text="Desde: 09:00" />
+                            android:text="Desde: 08:00" />
 
                         <Button
                             android:id="@+id/shop_notifications_end_hour"
@@ -1080,9 +1071,18 @@
                             android:layout_marginBottom="0dp"
                             android:layout_weight="1"
                             android:minHeight="56dp"
-                            android:text="Hasta: 20:00" />
+                            android:text="Hasta: 21:00" />
                     </LinearLayout>
                 </LinearLayout>
+
+                <Button
+                    android:id="@+id/shop_save"
+                    style="@style/ConectaSur.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:minHeight="64dp"
+                    android:text="@string/save_shop" />
 
                 <!-- TARJETA 4: CUENTA Y SEGURIDAD -->
                 <LinearLayout

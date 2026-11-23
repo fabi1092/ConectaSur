@@ -74,6 +74,7 @@
 
         <!-- Logo Management Card -->
         <LinearLayout
+            android:id="@+id/store_logo_actions_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_md"
@@ -115,52 +116,6 @@
         </LinearLayout>
 
         <!-- Store Actions -->
-        <LinearLayout
-            android:id="@+id/store_pickup_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_md"
-            android:background="@drawable/card_surface"
-            android:orientation="vertical"
-            android:padding="@dimen/space_md"
-            android:visibility="gone">
-
-            <TextView
-                style="@style/ConectaSur.Label"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Punto de retiro o feria" />
-
-            <TextView
-                android:id="@+id/store_pickup_text"
-                style="@style/ConectaSur.Body"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp" />
-
-            <FrameLayout
-                android:id="@+id/store_pickup_map_container"
-                android:layout_width="match_parent"
-                android:layout_height="180dp"
-                android:layout_marginTop="8dp"
-                android:visibility="gone">
-
-                <WebView
-                    android:id="@+id/store_pickup_map"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
-            </FrameLayout>
-
-            <Button
-                android:id="@+id/store_pickup_directions"
-                style="@style/ConectaSur.Button.Tonal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_sm"
-                android:minHeight="48dp"
-                android:text="Cómo llegar en mapa" />
-        </LinearLayout>
-
         <LinearLayout
             android:id="@+id/store_follow_card"
             android:layout_width="match_parent"
@@ -227,9 +182,24 @@
                 android:visibility="gone" />
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/store_products_heading"
+            style="@style/ConectaSur.Section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:text="Productos publicados" />
+
+        <LinearLayout
+            android:id="@+id/store_products_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:orientation="vertical" />
+
         <Button
             android:id="@+id/store_catalog"
-            style="@style/ConectaSur.Button.Primary"
+            style="@style/ConectaSur.Button.Tonal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_md"
@@ -242,6 +212,52 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_sm"
             android:text="@string/store_sales" />
+
+        <LinearLayout
+            android:id="@+id/store_pickup_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Punto de retiro o feria" />
+
+            <TextView
+                android:id="@+id/store_pickup_text"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" />
+
+            <FrameLayout
+                android:id="@+id/store_pickup_map_container"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_marginTop="8dp"
+                android:visibility="gone">
+
+                <WebView
+                    android:id="@+id/store_pickup_map"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </FrameLayout>
+
+            <Button
+                android:id="@+id/store_pickup_directions"
+                style="@style/ConectaSur.Button.Tonal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:minHeight="48dp"
+                android:text="Cómo llegar en mapa" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/store_ratings_card"
@@ -327,20 +343,5 @@
                 android:layout_marginTop="@dimen/space_sm"
                 android:orientation="vertical" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/store_products_heading"
-            style="@style/ConectaSur.Section"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_lg"
-            android:text="Productos publicados" />
-
-        <LinearLayout
-            android:id="@+id/store_products_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_sm"
-            android:orientation="vertical" />
     </LinearLayout>
 </ScrollView>
