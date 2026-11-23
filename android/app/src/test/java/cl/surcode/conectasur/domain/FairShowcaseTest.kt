@@ -34,5 +34,7 @@ class FairShowcaseTest {
         assertTrue(FairParticipantStatus.ADDED_BY_ADMIN.isPubliclyConfirmed)
         assertFalse(FairParticipantStatus.REJECTED.isPubliclyConfirmed)
         assertFalse(FairParticipantStatus.INVITED.isPubliclyConfirmed)
+        assertEquals(FairParticipantStatus.ADDED_BY_ADMIN, FairParticipantStatus.from("added"))
+        assertEquals(FairParticipantStatus.REJECTED, FairParticipantStatus.from("declined"))
     }
 }

@@ -14,7 +14,10 @@ data class Shop(
     val entrepreneurType: String, val sector: String, val contact: String, val showPrices: Boolean,
     val contactMode: ContactMode = ContactMode.FORM, val whatsappNumber: String = "",
     val pickupLabel: String = "", val pickupLat: Double? = null, val pickupLng: Double? = null,
-    val allowRatings: Boolean = true
+    val allowRatings: Boolean = true,
+    val contactNotifications: Boolean = true,
+    val notifyFrom: String = "08:00",
+    val notifyUntil: String = "21:00"
 )
 
 data class PublicAssociation(
@@ -56,7 +59,8 @@ data class FairParticipant(
     val status: FairParticipantStatus,
     val sector: String = "",
     val entrepreneurType: String = "",
-    val sampleProducts: List<PublicProduct> = emptyList()
+    val sampleProducts: List<PublicProduct> = emptyList(),
+    val isAssociation: Boolean = false
 )
 
 fun buildPublicFairShowcase(
@@ -120,6 +124,7 @@ interface ShopRepository {
     suspend fun listOwnerFairCalendar(shopId: String): List<OwnerFairCalendarItem> = emptyList()
     suspend fun respondToFairInvitation(shopId: String, fairId: String, participate: Boolean): FairParticipantStatus =
         applyOneTapFairDecision(participate)
+    suspend fun suggestFairsForSale(shopId: String, lat: Double? = null, lng: Double? = null): List<FairSaleSuggestion> = emptyList()
     suspend fun getAnonymousNavigation(): String = "allow"
     suspend fun updateShop(shop: Shop)
     /** Sube el logo (JPEG ya comprimido), guarda su URL en la tienda y la devuelve. */

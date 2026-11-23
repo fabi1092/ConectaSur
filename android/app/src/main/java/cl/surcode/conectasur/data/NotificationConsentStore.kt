@@ -131,18 +131,21 @@ class NotificationConsentStore(private val storage: ConsentStorage) {
             val cleanTitle = rawTitle?.trim().orEmpty()
             val cleanBody = rawBody?.trim().orEmpty()
 
+            val isInvitation = type in listOf("invitation", "fair_invitation")
+            val isFollowed = type in listOf("follow_fair_confirmed", "followed_fair")
+
             val title = when {
                 cleanTitle.isNotBlank() -> cleanTitle
-                type == "fair_invitation" -> "Invitación a feria"
-                type == "followed_fair" -> if (cleanFair.isNotBlank()) "Feria confirmada: $cleanFair" else "Novedad de tienda seguida"
+                isInvitation -> "Invitación a feria"
+                isFollowed -> if (cleanFair.isNotBlank()) "Feria confirmada: $cleanFair" else "Novedad de tienda seguida"
                 else -> "Aviso de ConectaSur"
             }
 
             val baseBody = when {
                 cleanBody.isNotBlank() -> cleanBody
-                type == "fair_invitation" && cleanFair.isNotBlank() -> "Te invitaron a participar en $cleanFair. Toca para confirmar."
-                type == "fair_invitation" -> "Tienes una nueva invitación a feria en ConectaSur."
-                type == "followed_fair" && cleanFair.isNotBlank() -> "Una tienda o asociación que sigues confirmó su participación en $cleanFair."
+                isInvitation && cleanFair.isNotBlank() -> "Te invitaron a participar en $cleanFair. Toca para confirmar."
+                isInvitation -> "Tienes una nueva invitación a feria en ConectaSur."
+                isFollowed && cleanFair.isNotBlank() -> "Una tienda o asociación que sigues confirmó su participación en $cleanFair."
                 else -> "Tienes una nueva notificación en ConectaSur."
             }
 

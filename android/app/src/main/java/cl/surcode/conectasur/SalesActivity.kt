@@ -331,7 +331,9 @@ class SalesActivity : OwnerActivity() {
     }
     private fun applyFairToPlaceForm(fairName:String){
         if(pending!=null) return
+        if(fairName !in activeFairNames) activeFairNames = (listOf(fairName) + activeFairNames).distinct()
         val saleFairOptions=listOf("Otro lugar (escribir abajo)")+activeFairNames
+        choices(R.id.sv_fair_selector, saleFairOptions, 0)
         val targetIndex=saleFairOptions.indexOf(fairName)
         findViewById<Button>(R.id.sv_place_feria)?.apply{background=optionBg(true,12f);setTextColor(0xFF155C43.toInt())}
         findViewById<Button>(R.id.sv_place_particular)?.apply{background=optionBg(false,12f);setTextColor(0xFF4A6560.toInt())}
@@ -342,16 +344,39 @@ class SalesActivity : OwnerActivity() {
         findViewById<EditText>(R.id.sv_place)?.setText(fairName)
     }
     private fun refreshFairSuggestion(autoApply:Boolean,userInitiated:Boolean){
-        val suggestionBox=findViewById<View>(R.id.sv_fair_suggestion_box)?:return
-        val suggestionText=findViewById<TextView>(R.id.sv_fair_suggestion_text)?:return
-        val applyButton=findViewById<Button>(R.id.sv_fair_suggestion_apply)?:return
         val gps=readDeviceLocationOrNull()
+        if(RepositoryProvider.supabaseReady() && shopId.isNotBlank()){
+            lifecycleScope.launch {
+                val remote = runCatching {
+                    RepositoryProvider.shops().suggestFairsForSale(shopId, gps?.first, gps?.second).firstOrNull()
+                }.getOrNull()
+                val suggestion = remote ?: suggestFairForSale(
+                    calendar=ownerFairCalendar,
+                    now=Instant.now(),
+                    userLat=gps?.first,
+                    userLng=gps?.second
+                )
+                applyResolvedFairSuggestion(suggestion, gps, autoApply, userInitiated)
+            }
+            return
+        }
         val suggestion=suggestFairForSale(
             calendar=ownerFairCalendar,
             now=Instant.now(),
             userLat=gps?.first,
             userLng=gps?.second
         )
+        applyResolvedFairSuggestion(suggestion, gps, autoApply, userInitiated)
+    }
+    private fun applyResolvedFairSuggestion(
+        suggestion:FairSaleSuggestion?,
+        gps:Pair<Double,Double>?,
+        autoApply:Boolean,
+        userInitiated:Boolean
+    ){
+        val suggestionBox=findViewById<View>(R.id.sv_fair_suggestion_box)?:return
+        val suggestionText=findViewById<TextView>(R.id.sv_fair_suggestion_text)?:return
+        val applyButton=findViewById<Button>(R.id.sv_fair_suggestion_apply)?:return
         currentFairSuggestion=suggestion
         if(suggestion!=null){
             suggestionBox.isVisible=true

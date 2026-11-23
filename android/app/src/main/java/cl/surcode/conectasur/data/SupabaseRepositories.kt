@@ -85,9 +85,16 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
         }.distinct()
         return ShopChoices(entrepreneurTypes = names)
     }
-    override suspend fun getShop(shopId: String) =
-        (client.request("/rest/v1/public_shops?select=*&id=eq.${SupabaseClient.encode(shopId)}") as JSONArray)
+    override suspend fun getShop(shopId: String): Shop? {
+        if (client.uid() != null && client.cachedProfile()?.shopId == shopId) {
+            val privateRow = runCatching {
+                (client.request("/rest/v1/shops?select=*&id=eq.${SupabaseClient.encode(shopId)}", authenticated = true) as JSONArray).optJSONObject(0)
+            }.getOrNull()
+            if (privateRow != null) return privateRow.toShopWithLocalFallback()
+        }
+        return (client.request("/rest/v1/public_shops?select=*&id=eq.${SupabaseClient.encode(shopId)}") as JSONArray)
             .optJSONObject(0)?.toShopWithLocalFallback()
+    }
     override suspend fun listPublicShops(): List<Shop> {
         val rows = client.request("/rest/v1/public_shops?select=*&order=name") as JSONArray
         return rows.rows { it.toShopWithLocalFallback() }
@@ -149,10 +156,23 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
             val participants = detail?.optJSONArray("participants") ?: JSONArray()
             (0 until participants.length()).mapNotNull { index ->
                 val row = participants.optJSONObject(index) ?: return@mapNotNull null
-                if (row.optString("kind") != "shop") return@mapNotNull null
-                val shopId = row.optString("id")
-                if (shopId.isBlank()) return@mapNotNull null
-                val shop = shopsById[shopId]
+                val kind = row.optString("kind")
+                val id = row.optString("id")
+                if (id.isBlank()) return@mapNotNull null
+                if (kind == "association") {
+                    return@mapNotNull FairParticipant(
+                        fairId = fairId,
+                        shopId = id,
+                        shopName = row.optString("name").ifBlank { "Asociación confirmada" },
+                        status = FairParticipantStatus.CONFIRMED,
+                        sector = row.optString("sector"),
+                        entrepreneurType = "Asociación",
+                        sampleProducts = emptyList(),
+                        isAssociation = true
+                    )
+                }
+                if (kind != "shop") return@mapNotNull null
+                val shop = shopsById[id]
                 val sampleArray = row.optJSONArray("sample")
                 val sampleProducts = if (sampleArray != null) {
                     (0 until sampleArray.length()).mapNotNull { pIdx ->
@@ -161,7 +181,7 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
                         if (pId.isBlank()) return@mapNotNull null
                         PublicProduct(
                             id = pId,
-                            shopId = shopId,
+                            shopId = id,
                             name = p.optString("name"),
                             description = "",
                             category = "",
@@ -173,72 +193,140 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
                 } else emptyList()
                 FairParticipant(
                     fairId = fairId,
-                    shopId = shopId,
+                    shopId = id,
                     shopName = row.optString("name").ifBlank { shop?.name.orEmpty() }.ifBlank { "Tienda confirmada" },
                     status = FairParticipantStatus.CONFIRMED,
                     sector = shop?.sector.orEmpty(),
                     entrepreneurType = row.optString("entrepreneur_type").ifBlank { shop?.entrepreneurType.orEmpty() },
-                    sampleProducts = sampleProducts
+                    sampleProducts = sampleProducts,
+                    isAssociation = false
                 )
             }
         }.getOrDefault(emptyList())
-        val byShop = remoteParticipants.associateBy { it.shopId }.toMutableMap()
+        val byShop = remoteParticipants.associateBy { "${it.isAssociation}:${it.shopId}" }.toMutableMap()
         val candidateShopIds = (shopsById.keys + listOfNotNull(client.cachedProfile()?.shopId)).toSet()
         for (sId in candidateShopIds) {
             val localStatus = readLocalFairDecisions(sId)[fairId] ?: continue
             val shop = shopsById[sId]
-            val existing = byShop[sId]
-            byShop[sId] = FairParticipant(
+            val key = "false:$sId"
+            val existing = byShop[key]
+            byShop[key] = FairParticipant(
                 fairId = fairId,
                 shopId = sId,
                 shopName = existing?.shopName ?: shop?.name?.ifBlank { "Tienda confirmada" } ?: "Tienda confirmada",
                 status = localStatus,
                 sector = existing?.sector ?: shop?.sector.orEmpty(),
                 entrepreneurType = existing?.entrepreneurType ?: shop?.entrepreneurType.orEmpty(),
-                sampleProducts = existing?.sampleProducts.orEmpty()
+                sampleProducts = existing?.sampleProducts.orEmpty(),
+                isAssociation = false
             )
         }
         return byShop.values.toList()
     }
     override suspend fun listOwnerFairCalendar(shopId: String): List<OwnerFairCalendarItem> {
         if (shopId.isBlank()) return emptyList()
+        val localDecisions = readLocalFairDecisions(shopId)
+        val remoteRows = runCatching {
+            client.request("/rest/v1/rpc/my_fair_invitations", "POST", JSONObject(), true) as JSONArray
+        }.getOrNull()
+        if (remoteRows != null) {
+            return (0 until remoteRows.length()).mapNotNull { i ->
+                val row = remoteRows.optJSONObject(i) ?: return@mapNotNull null
+                val fairId = row.optString("fair_id")
+                if (fairId.isBlank()) return@mapNotNull null
+                val fairStatus = row.optString("fair_status", "published")
+                if (fairStatus == "cancelled") return@mapNotNull null
+                val status = FairParticipantStatus.from(row.optString("my_status"))
+                    ?: localDecisions[fairId]
+                    ?: FairParticipantStatus.INVITED
+                writeLocalFairDecision(shopId, fairId, status)
+                OwnerFairCalendarItem(
+                    fair = PublicFair(
+                        id = fairId,
+                        name = row.optString("name"),
+                        description = row.optString("description"),
+                        imageUrl = row.nullableString("image_url"),
+                        placeName = row.optString("place_name"),
+                        latitude = row.optDouble("latitude", -41.4693),
+                        longitude = row.optDouble("longitude", -72.9424),
+                        startsAt = row.optString("starts_at"),
+                        endsAt = row.optString("ends_at"),
+                        organizer = "",
+                        status = fairStatus
+                    ),
+                    shopId = shopId,
+                    status = status
+                )
+            }.sortedWith(compareBy({ it.fair.startsAt }, { it.fair.name.lowercase() }))
+        }
         val remoteFairs = runCatching { listPublicFairs(null, null) }.getOrDefault(emptyList())
-        val fairs = if (remoteFairs.isNotEmpty()) remoteFairs else defaultPlatformFairs()
-        val remoteStatuses = runCatching {
-            val rows = client.request(
-                "/rest/v1/fair_participants?select=fair_id,status&shop_id=eq.${SupabaseClient.encode(shopId)}",
-                authenticated = true
-            ) as JSONArray
-            buildMap {
-                for (i in 0 until rows.length()) {
-                    val row = rows.optJSONObject(i) ?: continue
-                    val fId = row.optString("fair_id")
-                    val st = FairParticipantStatus.from(row.optString("status"))
-                    if (fId.isNotBlank() && st != null) put(fId, st)
-                }
-            }
-        }.getOrDefault(emptyMap())
-        val merged = remoteStatuses + readLocalFairDecisions(shopId)
-        return buildOwnerFairCalendar(fairs, merged, shopId)
+        val fallbackFairs = if (remoteFairs.isNotEmpty()) remoteFairs else defaultPlatformFairs()
+        return fallbackFairs.mapNotNull { fair ->
+            val st = localDecisions[fair.id] ?: return@mapNotNull null
+            OwnerFairCalendarItem(fair = fair, shopId = shopId, status = st)
+        }.sortedWith(compareBy({ it.fair.startsAt }, { it.fair.name.lowercase() }))
     }
     override suspend fun respondToFairInvitation(shopId: String, fairId: String, participate: Boolean): FairParticipantStatus {
         require(shopId.isNotBlank() && fairId.isNotBlank()) { "Identificador de tienda o feria inválido" }
-        val nextStatus = applyOneTapFairDecision(participate)
-        writeLocalFairDecision(shopId, fairId, nextStatus)
-        runCatching {
-            val payload = JSONObject()
-                .put("fair_id", fairId)
-                .put("shop_id", shopId)
-                .put("status", nextStatus.wire)
+        val result = try {
             client.request(
-                "/rest/v1/fair_participants?on_conflict=fair_id,shop_id",
+                "/rest/v1/rpc/respond_fair_invitation",
                 "POST",
-                payload,
-                true,
-                "resolution=merge-duplicates"
+                JSONObject().put("p_fair_id", fairId).put("p_participate", participate),
+                true
             )
+        } catch (error: BackendException) {
+            val msg = error.message.orEmpty()
+            if (error.status == 403 && (msg.contains("invitada", ignoreCase = true) || msg.contains("dueña", ignoreCase = true))) {
+                throw IllegalStateException(msg)
+            }
+            throw error
         }
-        return nextStatus
+        val confirmedStatus = FairParticipantStatus.from(result.toString().trim().trim('"'))
+            ?: applyOneTapFairDecision(participate)
+        writeLocalFairDecision(shopId, fairId, confirmedStatus)
+        return confirmedStatus
+    }
+    override suspend fun suggestFairsForSale(shopId: String, lat: Double?, lng: Double?): List<FairSaleSuggestion> {
+        if (shopId.isBlank()) return emptyList()
+        return runCatching {
+            val body = JSONObject()
+                .put("p_shop_id", shopId)
+                .put("p_lat", lat ?: JSONObject.NULL)
+                .put("p_lng", lng ?: JSONObject.NULL)
+            val rows = client.request("/rest/v1/rpc/suggest_fairs_for_sale", "POST", body, true) as JSONArray
+            (0 until rows.length()).mapNotNull { i ->
+                val row = rows.optJSONObject(i) ?: return@mapNotNull null
+                val fairId = row.optString("fair_id")
+                val name = row.optString("name")
+                if (fairId.isBlank() || name.isBlank()) return@mapNotNull null
+                val inProgress = row.optBoolean("in_progress", false)
+                val distKm = row.nullableDouble("distance_km")
+                val fair = PublicFair(
+                    id = fairId,
+                    name = name,
+                    description = "",
+                    imageUrl = null,
+                    placeName = row.optString("place_name"),
+                    latitude = 0.0,
+                    longitude = 0.0,
+                    startsAt = row.optString("starts_at"),
+                    endsAt = row.optString("ends_at"),
+                    organizer = "",
+                    status = "published",
+                    distanceKm = distKm
+                )
+                val nearGps = inProgress && distKm != null && distKm <= 3.0
+                val reason = if (nearGps) FairSuggestionReason.IN_PROGRESS_NEARBY_GPS else FairSuggestionReason.CONFIRMED_SAME_DAY
+                val label = if (nearGps) {
+                    val distText = String.format(java.util.Locale.US, "%.1f km", distKm)
+                    "Sugerida por tu ubicación: $name ($distText, en curso)"
+                } else {
+                    "Feria confirmada para hoy: $name"
+                }
+                FairSaleSuggestion(fair = fair, reason = reason, distanceKm = distKm, label = label)
+            }
+        }.getOrDefault(emptyList())
     }
     override suspend fun getAnonymousNavigation(): String {
         val rows = client.request("/rest/v1/platform_settings?select=anonymous_navigation&id=eq.true") as JSONArray
@@ -262,7 +350,11 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
             .put("pickup_label", shop.pickupLabel)
             .put("pickup_lat", shop.pickupLat ?: JSONObject.NULL)
             .put("pickup_lng", shop.pickupLng ?: JSONObject.NULL)
-        val bodyWithRatings = JSONObject(baseBody.toString()).put("allow_ratings", shop.allowRatings)
+        val bodyWithRatings = JSONObject(baseBody.toString())
+            .put("allow_ratings", shop.allowRatings)
+            .put("contact_notifications", shop.contactNotifications)
+            .put("notify_from", shop.notifyFrom.take(5).ifBlank { "08:00" })
+            .put("notify_until", shop.notifyUntil.take(5).ifBlank { "21:00" })
         val rows = try {
             client.request("/rest/v1/shops?id=eq.${SupabaseClient.encode(shop.id)}", "PATCH", bodyWithRatings, true, "return=representation") as JSONArray
         } catch (error: BackendException) {
@@ -413,7 +505,7 @@ class SupabaseFollowRepository(
                 val type = FollowTargetType.from(row.optString("target_type")) ?: return@mapNotNull null
                 val id = row.optString("target_id")
                 if (id.isBlank()) return@mapNotNull null
-                FollowedTarget(type, id, row.optString("target_name", id))
+                FollowedTarget(type, id, row.optString("name").ifBlank { id })
             }
         }.getOrNull()
         if (remote != null && buyerId.isNotBlank()) {

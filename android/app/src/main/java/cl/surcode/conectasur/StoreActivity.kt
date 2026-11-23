@@ -56,6 +56,8 @@ class StoreActivity : FragmentActivity() {
     private var bindingNotifications = false
     private var choosingLogo = false
     private var choosingGoogle = false
+    private var pushSyncedUid: String? = null
+    private var syncedScheduleShopId: String? = null
     private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         FirebasePushManager.onPermissionResult(this, granted) {
             renderOwnerNotificationsCard()
@@ -276,25 +278,26 @@ class StoreActivity : FragmentActivity() {
         findViewById<CheckBox>(R.id.shop_allow_ratings)?.setOnCheckedChangeListener { _, _ -> if (!binding) captureDraft() }
         findViewById<CheckBox>(R.id.shop_notifications_enabled)?.setOnCheckedChangeListener { _, isChecked ->
             if (bindingNotifications) return@setOnCheckedChangeListener
+            captureDraft()
             if (isChecked) {
                 notificationConsent.grantConsent()
-                notificationConsent.setNotificationSchedule(
-                    notificationConsent.allowedStartHour(),
-                    notificationConsent.allowedEndHour(),
-                    enabled = true
-                )
+                val draft = model.draft ?: model.state.value.shop
+                val startH = draft?.notifyFrom?.substringBefore(":")?.toIntOrNull() ?: notificationConsent.allowedStartHour()
+                val endH = draft?.notifyUntil?.substringBefore(":")?.toIntOrNull() ?: notificationConsent.allowedEndHour()
+                runCatching {
+                    notificationConsent.setNotificationSchedule(startH, endH, enabled = true)
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !FirebasePushManager.hasSystemPermission(this)) {
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 } else {
                     FirebasePushManager.fetchAndStoreToken(this) { renderOwnerNotificationsCard() }
                 }
                 if (::model.isInitialized) {
-                    model.message("Avisos activados en horario ${notificationConsent.formatScheduleLabel()}.")
+                    model.message("Avisos de contacto activados (${draft?.notifyFrom ?: "08:00"} a ${draft?.notifyUntil ?: "21:00"}). Pulsa Guardar cambios para publicar.")
                 }
             } else {
-                FirebasePushManager.optOut(this) { renderOwnerNotificationsCard() }
                 if (::model.isInitialized) {
-                    model.message("Avisos desactivados en este teléfono.")
+                    model.message("Avisos de contacto desactivados. Pulsa Guardar cambios para guardar.")
                 }
             }
             renderOwnerNotificationsCard()
@@ -429,7 +432,23 @@ class StoreActivity : FragmentActivity() {
             catch (_: android.content.ActivityNotFoundException) { model.googleBrowserUnavailable() }
         }
         if (privateVisible) {
-            val draft = model.draft ?: state.shop!!
+            val uid = state.session?.uid
+            if (notificationConsent.isConsented() && !uid.isNullOrBlank() && pushSyncedUid != uid) {
+                pushSyncedUid = uid
+                FirebasePushManager.fetchAndStoreToken(this)
+            }
+            val serverShop = state.shop!!
+            if (syncedScheduleShopId != serverShop.id) {
+                syncedScheduleShopId = serverShop.id
+                val sHour = serverShop.notifyFrom.substringBefore(":").toIntOrNull()
+                val eHour = serverShop.notifyUntil.substringBefore(":").toIntOrNull()
+                if (sHour != null && eHour != null && sHour != eHour) {
+                    runCatching {
+                        notificationConsent.setNotificationSchedule(sHour, eHour, enabled = serverShop.contactNotifications)
+                    }
+                }
+            }
+            val draft = model.draft ?: serverShop
             val storeName = draft.name.ifBlank { state.shop?.name?.ifBlank { "Tu tienda" } ?: "Tu tienda" }
             findViewById<TextView>(R.id.shop_owner_store_name)?.text = storeName
             val sectorText = draft.sector.ifBlank { state.shop?.sector.orEmpty() }
@@ -510,37 +529,57 @@ class StoreActivity : FragmentActivity() {
         model.edit(base.copy(name = values[0], description = values[1], contact = values[2], whatsappNumber = values[3],
             showPrices = findViewById<CheckBox>(R.id.shop_show_prices).isChecked,
             allowRatings = findViewById<CheckBox>(R.id.shop_allow_ratings)?.isChecked ?: base.allowRatings,
+            contactNotifications = findViewById<CheckBox>(R.id.shop_notifications_enabled)?.isChecked ?: base.contactNotifications,
             pickupLabel = pickupText))
     }
 
     private fun renderOwnerNotificationsCard() {
+        val currentShop = if (::model.isInitialized) (model.draft ?: model.state.value.shop) else null
+        val enabled = currentShop?.contactNotifications ?: notificationConsent.isConsented()
+        val fromText = currentShop?.notifyFrom?.take(5)?.ifBlank { null } ?: NotificationConsentStore.formatHour(notificationConsent.allowedStartHour())
+        val untilText = currentShop?.notifyUntil?.take(5)?.ifBlank { null } ?: NotificationConsentStore.formatHour(notificationConsent.allowedEndHour())
         bindingNotifications = true
-        findViewById<CheckBox>(R.id.shop_notifications_enabled)?.isChecked = notificationConsent.isConsented()
+        findViewById<CheckBox>(R.id.shop_notifications_enabled)?.isChecked = enabled
         bindingNotifications = false
-        findViewById<TextView>(R.id.shop_notifications_schedule_status)?.text = notificationConsent.formatScheduleSummary()
-        findViewById<Button>(R.id.shop_notifications_start_hour)?.text =
-            "Desde: ${NotificationConsentStore.formatHour(notificationConsent.allowedStartHour())}"
-        findViewById<Button>(R.id.shop_notifications_end_hour)?.text =
-            "Hasta: ${NotificationConsentStore.formatHour(notificationConsent.allowedEndHour())}"
+        findViewById<TextView>(R.id.shop_notifications_schedule_status)?.text =
+            if (enabled) "Avisos de contacto activos · Horario: $fromText a $untilText hrs"
+            else "Avisos de contacto desactivados (horario guardado: $fromText a $untilText hrs)."
+        findViewById<Button>(R.id.shop_notifications_start_hour)?.text = "Desde: $fromText"
+        findViewById<Button>(R.id.shop_notifications_end_hour)?.text = "Hasta: $untilText"
     }
 
     private fun chooseNotificationHour(isStart: Boolean) {
+        val currentShop = if (::model.isInitialized) (model.draft ?: model.state.value.shop) else null
         val hours = (0..23).toList()
         val labels = hours.map { NotificationConsentStore.formatHour(it) }.toTypedArray()
-        val currentHour = if (isStart) notificationConsent.allowedStartHour() else notificationConsent.allowedEndHour()
+        val currentFrom = currentShop?.notifyFrom?.substringBefore(":")?.toIntOrNull() ?: notificationConsent.allowedStartHour()
+        val currentUntil = currentShop?.notifyUntil?.substringBefore(":")?.toIntOrNull() ?: notificationConsent.allowedEndHour()
+        val currentHour = if (isStart) currentFrom else currentUntil
         val dialog = AlertDialog.Builder(this)
             .setTitle(if (isStart) "Hora de inicio de avisos" else "Hora de término de avisos")
             .setSingleChoiceItems(labels, currentHour.coerceIn(0, 23)) { dlg, which ->
                 val chosenHour = hours[which]
-                val newStart = if (isStart) chosenHour else notificationConsent.allowedStartHour()
-                val newEnd = if (isStart) notificationConsent.allowedEndHour() else chosenHour
+                val newStart = if (isStart) chosenHour else currentFrom
+                val newEnd = if (isStart) currentUntil else chosenHour
                 if (newStart == newEnd) {
                     if (::model.isInitialized) model.message("El horario de inicio y término debe usar horas distintas.", true)
                 } else {
-                    notificationConsent.setNotificationSchedule(newStart, newEnd, enabled = true)
+                    val newFromStr = NotificationConsentStore.formatHour(newStart)
+                    val newUntilStr = NotificationConsentStore.formatHour(newEnd)
+                    val latest = if (::model.isInitialized) model.draft else null
+                    if (latest != null) {
+                        model.edit(latest.copy(notifyFrom = newFromStr, notifyUntil = newUntilStr))
+                    }
+                    runCatching {
+                        notificationConsent.setNotificationSchedule(
+                            newStart,
+                            newEnd,
+                            enabled = latest?.contactNotifications ?: true
+                        )
+                    }
                     renderOwnerNotificationsCard()
                     if (::model.isInitialized) {
-                        model.message("Horario de avisos actualizado: ${notificationConsent.formatScheduleLabel()}.")
+                        model.message("Horario de avisos: $newFromStr a $newUntilStr hrs. Pulsa Guardar cambios para publicar.")
                     }
                 }
                 dlg.dismiss()

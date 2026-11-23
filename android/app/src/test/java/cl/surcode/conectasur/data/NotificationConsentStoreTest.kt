@@ -70,6 +70,24 @@ class NotificationConsentStoreTest {
         )
         assertEquals("Invitación a feria", invTitle)
         assertTrue(invBody.contains("Feria Plaza de Armas"))
+
+        val (backendInvTitle, backendInvBody) = NotificationConsentStore.buildFairNotificationText(
+            rawTitle = null,
+            rawBody = null,
+            fairName = "Feria de Alerce",
+            type = "invitation"
+        )
+        assertEquals("Invitación a feria", backendInvTitle)
+        assertTrue(backendInvBody.contains("Feria de Alerce"))
+
+        val (followTitle, followBody) = NotificationConsentStore.buildFairNotificationText(
+            rawTitle = null,
+            rawBody = null,
+            fairName = "Feria Angelmó",
+            type = "follow_fair_confirmed"
+        )
+        assertTrue(followTitle.contains("Feria Angelmó"))
+        assertTrue(followBody.contains("Feria Angelmó"))
     }
 
     @Test
