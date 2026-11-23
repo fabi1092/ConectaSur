@@ -34,6 +34,15 @@ object RepositoryProvider {
     fun ownerWorkspace() = OwnerWorkspaceRepository(client())
     fun products(): ProductRepository = SupabaseProductRepository(client())
     fun sales(): SalesRepository = SupabaseSalesRepository(client())
-    fun follows(context: Context): FollowRepository = BuyerEngagementStore(context)
-    fun ratings(context: Context): RatingRepository = BuyerEngagementStore(context)
+    fun push(): PushRepository = if (supabaseReady()) {
+        SupabasePushRepository(client()) { firebaseBuyer?.currentIdToken() }
+    } else object : PushRepository {}
+    fun follows(context: Context): FollowRepository {
+        val local = BuyerEngagementStore(context)
+        return if (supabaseReady()) SupabaseFollowRepository(client(), { firebaseBuyer?.currentIdToken() }, local) else local
+    }
+    fun ratings(context: Context): RatingRepository {
+        val local = BuyerEngagementStore(context)
+        return if (supabaseReady()) SupabaseRatingRepository(client(), { firebaseBuyer?.currentIdToken() }, local) else local
+    }
 }

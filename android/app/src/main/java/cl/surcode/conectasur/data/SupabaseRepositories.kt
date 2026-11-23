@@ -140,22 +140,45 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
         if (fairId.isBlank()) return emptyList()
         val shopsById = runCatching { listPublicShops() }.getOrDefault(emptyList()).associateBy { it.id }
         val remoteParticipants = runCatching {
-            val rows = client.request(
-                "/rest/v1/fair_participants?select=fair_id,shop_id,status&fair_id=eq.${SupabaseClient.encode(fairId)}"
-            ) as JSONArray
-            (0 until rows.length()).mapNotNull { index ->
-                val row = rows.optJSONObject(index) ?: return@mapNotNull null
-                val status = FairParticipantStatus.from(row.optString("status")) ?: return@mapNotNull null
-                val shopId = row.optString("shop_id")
+            val detail = client.request(
+                "/rest/v1/rpc/fair_public_detail",
+                "POST",
+                JSONObject().put("p_fair_id", fairId),
+                false
+            ) as? JSONObject
+            val participants = detail?.optJSONArray("participants") ?: JSONArray()
+            (0 until participants.length()).mapNotNull { index ->
+                val row = participants.optJSONObject(index) ?: return@mapNotNull null
+                if (row.optString("kind") != "shop") return@mapNotNull null
+                val shopId = row.optString("id")
                 if (shopId.isBlank()) return@mapNotNull null
                 val shop = shopsById[shopId]
+                val sampleArray = row.optJSONArray("sample")
+                val sampleProducts = if (sampleArray != null) {
+                    (0 until sampleArray.length()).mapNotNull { pIdx ->
+                        val p = sampleArray.optJSONObject(pIdx) ?: return@mapNotNull null
+                        val pId = p.optString("id")
+                        if (pId.isBlank()) return@mapNotNull null
+                        PublicProduct(
+                            id = pId,
+                            shopId = shopId,
+                            name = p.optString("name"),
+                            description = "",
+                            category = "",
+                            priceClp = p.nullableLong("price_clp"),
+                            onRequest = false,
+                            photo = p.optString("photo")
+                        )
+                    }
+                } else emptyList()
                 FairParticipant(
-                    fairId = row.optString("fair_id", fairId),
+                    fairId = fairId,
                     shopId = shopId,
-                    shopName = shop?.name?.ifBlank { "Tienda confirmada" } ?: "Tienda confirmada",
-                    status = status,
+                    shopName = row.optString("name").ifBlank { shop?.name.orEmpty() }.ifBlank { "Tienda confirmada" },
+                    status = FairParticipantStatus.CONFIRMED,
                     sector = shop?.sector.orEmpty(),
-                    entrepreneurType = shop?.entrepreneurType.orEmpty()
+                    entrepreneurType = row.optString("entrepreneur_type").ifBlank { shop?.entrepreneurType.orEmpty() },
+                    sampleProducts = sampleProducts
                 )
             }
         }.getOrDefault(emptyList())
@@ -171,7 +194,8 @@ class SupabaseShopRepository(private val client: SupabaseClient) : ShopRepositor
                 shopName = existing?.shopName ?: shop?.name?.ifBlank { "Tienda confirmada" } ?: "Tienda confirmada",
                 status = localStatus,
                 sector = existing?.sector ?: shop?.sector.orEmpty(),
-                entrepreneurType = existing?.entrepreneurType ?: shop?.entrepreneurType.orEmpty()
+                entrepreneurType = existing?.entrepreneurType ?: shop?.entrepreneurType.orEmpty(),
+                sampleProducts = existing?.sampleProducts.orEmpty()
             )
         }
         return byShop.values.toList()
@@ -335,5 +359,178 @@ class SupabaseSalesRepository(private val client: SupabaseClient) : SalesReposit
             delay(15000)
         }
         emit(emptyList())
+    }
+}
+
+private suspend fun callBuyerRpc(
+    client: SupabaseClient,
+    firebaseToken: suspend () -> String?,
+    rpcName: String,
+    body: JSONObject
+): Any {
+    val hasSupabaseSession = client.uid() != null
+    if (!hasSupabaseSession) {
+        val token = firebaseToken()
+        if (!token.isNullOrBlank()) body.put("p_token", token)
+    }
+    return client.request("/rest/v1/rpc/$rpcName", "POST", body, authenticated = hasSupabaseSession)
+}
+
+class SupabasePushRepository(
+    private val client: SupabaseClient,
+    private val firebaseToken: suspend () -> String?
+) : PushRepository {
+    override suspend fun setNotificationConsent(granted: Boolean) {
+        callBuyerRpc(client, firebaseToken, "set_notification_consent", JSONObject().put("p_granted", granted))
+    }
+
+    override suspend fun registerDeviceToken(token: String, platform: String) {
+        if (token.isBlank()) return
+        callBuyerRpc(
+            client,
+            firebaseToken,
+            "register_device",
+            JSONObject().put("p_fcm_token", token).put("p_platform", platform)
+        )
+    }
+
+    override suspend fun unregisterDeviceToken(token: String) {
+        if (token.isBlank()) return
+        callBuyerRpc(client, firebaseToken, "unregister_device", JSONObject().put("p_fcm_token", token))
+    }
+}
+
+class SupabaseFollowRepository(
+    private val client: SupabaseClient,
+    private val firebaseToken: suspend () -> String?,
+    private val local: BuyerEngagementStore
+) : FollowRepository {
+    override suspend fun listFollows(buyerId: String): List<FollowedTarget> {
+        val remote = runCatching {
+            val rows = callBuyerRpc(client, firebaseToken, "my_follows", JSONObject()) as JSONArray
+            (0 until rows.length()).mapNotNull { i ->
+                val row = rows.optJSONObject(i) ?: return@mapNotNull null
+                val type = FollowTargetType.from(row.optString("target_type")) ?: return@mapNotNull null
+                val id = row.optString("target_id")
+                if (id.isBlank()) return@mapNotNull null
+                FollowedTarget(type, id, row.optString("target_name", id))
+            }
+        }.getOrNull()
+        if (remote != null && buyerId.isNotBlank()) {
+            local.currentFollows(buyerId).forEach { old ->
+                if (remote.none { it.targetType == old.targetType && it.targetId == old.targetId }) {
+                    local.unfollowLocal(buyerId, old.targetType, old.targetId)
+                }
+            }
+            remote.forEach { item ->
+                local.followLocal(buyerId, item.targetType, item.targetId, item.targetName)
+            }
+            return remote
+        }
+        return local.currentFollows(buyerId)
+    }
+
+    override suspend fun follow(buyerId: String, type: FollowTargetType, id: String, name: String): FollowedTarget {
+        val saved = local.followLocal(buyerId, type, id, name)
+        runCatching {
+            callBuyerRpc(
+                client,
+                firebaseToken,
+                "follow_target",
+                JSONObject().put("p_target_type", type.wire).put("p_target_id", id)
+            )
+        }
+        return saved
+    }
+
+    override suspend fun unfollow(buyerId: String, type: FollowTargetType, id: String): Boolean {
+        val removed = local.unfollowLocal(buyerId, type, id)
+        runCatching {
+            callBuyerRpc(
+                client,
+                firebaseToken,
+                "unfollow_target",
+                JSONObject().put("p_target_type", type.wire).put("p_target_id", id)
+            )
+        }
+        return removed
+    }
+}
+
+class SupabaseRatingRepository(
+    private val client: SupabaseClient,
+    private val firebaseToken: suspend () -> String?,
+    private val local: BuyerEngagementStore
+) : RatingRepository {
+    override suspend fun summary(type: RatingTargetType, targetId: String, buyerId: String?, shopId: String): RatingSummary {
+        val resolvedShop = if (type == RatingTargetType.SHOP) targetId else shopId
+        if (resolvedShop.isBlank()) return local.summaryLocal(type, targetId, buyerId)
+        return runCatching {
+            val productFilter = if (type == RatingTargetType.PRODUCT) "&product_id=eq.${SupabaseClient.encode(targetId)}" else "&product_id=is.null"
+            val avgRows = client.request("/rest/v1/public_ratings?select=average,total&shop_id=eq.${SupabaseClient.encode(resolvedShop)}$productFilter") as JSONArray
+            val avgObj = avgRows.optJSONObject(0)
+            val average = avgObj?.optDouble("average", 0.0) ?: 0.0
+            val total = avgObj?.optInt("total", 0) ?: 0
+
+            val commentsBody = JSONObject().put("p_shop_id", resolvedShop).put("p_limit", 5)
+                .put("p_product_id", if (type == RatingTargetType.PRODUCT) targetId else JSONObject.NULL)
+            val commentRows = client.request("/rest/v1/rpc/rating_comments", "POST", commentsBody, false) as? JSONArray ?: JSONArray()
+            val recent = (0 until commentRows.length()).mapNotNull { i ->
+                val row = commentRows.optJSONObject(i) ?: return@mapNotNull null
+                val stars = row.optInt("stars", 0)
+                if (stars !in 1..5) return@mapNotNull null
+                RatingEntry(
+                    id = row.optString("id", "$i"),
+                    targetType = type,
+                    targetId = targetId,
+                    score = stars,
+                    comment = row.optString("comment"),
+                    authorLabel = "Comprador"
+                )
+            }
+            val userRating = if (buyerId != null) {
+                runCatching {
+                    val myRows = callBuyerRpc(client, firebaseToken, "my_ratings", JSONObject().put("p_shop_id", resolvedShop)) as? JSONArray ?: JSONArray()
+                    (0 until myRows.length()).mapNotNull { i -> myRows.optJSONObject(i) }
+                        .firstOrNull { r ->
+                            val pId = r.nullableString("product_id")
+                            if (type == RatingTargetType.SHOP) pId == null else pId == targetId
+                        }?.let { r ->
+                            RatingEntry(
+                                id = r.optString("id", "mine"),
+                                targetType = type,
+                                targetId = targetId,
+                                score = r.optInt("stars", 5),
+                                comment = r.optString("comment"),
+                                authorLabel = "Tu calificación"
+                            )
+                        }
+                }.getOrNull()
+            } else null
+            RatingSummary(average = average, count = total, userRating = userRating, recent = recent)
+        }.getOrElse { local.summaryLocal(type, targetId, buyerId) }
+    }
+
+    override suspend fun submit(
+        type: RatingTargetType,
+        targetId: String,
+        score: Int,
+        comment: String,
+        buyerId: String?,
+        authorLabel: String,
+        ratingsAllowed: Boolean,
+        shopId: String
+    ): RatingEntry {
+        check(ratingsAllowed) { "Esta tienda desactivó las calificaciones." }
+        val resolvedShop = if (type == RatingTargetType.SHOP) targetId else shopId
+        val body = JSONObject()
+            .put("p_shop_id", resolvedShop)
+            .put("p_product_id", if (type == RatingTargetType.PRODUCT) targetId else JSONObject.NULL)
+            .put("p_stars", score)
+            .put("p_comment", comment.trim().takeIf { it.isNotEmpty() } ?: JSONObject.NULL)
+        if (resolvedShop.isNotBlank()) {
+            callBuyerRpc(client, firebaseToken, "rate_target", body)
+        }
+        return local.submitRatingLocal(type, targetId, score, comment, buyerId, authorLabel, ratingsAllowed)
     }
 }

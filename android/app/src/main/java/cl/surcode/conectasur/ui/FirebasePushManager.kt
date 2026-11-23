@@ -22,6 +22,9 @@ import cl.surcode.conectasur.data.NotificationConsentStore
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 object FirebasePushManager {
     const val CHANNEL_INVITATIONS = "conectasur_invitations"
@@ -140,7 +143,17 @@ object FirebasePushManager {
         runCatching {
             FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
                 val token = if (task.isSuccessful) task.result?.takeIf { it.isNotBlank() } else null
-                if (token != null) store.saveTokenIfConsented(token)
+                if (token != null) {
+                    store.saveTokenIfConsented(token)
+                    if (cl.surcode.conectasur.data.RepositoryProvider.supabaseReady()) {
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                            runCatching {
+                                cl.surcode.conectasur.data.RepositoryProvider.push().setNotificationConsent(true)
+                                cl.surcode.conectasur.data.RepositoryProvider.push().registerDeviceToken(token)
+                            }
+                        }
+                    }
+                }
                 onComplete(token)
             }
         }.onFailure { onComplete(null) }
@@ -148,8 +161,20 @@ object FirebasePushManager {
 
     fun optOut(context: Context, onStatusChanged: () -> Unit = {}) {
         val appContext = context.applicationContext
-        NotificationConsentStore(appContext).revokeConsent()
+        val consentStore = NotificationConsentStore(appContext)
+        val oldToken = consentStore.lastToken()
+        consentStore.revokeConsent()
         NotificationManagerCompat.from(appContext).cancelAll()
+        if (cl.surcode.conectasur.data.RepositoryProvider.supabaseReady()) {
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                runCatching {
+                    if (!oldToken.isNullOrBlank()) {
+                        cl.surcode.conectasur.data.RepositoryProvider.push().unregisterDeviceToken(oldToken)
+                    }
+                    cl.surcode.conectasur.data.RepositoryProvider.push().setNotificationConsent(false)
+                }
+            }
+        }
         if (ensureInitialized(appContext)) {
             runCatching {
                 FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener { onStatusChanged() }

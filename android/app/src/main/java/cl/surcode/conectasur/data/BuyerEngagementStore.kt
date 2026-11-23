@@ -193,7 +193,7 @@ class BuyerEngagementStore(private val storage: ConsentStorage) : FollowReposito
     override suspend fun unfollow(buyerId: String, type: FollowTargetType, id: String) =
         unfollowLocal(buyerId, type, id)
 
-    override suspend fun summary(type: RatingTargetType, targetId: String, buyerId: String?) =
+    override suspend fun summary(type: RatingTargetType, targetId: String, buyerId: String?, shopId: String) =
         summaryLocal(type, targetId, buyerId)
 
     override suspend fun submit(
@@ -203,7 +203,8 @@ class BuyerEngagementStore(private val storage: ConsentStorage) : FollowReposito
         comment: String,
         buyerId: String?,
         authorLabel: String,
-        ratingsAllowed: Boolean
+        ratingsAllowed: Boolean,
+        shopId: String
     ) = submitRatingLocal(type, targetId, score, comment, buyerId, authorLabel, ratingsAllowed)
 
     private fun followsKey(buyerId: String) = "follows_${encodeB64(buyerId)}"

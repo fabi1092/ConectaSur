@@ -39,8 +39,13 @@ enum class FairParticipantStatus(val wire: String) {
         get() = this == CONFIRMED || this == ADDED_BY_ADMIN
 
     companion object {
-        fun from(value: String?): FairParticipantStatus? =
-            entries.firstOrNull { it.wire == value?.trim()?.lowercase() }
+        fun from(value: String?): FairParticipantStatus? = when (value?.trim()?.lowercase()) {
+            "invited" -> INVITED
+            "confirmed" -> CONFIRMED
+            "rejected", "declined" -> REJECTED
+            "added", "added_by_admin" -> ADDED_BY_ADMIN
+            else -> null
+        }
     }
 }
 
@@ -137,6 +142,7 @@ interface SalesRepository {
 }
 
 interface PushRepository {
+    suspend fun setNotificationConsent(granted: Boolean) {}
     suspend fun registerDeviceToken(token: String, platform: String = "android") {}
     suspend fun unregisterDeviceToken(token: String) {}
 }
@@ -198,7 +204,7 @@ interface FollowRepository {
 }
 
 interface RatingRepository {
-    suspend fun summary(type: RatingTargetType, targetId: String, buyerId: String?): RatingSummary
+    suspend fun summary(type: RatingTargetType, targetId: String, buyerId: String?, shopId: String = ""): RatingSummary
     suspend fun submit(
         type: RatingTargetType,
         targetId: String,
@@ -206,7 +212,8 @@ interface RatingRepository {
         comment: String,
         buyerId: String?,
         authorLabel: String,
-        ratingsAllowed: Boolean
+        ratingsAllowed: Boolean,
+        shopId: String = ""
     ): RatingEntry
 }
 

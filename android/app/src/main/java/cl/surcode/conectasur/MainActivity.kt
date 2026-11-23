@@ -272,7 +272,17 @@ class MainActivity : FragmentActivity() {
                         checkAnonymousGate(state)
                         if (current.screen == "home") renderHomeBuyerState(state)
                         if (current.screen == "settings") refreshFollowingSettingsCard()
-                        state.session?.let { session -> applyPendingFollowIfNeeded(session) }
+                        state.session?.let { session ->
+                            applyPendingFollowIfNeeded(session)
+                            if (RepositoryProvider.supabaseReady() && !state.demo) {
+                                lifecycleScope.launch {
+                                    runCatching { RepositoryProvider.follows(applicationContext).listFollows(session.uid) }
+                                }
+                                if (NotificationConsentStore(this@MainActivity).isConsented()) {
+                                    FirebasePushManager.fetchAndStoreToken(this@MainActivity)
+                                }
+                            }
+                        }
                         state.launchUrl?.let { url ->
                             buyerModel.browserLaunched()
                             try { reader.stop(); startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
@@ -1126,6 +1136,9 @@ class MainActivity : FragmentActivity() {
                 }
                 setOnClickListener {
                     engagementStore.unfollowLocal(buyerId, item.targetType, item.targetId)
+                    lifecycleScope.launch {
+                        runCatching { RepositoryProvider.follows(applicationContext).unfollow(buyerId, item.targetType, item.targetId) }
+                    }
                     Toast.makeText(this@MainActivity, "Dejaste de seguir a ${item.targetName.ifBlank { kindLabel }}.", Toast.LENGTH_SHORT).show()
                     refreshFollowingSettingsCard()
                 }
@@ -1987,7 +2000,8 @@ class MainActivity : FragmentActivity() {
             listContainer = page.findViewById(R.id.detail_rating_list),
             targetType = RatingTargetType.PRODUCT,
             targetId = product.id,
-            ratingsAllowed = ratingsAllowed
+            ratingsAllowed = ratingsAllowed,
+            shopId = product.shopId
         )
     }
 
@@ -2021,9 +2035,15 @@ class MainActivity : FragmentActivity() {
             }
             if (engagementStore.isFollowing(activeBuyer, type, targetId)) {
                 engagementStore.unfollowLocal(activeBuyer, type, targetId)
+                lifecycleScope.launch {
+                    runCatching { RepositoryProvider.follows(applicationContext).unfollow(activeBuyer, type, targetId) }
+                }
                 Toast.makeText(this, "Dejaste de seguir a $cleanName.", Toast.LENGTH_SHORT).show()
             } else {
                 engagementStore.followLocal(activeBuyer, type, targetId, cleanName)
+                lifecycleScope.launch {
+                    runCatching { RepositoryProvider.follows(applicationContext).follow(activeBuyer, type, targetId, cleanName) }
+                }
                 Toast.makeText(this, "Ahora sigues a $cleanName.", Toast.LENGTH_SHORT).show()
             }
             bindFollowViews(card, statusView, button, type, targetId, cleanName)
@@ -2057,6 +2077,18 @@ class MainActivity : FragmentActivity() {
     private fun applyPendingFollowIfNeeded(session: Session) {
         val pending = engagementStore.peekPendingFollow() ?: return
         val completed = engagementStore.completePendingFollowIfSignedIn(session.uid) ?: return
+        if (RepositoryProvider.supabaseReady()) {
+            lifecycleScope.launch {
+                runCatching {
+                    RepositoryProvider.follows(applicationContext).follow(
+                        session.uid,
+                        completed.targetType,
+                        completed.targetId,
+                        completed.targetName
+                    )
+                }
+            }
+        }
         val label = completed.targetName.ifBlank { "este espacio" }
         Toast.makeText(this, "Ahora sigues a $label.", Toast.LENGTH_LONG).show()
         val sameDestination = current.screen == pending.destinationScreen && current.productId == pending.destinationId
@@ -2090,13 +2122,29 @@ class MainActivity : FragmentActivity() {
         listContainer: LinearLayout,
         targetType: RatingTargetType,
         targetId: String,
-        ratingsAllowed: Boolean?
+        ratingsAllowed: Boolean?,
+        shopId: String = "",
+        remoteSummary: RatingSummary? = null
     ) {
         card.isVisible = targetId.isNotBlank()
         if (targetId.isBlank()) return
         val buyerId = currentBuyerId()
-        val summary = engagementStore.summaryLocal(targetType, targetId, buyerId)
+        val summary = remoteSummary ?: engagementStore.summaryLocal(targetType, targetId, buyerId)
         summaryView.text = BuyerEngagementStore.formatSummaryText(summary)
+        if (remoteSummary == null && RepositoryProvider.supabaseReady()) {
+            lifecycleScope.launch {
+                val loaded = runCatching {
+                    RepositoryProvider.ratings(applicationContext).summary(targetType, targetId, buyerId, shopId)
+                }.getOrNull()
+                if (loaded != null && ::page.isInitialized && card.isAttachedToWindow) {
+                    bindRatingsSection(
+                        card, summaryView, disabledNote, form, scoresRow,
+                        commentInput, submitButton, listContainer,
+                        targetType, targetId, ratingsAllowed, shopId, loaded
+                    )
+                }
+            }
+        }
 
         val dp = resources.displayMetrics.density
         listContainer.removeAllViews()
@@ -2164,25 +2212,34 @@ class MainActivity : FragmentActivity() {
                 renderScoreButtons()
                 submitButton.text = if (summary.userRating != null) "Actualizar calificación" else "Enviar calificación"
                 submitButton.setOnClickListener {
-                    runCatching {
-                        engagementStore.submitRatingLocal(
-                            type = targetType,
-                            targetId = targetId,
-                            score = selectedScore,
-                            comment = commentInput.text?.toString().orEmpty(),
-                            buyerId = currentBuyerId(),
-                            authorLabel = currentBuyerLabel(),
-                            ratingsAllowed = true
-                        )
-                    }.onSuccess {
-                        Toast.makeText(this, "Calificación guardada.", Toast.LENGTH_SHORT).show()
-                        bindRatingsSection(
-                            card, summaryView, disabledNote, form, scoresRow,
-                            commentInput, submitButton, listContainer,
-                            targetType, targetId, true
-                        )
-                    }.onFailure { err ->
-                        Toast.makeText(this, err.message ?: "No pudimos guardar la calificación.", Toast.LENGTH_SHORT).show()
+                    submitButton.isEnabled = false
+                    lifecycleScope.launch {
+                        val result = runCatching {
+                            RepositoryProvider.ratings(applicationContext).submit(
+                                type = targetType,
+                                targetId = targetId,
+                                score = selectedScore,
+                                comment = commentInput.text?.toString().orEmpty(),
+                                buyerId = currentBuyerId(),
+                                authorLabel = currentBuyerLabel(),
+                                ratingsAllowed = true,
+                                shopId = shopId
+                            )
+                        }
+                        submitButton.isEnabled = true
+                        result.onSuccess {
+                            Toast.makeText(this@MainActivity, "Calificación guardada.", Toast.LENGTH_SHORT).show()
+                            val refreshed = runCatching {
+                                RepositoryProvider.ratings(applicationContext).summary(targetType, targetId, currentBuyerId(), shopId)
+                            }.getOrNull()
+                            bindRatingsSection(
+                                card, summaryView, disabledNote, form, scoresRow,
+                                commentInput, submitButton, listContainer,
+                                targetType, targetId, true, shopId, refreshed
+                            )
+                        }.onFailure { err ->
+                            Toast.makeText(this@MainActivity, err.message ?: "No pudimos guardar la calificación.", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
