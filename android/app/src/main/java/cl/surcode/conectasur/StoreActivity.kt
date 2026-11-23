@@ -42,6 +42,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 class StoreActivity : FragmentActivity() {
+    companion object {
+        const val EXTRA_FOCUS_FAIRS = "cl.surcode.conectasur.FOCUS_FAIRS"
+    }
     private val presentation by lazy { AccessibilityPreferences(applicationContext).read() }
     private val biometric by lazy { BiometricStoreLock(applicationContext) }
     private val notificationConsent by lazy { NotificationConsentStore(applicationContext) }
@@ -58,6 +61,7 @@ class StoreActivity : FragmentActivity() {
     private var choosingGoogle = false
     private var pushSyncedUid: String? = null
     private var syncedScheduleShopId: String? = null
+    private var pendingFocusFairs = false
     private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         FirebasePushManager.onPermissionResult(this, granted) {
             renderOwnerNotificationsCard()
@@ -90,6 +94,7 @@ class StoreActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(if (presentation.highContrast) R.style.Theme_ConectaSur_HighContrast else R.style.Theme_ConectaSur)
         super.onCreate(savedInstanceState)
+        pendingFocusFairs = intent.getBooleanExtra(EXTRA_FOCUS_FAIRS, false)
         if (!BuildConfig.DEBUG) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         enableEdgeToEdge()
         setContentView(R.layout.activity_store)
@@ -602,6 +607,7 @@ class StoreActivity : FragmentActivity() {
         if (items.isEmpty()) {
             summaryView.text = "No hay ferias próximas disponibles por ahora."
             listView.removeAllViews()
+            focusFairsIfRequested(state)
             return
         }
         val confirmedCount = items.count { it.status.isPubliclyConfirmed }
@@ -691,6 +697,22 @@ class StoreActivity : FragmentActivity() {
             listView.addView(card)
         }
         applyAccessibility(listView, presentation)
+        focusFairsIfRequested(state)
+    }
+
+    private fun focusFairsIfRequested(state: StoreState) {
+        if (!pendingFocusFairs || state.busy || state.shop == null) return
+        pendingFocusFairs = false
+        val scroll = findViewById<ScrollView>(R.id.account_scroll) ?: return
+        val fairsCard = findViewById<View>(R.id.shop_fairs_card) ?: return
+        scroll.post {
+            runCatching {
+                val rect = android.graphics.Rect()
+                fairsCard.getDrawingRect(rect)
+                scroll.offsetDescendantRectToMyCoords(fairsCard, rect)
+                scroll.smoothScrollTo(0, (rect.top - (12 * resources.displayMetrics.density).toInt()).coerceAtLeast(0))
+            }
+        }
     }
     private fun bindChoice(id: Int, current: String, choices: List<String>, action: Int, state: StoreState) {
         findViewById<Button>(id).apply {
