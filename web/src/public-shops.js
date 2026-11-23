@@ -1,5 +1,5 @@
 // Las pantallas públicas reciben un repositorio; no acceden al SDK ni a tablas privadas.
-import { escapeHtml as escape, safeImageUrl as imageUrl } from './content.js';
+import { escapeHtml as escape, safeImageUrl as imageUrl, priceLabel } from './content.js';
 import { icon, brand } from './visuals.js';
 import { accountDestination } from './account-navigation.js';
 import { photo, wirePhotos, productCard, wireProducts, isPublicProductVisible } from './public-products.js';
@@ -7,6 +7,7 @@ import { contactMarkup, wireContact } from './shop-contact.js';
 import { renderInteractiveMap, directionsUrl } from './fair-map.js';
 
 const shopLink = id => '#tienda/' + encodeURIComponent(id);
+const productLink = id => '#producto/' + encodeURIComponent(id);
 const associationLink = id => '#asociacion/' + encodeURIComponent(id);
 const fairLink = id => '#feria/' + encodeURIComponent(id);
 const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-CL');
@@ -122,7 +123,7 @@ export async function showPublicShops(app, db, isCurrent = () => true) {
       db.listPublicShops(),
       db.listPublicAssociations().catch(() => []),
       db.listPublicShopAssociations().catch(() => []),
-      db.listPublicFairs().catch(() => [])
+      (typeof db.upcomingFairs === 'function' ? db.upcomingFairs().catch(() => db.listPublicFairs()) : db.listPublicFairs()).catch(() => [])
     ]);
     if (!isCurrent()) return;
     const results = app.querySelector('#public-results');
@@ -192,11 +193,11 @@ export async function showPublicShops(app, db, isCurrent = () => true) {
     }).join('') : '<div class="public-empty"><h3>Aún no hay asociaciones publicadas</h3><p>Cuando la comunidad registre asociaciones aparecerán aquí.</p></div>';
     imageFallbacks(assocGrid);
 
-    // Próximas ferias públicas (W16-W17)
+    // Próximas ferias públicas (W14 / W02)
     const fairsGrid = app.querySelector('#public-fairs');
     const fairsCount = app.querySelector('#fairs-count');
     const dateFmt = new Intl.DateTimeFormat('es-CL', { dateStyle: 'medium', timeStyle: 'short' });
-    const visibleFairs = fairs.filter(f => f.status === 'published' || f.status === 'cancelled');
+    const visibleFairs = fairs.filter(f => f.status === 'published');
     fairsCount.textContent = `${visibleFairs.length} ${visibleFairs.length === 1 ? 'feria' : 'ferias'}`;
     fairsGrid.setAttribute('aria-busy', 'false');
     fairsGrid.innerHTML = visibleFairs.length ? visibleFairs.map(f => {
@@ -379,9 +380,12 @@ export async function showPublicFair(app, db, id, isCurrent = () => true) {
   document.title = 'ConectaSur | Feria';
   app.innerHTML = shell('<section class="public-state"><p role="status">Cargando información de la feria…</p></section>');
   try {
-    const fairs = await db.listPublicFairs();
+    const detail = typeof db.getPublicFairDetail === 'function'
+      ? await db.getPublicFairDetail(id)
+      : { fair: (await db.listPublicFairs()).find(f => f.id === id) || null, participants: [] };
     if (!isCurrent()) return;
-    const fair = fairs.find(f => f.id === id);
+    const fair = detail?.fair || null;
+    const participants = Array.isArray(detail?.participants) ? detail.participants : [];
     if (!fair) {
       showStatus(app, 'Esta feria no está disponible', 'Puede que aún sea un borrador o que el enlace ya no esté vigente.');
       return;
@@ -390,6 +394,39 @@ export async function showPublicFair(app, db, id, isCurrent = () => true) {
     const imgSrc = imageUrl(fair.image_url);
     const cancelled = fair.status === 'cancelled';
     document.title = `${fair.name} | ConectaSur`;
+    const participantsHtml = participants.length ? participants.map(participant => {
+      const isAssociation = participant.kind === 'association';
+      const targetUrl = isAssociation ? associationLink(participant.id) : shopLink(participant.id);
+      const subtitle = isAssociation
+        ? (participant.sector ? `Asociación · ${participant.sector}` : 'Asociación confirmada')
+        : (participant.entrepreneur_type || 'Emprendimiento confirmado');
+      const sample = Array.isArray(participant.sample) ? participant.sample : [];
+      const sampleHtml = !isAssociation ? (
+        sample.length
+          ? `<div class="fair-sample-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px;">
+              ${sample.map(item => `<a href="${escape(productLink(item.id))}" class="public-card-link" style="display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid #d3ddd9;border-radius:10px;background:#f9fbfa;text-decoration:none;color:inherit;">
+                ${photo(item.photo, item.name, 'fair-sample-photo')}
+                <strong>${escape(item.name)}</strong>
+                <span>${escape(priceLabel(item.price_clp))}</span>
+              </a>`).join('')}
+            </div>`
+          : '<p class="public-card-description">Sin productos públicos destacados aún.</p>'
+      ) : '';
+      return `<article class="public-shop-card">
+        <div class="public-shop-card-body">
+          <div class="public-card-heading">
+            ${logo({ name: participant.name, logoUrl: participant.logo_url })}
+            <span class="catalog-badge badge-available">Confirmada</span>
+          </div>
+          <h3><a href="${escape(targetUrl)}">${escape(participant.name)}</a></h3>
+          <p class="public-sector">${escape(subtitle)}</p>
+          ${sampleHtml}
+          <div class="fair-card-actions" style="margin-top:12px;">
+            <a class="public-card-link" href="${escape(targetUrl)}">${isAssociation ? 'Ver asociación' : 'Ver tienda'} ${icon('arrow')}</a>
+          </div>
+        </div>
+      </article>`;
+    }).join('') : '<div class="public-empty"><h3>Aún no hay participantes confirmadas</h3><p>Cuando las emprendedoras o asociaciones confirmen su participación aparecerán aquí.</p></div>';
     app.innerHTML = shell(`<div class="public-shop-page">
       <a class="public-back" href="#ferias">← Volver a las ferias</a>
       <section class="public-shop-banner" aria-labelledby="fair-title">
@@ -420,7 +457,17 @@ export async function showPublicFair(app, db, id, isCurrent = () => true) {
         <h2>Ubicación en el mapa</h2>
         <div id="public-fair-map" class="fair-map"></div>
       </section>
+      <section class="public-directory" aria-labelledby="fair-participants-title">
+        <div class="public-directory-heading">
+          <div>
+            <p class="public-eyebrow">Emprendedoras y asociaciones</p>
+            <h2 id="fair-participants-title">Participantes confirmadas (${participants.length})</h2>
+          </div>
+        </div>
+        <div class="public-shops-grid">${participantsHtml}</div>
+      </section>
     </div>`);
+    wirePhotos(app);
     imageFallbacks(app);
     renderInteractiveMap(app.querySelector('#public-fair-map'), {
       lat: fair.latitude,

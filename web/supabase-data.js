@@ -545,6 +545,10 @@ export function createDataLayer(config, { storage, storageKey, firebaseBuyer = n
       return unwrap(await sdk.rpc('upcoming_fairs', { p_lat: lat, p_lng: lng }));
     },
 
+    async getPublicFairDetail(fairId) {
+      return unwrap(await sdk.rpc('fair_public_detail', { p_fair_id: fairId }));
+    },
+
     async listAdminFairs() {
       await requireAdmin();
       return unwrap(
@@ -1016,4 +1020,5 @@ export const watchPublicProducts = (...a) =>
 
 export const listPublicFairs = (...a) => current().listPublicFairs(...a);
 export const upcomingFairs = (...a) => current().upcomingFairs(...a);
+export const getPublicFairDetail = (...a) => current().getPublicFairDetail(...a);
 export const getAnonymousNavigation = (...a) => current().getAnonymousNavigation(...a);
