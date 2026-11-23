@@ -198,7 +198,11 @@ export async function showPublicShops(app, db, isCurrent = () => true) {
     const fairsGrid = app.querySelector('#public-fairs');
     const fairsCount = app.querySelector('#fairs-count');
     const dateFmt = new Intl.DateTimeFormat('es-CL', { dateStyle: 'medium', timeStyle: 'short' });
-    const visibleFairs = fairs.filter(f => f.status === 'published');
+    const nowMs = Date.now();
+    const visibleFairs = fairs.filter(f =>
+      (!f.status || f.status === 'published') &&
+      (!f.ends_at || Number.isNaN(Date.parse(f.ends_at)) || Date.parse(f.ends_at) >= nowMs)
+    );
     fairsCount.textContent = `${visibleFairs.length} ${visibleFairs.length === 1 ? 'feria' : 'ferias'}`;
     fairsGrid.setAttribute('aria-busy', 'false');
     fairsGrid.innerHTML = visibleFairs.length ? visibleFairs.map(f => {
