@@ -123,16 +123,18 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
                 <tbody>
                   ${fairs.map(f => `
                     <tr>
-                      <td><strong>${esc(f.name)}</strong><small>${esc(f.organizer || 'Sin organizador indicado')}</small></td>
-                      <td>${esc(dateFmt.format(new Date(f.starts_at)))}<small>Hasta ${esc(dateFmt.format(new Date(f.ends_at)))}</small></td>
-                      <td>${esc(f.place_name)}</td>
-                      <td><span class="status ${f.status === 'published' ? 'active' : 'inactive'}"><span class="status-dot" aria-hidden="true"></span>${esc(FAIR_STATUS_LABELS[f.status] || f.status)}</span></td>
-                      <td class="actions">
-                        <button type="button" data-participants="${esc(f.id)}">Participantes</button>
-                        ${f.status === 'draft' ? `<button type="button" data-publish-fair="${esc(f.id)}">Publicar</button>` : ''}
-                        ${f.status === 'published' ? `<button type="button" data-cancel-fair="${esc(f.id)}">Cancelar feria</button>` : ''}
-                        <button type="button" data-edit-fair="${esc(f.id)}">Editar</button>
-                        <button type="button" data-delete-fair="${esc(f.id)}">Eliminar</button>
+                      <td data-label="Feria"><strong>${esc(f.name)}</strong><small>${esc(f.organizer || 'Sin organizador indicado')}</small></td>
+                      <td data-label="Fecha y horario">${esc(dateFmt.format(new Date(f.starts_at)))}<small>Hasta ${esc(dateFmt.format(new Date(f.ends_at)))}</small></td>
+                      <td data-label="Lugar">${esc(f.place_name)}</td>
+                      <td data-label="Estado"><span class="status ${f.status === 'published' ? 'active' : 'inactive'}"><span class="status-dot" aria-hidden="true"></span>${esc(FAIR_STATUS_LABELS[f.status] || f.status)}</span></td>
+                      <td data-label="Acciones" class="actions">
+                        <div class="fair-actions-row">
+                          <button type="button" data-participants="${esc(f.id)}">Participantes</button>
+                          ${f.status === 'draft' ? `<button type="button" data-publish-fair="${esc(f.id)}">Publicar</button>` : ''}
+                          ${f.status === 'published' ? `<button type="button" data-cancel-fair="${esc(f.id)}">Cancelar feria</button>` : ''}
+                          <button type="button" data-edit-fair="${esc(f.id)}">Editar</button>
+                          <button type="button" data-delete-fair="${esc(f.id)}">Eliminar</button>
+                        </div>
                       </td>
                     </tr>
                   `).join('')}
