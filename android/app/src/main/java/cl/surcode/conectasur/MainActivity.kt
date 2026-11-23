@@ -43,7 +43,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
-    companion object { const val OPEN_CATALOG = "cl.surcode.conectasur.OPEN_CATALOG" }
+    companion object {
+        const val OPEN_CATALOG = "cl.surcode.conectasur.OPEN_CATALOG"
+        const val OPEN_SETTINGS = "cl.surcode.conectasur.OPEN_SETTINGS"
+    }
     private data class Destination(val screen: String, val productId: String = "") {
         fun encode() = "$screen|${Uri.encode(productId)}"
         companion object {
@@ -88,6 +91,7 @@ class MainActivity : FragmentActivity() {
     private var requireGoogleAttempted = false
     private var requireErrorMessage: String? = null
     private var navGateDismissed = false
+    private var lastObservedSessionUid: String? = null
     private var publicShops = emptyList<Shop>()
     private var publicAssociations = emptyList<PublicAssociation>()
     private val shopAllowRatingsCache = mutableMapOf<String, Boolean>()
@@ -111,9 +115,16 @@ class MainActivity : FragmentActivity() {
     }
     private val accountAccess = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         lifecycleScope.launch { repository.refresh() }
-        if (result.resultCode == RESULT_OK && result.data?.getBooleanExtra(OPEN_CATALOG, false) == true) {
-            shopFilter = null
-            navigate(Destination("catalog"))
+        if (result.resultCode == RESULT_OK) {
+            val openSettings = result.data?.getBooleanExtra(OPEN_SETTINGS, false) == true
+            val openCatalog = result.data?.getBooleanExtra(OPEN_CATALOG, false) == true
+            when {
+                openSettings -> navigate(Destination("settings"))
+                openCatalog -> {
+                    shopFilter = null
+                    navigate(Destination("catalog"))
+                }
+            }
         }
     }
     private val voiceSearchLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -240,8 +251,9 @@ class MainActivity : FragmentActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = goBack()
         })
-        if (intent?.getStringExtra("screen") == "help") {
-            navigate(Destination("help"))
+        when (intent?.getStringExtra("screen")) {
+            "help" -> navigate(Destination("help"))
+            "settings" -> navigate(Destination("settings"))
         }
         val root = findViewById<View>(R.id.main_root)
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
@@ -283,6 +295,11 @@ class MainActivity : FragmentActivity() {
                                 }
                             }
                         }
+                        val observedUid = state.session?.uid
+                        if (observedUid != lastObservedSessionUid) {
+                            lastObservedSessionUid = observedUid
+                            refreshEngagementAfterSessionChange()
+                        }
                         state.launchUrl?.let { url ->
                             buyerModel.browserLaunched()
                             try { reader.stop(); startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
@@ -309,6 +326,7 @@ class MainActivity : FragmentActivity() {
         handlePushIntent(intent)
         when (intent.getStringExtra("screen")) {
             "help" -> navigate(Destination("help"))
+            "settings" -> navigate(Destination("settings"))
             "home" -> navigate(Destination("home"), clear = true)
         }
     }
@@ -603,6 +621,7 @@ class MainActivity : FragmentActivity() {
     }
     private fun bindHomeBuyerAccess() {
         page.findViewById<Button>(R.id.buyer_demo_login).setOnClickListener { buyerModel.enterDemo() }
+        page.findViewById<Button>(R.id.home_notifications_follows)?.setOnClickListener { navigate(Destination("settings")) }
         page.findViewById<Button>(R.id.buyer_cancel_login).setOnClickListener { buyerModel.cancelGoogle() }
         page.findViewById<Button>(R.id.buyer_logout).setOnClickListener {
             BiometricStoreLock(applicationContext).clear()
@@ -1968,8 +1987,35 @@ class MainActivity : FragmentActivity() {
 
     private fun currentBuyerId(): String? = buyerModel.state.value.session?.uid
 
-    private fun currentBuyerLabel(): String =
-        buyerModel.state.value.session?.email?.takeIf { it.isNotBlank() } ?: "Comprador"
+    private fun currentBuyerLabel(): String {
+        val savedName = getSharedPreferences("buyer_profile", MODE_PRIVATE).getString("name", null)
+        return BuyerEngagementStore.formatPublicReviewerName(savedName, RepositoryProvider.currentDisplayName())
+    }
+
+    private fun refreshEngagementAfterSessionChange() {
+        if (!::page.isInitialized) return
+        when (current.screen) {
+            "public_store" -> {
+                val storeId = current.productId.ifBlank { "demo" }
+                val knownShop = publicShops.firstOrNull { it.id == storeId }
+                val loadedName = page.findViewById<TextView>(R.id.store_name)?.text?.toString()
+                    ?.takeIf { it.isNotBlank() && it != "Cargando tienda…" }
+                val cachedAllow = if (!RepositoryProvider.supabaseReady()) true
+                    else knownShop?.allowRatings ?: shopAllowRatingsCache[storeId]
+                if (cachedAllow != null) {
+                    bindStoreFollowAndRatings(storeId, loadedName ?: knownShop?.name ?: "esta tienda", cachedAllow)
+                } else {
+                    bindStore()
+                }
+            }
+            "detail" -> {
+                val product = products.find { it.id == current.productId } ?: return
+                val cachedAllow = if (!RepositoryProvider.supabaseReady()) true else shopAllowRatingsCache[product.shopId]
+                if (cachedAllow != null) bindDetailRatings(product, cachedAllow) else bindDetail()
+            }
+            "association_detail" -> bindAssociationDetail()
+        }
+    }
 
     private fun bindStoreFollowAndRatings(shopId: String, shopName: String, ratingsAllowed: Boolean?) {
         if (!::page.isInitialized || shopId.isBlank()) return
@@ -1983,6 +2029,8 @@ class MainActivity : FragmentActivity() {
             card = ratingsCard,
             summaryView = page.findViewById(R.id.store_rating_summary),
             disabledNote = page.findViewById(R.id.store_rating_disabled_note),
+            loginPrompt = page.findViewById(R.id.store_rating_login_prompt),
+            loginButton = page.findViewById(R.id.store_rating_login_button),
             form = page.findViewById(R.id.store_rating_form),
             scoresRow = page.findViewById(R.id.store_rating_scores),
             commentInput = page.findViewById(R.id.store_rating_comment),
@@ -2001,6 +2049,8 @@ class MainActivity : FragmentActivity() {
             card = card,
             summaryView = page.findViewById(R.id.detail_rating_summary),
             disabledNote = page.findViewById(R.id.detail_rating_disabled_note),
+            loginPrompt = page.findViewById(R.id.detail_rating_login_prompt),
+            loginButton = page.findViewById(R.id.detail_rating_login_button),
             form = page.findViewById(R.id.detail_rating_form),
             scoresRow = page.findViewById(R.id.detail_rating_scores),
             commentInput = page.findViewById(R.id.detail_rating_comment),
@@ -2123,6 +2173,8 @@ class MainActivity : FragmentActivity() {
         card: View,
         summaryView: TextView,
         disabledNote: TextView,
+        loginPrompt: View?,
+        loginButton: Button?,
         form: View,
         scoresRow: LinearLayout,
         commentInput: EditText,
@@ -2146,7 +2198,7 @@ class MainActivity : FragmentActivity() {
                 }.getOrNull()
                 if (loaded != null && ::page.isInitialized && card.isAttachedToWindow) {
                     bindRatingsSection(
-                        card, summaryView, disabledNote, form, scoresRow,
+                        card, summaryView, disabledNote, loginPrompt, loginButton, form, scoresRow,
                         commentInput, submitButton, listContainer,
                         targetType, targetId, ratingsAllowed, shopId, loaded
                     )
@@ -2156,114 +2208,222 @@ class MainActivity : FragmentActivity() {
 
         val dp = resources.displayMetrics.density
         listContainer.removeAllViews()
+        var ownMarked = false
+        val mine = summary.userRating
         summary.recent.forEach { entry ->
+            val isMine = !ownMarked && mine != null &&
+                (entry.id == mine.id || (entry.score == mine.score && entry.comment.trim() == mine.comment.trim()))
+            if (isMine) ownMarked = true
+            listContainer.addView(buildRatingCommentCard(entry, isMine, dp))
+        }
+        if (summary.recent.isEmpty() && summary.count > 0) {
             listContainer.addView(TextView(this).apply {
-                text = BuyerEngagementStore.formatEntryLabel(entry)
+                text = "Aún no hay comentarios escritos."
                 textSize = 14f
-                setTextColor(0xFF183A34.toInt())
-                setBackgroundColor(0xFFF5F8F6.toInt())
-                val pad = (10 * dp).toInt()
-                setPadding(pad, pad, pad, pad)
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                    topMargin = (6 * dp).toInt()
-                }
+                setTextColor(0xFF5F746F.toInt())
+                setPadding(0, (6 * dp).toInt(), 0, 0)
             })
         }
 
         when (ratingsAllowed) {
             null -> {
                 form.isVisible = false
+                loginPrompt?.isVisible = false
                 disabledNote.isVisible = true
                 disabledNote.text = "Comprobando disponibilidad de calificaciones..."
             }
             false -> {
                 form.isVisible = false
+                loginPrompt?.isVisible = false
                 disabledNote.isVisible = true
                 disabledNote.text = "Esta tienda desactivó las calificaciones."
             }
             true -> {
-                disabledNote.isVisible = false
-                form.isVisible = true
-                var selectedScore = summary.userRating?.score ?: 5
-                if (commentInput.text.isNullOrBlank() && !summary.userRating?.comment.isNullOrBlank()) {
-                    commentInput.setText(summary.userRating?.comment)
-                }
-                fun renderScoreButtons() {
-                    scoresRow.removeAllViews()
-                    (1..5).forEach { value ->
-                        val active = value == selectedScore
-                        scoresRow.addView(Button(this).apply {
-                            text = value.toString()
-                            contentDescription = "$value de 5 puntos"
-                            textSize = 15f
-                            setTextColor(if (active) 0xFF183A34.toInt() else 0xFF4A6560.toInt())
-                            background = GradientDrawable().apply {
-                                cornerRadius = 10 * dp
-                                setColor(if (active) 0xFFEEF6F4.toInt() else 0xFFFFFFFF.toInt())
-                                setStroke(
-                                    ((if (active) 2f else 1f) * dp).toInt(),
-                                    if (active) 0xFF1A7B6E.toInt() else 0xFFD3DDD9.toInt()
+                val resolvedShopId = if (targetType == RatingTargetType.SHOP) targetId else shopId
+                val session = buyerModel.state.value.session
+                val isOwnShop = session?.role == Role.EMPRENDEDORA &&
+                    !session.shopId.isNullOrBlank() &&
+                    session.shopId == resolvedShopId
+                if (isOwnShop) {
+                    form.isVisible = false
+                    loginPrompt?.isVisible = false
+                    disabledNote.isVisible = true
+                    disabledNote.text = "No puedes calificar tu propia tienda."
+                } else if (buyerId == null && !buyerModel.state.value.demo) {
+                    form.isVisible = false
+                    disabledNote.isVisible = false
+                    loginPrompt?.isVisible = true
+                    loginButton?.setOnClickListener { launchDirectGoogleSignIn() }
+                } else {
+                    loginPrompt?.isVisible = false
+                    disabledNote.isVisible = false
+                    form.isVisible = true
+                    var selectedScore = summary.userRating?.score ?: 5
+                    if (commentInput.text.isNullOrBlank() && !summary.userRating?.comment.isNullOrBlank()) {
+                        commentInput.setText(summary.userRating?.comment)
+                    }
+                    fun renderScoreButtons() {
+                        scoresRow.removeAllViews()
+                        (1..5).forEach { value ->
+                            val active = value == selectedScore
+                            scoresRow.addView(Button(this).apply {
+                                text = value.toString()
+                                contentDescription = "$value de 5 puntos"
+                                textSize = 15f
+                                setTextColor(if (active) 0xFF183A34.toInt() else 0xFF4A6560.toInt())
+                                background = GradientDrawable().apply {
+                                    cornerRadius = 10 * dp
+                                    setColor(if (active) 0xFFEEF6F4.toInt() else 0xFFFFFFFF.toInt())
+                                    setStroke(
+                                        ((if (active) 2f else 1f) * dp).toInt(),
+                                        if (active) 0xFF1A7B6E.toInt() else 0xFFD3DDD9.toInt()
+                                    )
+                                }
+                                minimumHeight = (48 * dp).toInt()
+                                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                                    if (value > 1) marginStart = (4 * dp).toInt()
+                                }
+                                setOnClickListener {
+                                    selectedScore = value
+                                    renderScoreButtons()
+                                }
+                            })
+                        }
+                        applyAccessibility(scoresRow, prefs.read())
+                    }
+                    renderScoreButtons()
+                    submitButton.text = if (summary.userRating != null) "Actualizar calificación" else "Enviar calificación"
+                    submitButton.setOnClickListener {
+                        if (RepositoryProvider.supabaseReady() && currentBuyerId() == null) {
+                            val dlg = AlertDialog.Builder(this@MainActivity)
+                                .setTitle("Inicia sesión para calificar")
+                                .setMessage("Inicia sesión con tu cuenta de Google para enviar tu calificación.")
+                                .setPositiveButton("Continuar con Google") { _, _ -> launchDirectGoogleSignIn() }
+                                .setNegativeButton("Ahora no", null)
+                                .create()
+                            dlg.setOnShowListener { applyAccessibility(dlg.window!!.decorView, prefs.read()) }
+                            dlg.show()
+                            return@setOnClickListener
+                        }
+                        submitButton.isEnabled = false
+                        lifecycleScope.launch {
+                            val result = runCatching {
+                                RepositoryProvider.ratings(applicationContext).submit(
+                                    type = targetType,
+                                    targetId = targetId,
+                                    score = selectedScore,
+                                    comment = commentInput.text?.toString().orEmpty(),
+                                    buyerId = currentBuyerId(),
+                                    authorLabel = currentBuyerLabel(),
+                                    ratingsAllowed = true,
+                                    shopId = shopId
                                 )
                             }
-                            minimumHeight = (48 * dp).toInt()
-                            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                                if (value > 1) marginStart = (4 * dp).toInt()
+                            submitButton.isEnabled = true
+                            result.onSuccess {
+                                Toast.makeText(this@MainActivity, "Calificación guardada.", Toast.LENGTH_SHORT).show()
+                                val refreshed = runCatching {
+                                    RepositoryProvider.ratings(applicationContext).summary(targetType, targetId, currentBuyerId(), shopId)
+                                }.getOrNull()
+                                bindRatingsSection(
+                                    card, summaryView, disabledNote, loginPrompt, loginButton, form, scoresRow,
+                                    commentInput, submitButton, listContainer,
+                                    targetType, targetId, true, shopId, refreshed
+                                )
+                            }.onFailure { err ->
+                                Toast.makeText(this@MainActivity, err.message ?: "No pudimos guardar la calificación.", Toast.LENGTH_SHORT).show()
                             }
-                            setOnClickListener {
-                                selectedScore = value
-                                renderScoreButtons()
-                            }
-                        })
-                    }
-                    applyAccessibility(scoresRow, prefs.read())
-                }
-                renderScoreButtons()
-                submitButton.text = if (summary.userRating != null) "Actualizar calificación" else "Enviar calificación"
-                submitButton.setOnClickListener {
-                    if (RepositoryProvider.supabaseReady() && currentBuyerId() == null) {
-                        val dlg = AlertDialog.Builder(this@MainActivity)
-                            .setTitle("Inicia sesión para calificar")
-                            .setMessage("Inicia sesión con tu cuenta de Google para enviar tu calificación.")
-                            .setPositiveButton("Continuar con Google") { _, _ -> launchDirectGoogleSignIn() }
-                            .setNegativeButton("Ahora no", null)
-                            .create()
-                        dlg.setOnShowListener { applyAccessibility(dlg.window!!.decorView, prefs.read()) }
-                        dlg.show()
-                        return@setOnClickListener
-                    }
-                    submitButton.isEnabled = false
-                    lifecycleScope.launch {
-                        val result = runCatching {
-                            RepositoryProvider.ratings(applicationContext).submit(
-                                type = targetType,
-                                targetId = targetId,
-                                score = selectedScore,
-                                comment = commentInput.text?.toString().orEmpty(),
-                                buyerId = currentBuyerId(),
-                                authorLabel = currentBuyerLabel(),
-                                ratingsAllowed = true,
-                                shopId = shopId
-                            )
-                        }
-                        submitButton.isEnabled = true
-                        result.onSuccess {
-                            Toast.makeText(this@MainActivity, "Calificación guardada.", Toast.LENGTH_SHORT).show()
-                            val refreshed = runCatching {
-                                RepositoryProvider.ratings(applicationContext).summary(targetType, targetId, currentBuyerId(), shopId)
-                            }.getOrNull()
-                            bindRatingsSection(
-                                card, summaryView, disabledNote, form, scoresRow,
-                                commentInput, submitButton, listContainer,
-                                targetType, targetId, true, shopId, refreshed
-                            )
-                        }.onFailure { err ->
-                            Toast.makeText(this@MainActivity, err.message ?: "No pudimos guardar la calificación.", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
             }
         }
         applyAccessibility(card, prefs.read())
+    }
+
+    private fun buildRatingCommentCard(entry: RatingEntry, isMine: Boolean, dp: Float): View {
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val pad = (12 * dp).toInt()
+            setPadding(pad, pad, pad, pad)
+            background = GradientDrawable().apply {
+                cornerRadius = 12 * dp
+                setColor(if (isMine) 0xFFEEF6F4.toInt() else 0xFFF5F8F6.toInt())
+                setStroke((1 * dp).toInt(), if (isMine) 0xFF9AC5BC.toInt() else 0xFFDDE6E2.toInt())
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = (8 * dp).toInt()
+            }
+            contentDescription = BuyerEngagementStore.formatEntryLabel(entry)
+        }
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(this).apply {
+            text = "${entry.score} / 5"
+            textSize = 12f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(0xFF183A34.toInt())
+            background = GradientDrawable().apply {
+                cornerRadius = 999 * dp
+                setColor(0xFFDFF1EC.toInt())
+            }
+            setPadding((8 * dp).toInt(), (3 * dp).toInt(), (8 * dp).toInt(), (3 * dp).toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { marginEnd = (8 * dp).toInt() }
+        })
+        header.addView(TextView(this).apply {
+            text = BuyerEngagementStore.formatPublicReviewerName(entry.authorLabel)
+            textSize = 14f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(0xFF183A34.toInt())
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        if (isMine) {
+            header.addView(TextView(this).apply {
+                text = "Tu calificación"
+                textSize = 11f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(0xFF0E4D44.toInt())
+                background = GradientDrawable().apply {
+                    cornerRadius = 999 * dp
+                    setColor(0xFFCDE9E2.toInt())
+                }
+                setPadding((7 * dp).toInt(), (2 * dp).toInt(), (7 * dp).toInt(), (2 * dp).toInt())
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { marginStart = (6 * dp).toInt() }
+            })
+        }
+        val dateText = BuyerEngagementStore.formatRatingDate(entry.createdAtMillis)
+        if (dateText.isNotBlank()) {
+            header.addView(TextView(this).apply {
+                text = dateText
+                textSize = 12f
+                setTextColor(0xFF5F746F.toInt())
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { marginStart = (8 * dp).toInt() }
+            })
+        }
+        container.addView(header)
+        if (entry.comment.isNotBlank()) {
+            container.addView(TextView(this).apply {
+                text = entry.comment
+                textSize = 14f
+                setTextColor(0xFF26423C.toInt())
+                setPadding(0, (6 * dp).toInt(), 0, 0)
+            })
+        }
+        return container
     }
 
     override fun onDestroy() {

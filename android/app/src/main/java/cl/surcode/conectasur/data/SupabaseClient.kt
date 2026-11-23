@@ -28,6 +28,7 @@ class SupabaseClient(val url: String, private val anonKey: String, val store: Se
     fun storedSession(): JSONObject? = store.read("auth")?.let { runCatching { JSONObject(it) }.getOrNull() }
     fun uid(): String? = storedSession()?.optJSONObject("user")?.optString("id")?.takeIf { it.isNotBlank() }
     fun cachedProfile(): Session? = storedSession()?.optJSONObject("profile")?.toSession()
+    fun cachedDisplayName(): String? = storedSession()?.optJSONObject("profile")?.optString("display_name")?.takeIf { it.isNotBlank() }
     suspend fun request(path: String, method: String = "GET", body: JSONObject? = null, authenticated: Boolean = false, prefer: String? = null): Any {
         val token = if (authenticated) accessToken() else anonKey
         return try { send(path, method, body?.toString()?.toByteArray(Charsets.UTF_8), "application/json", token, prefer) }

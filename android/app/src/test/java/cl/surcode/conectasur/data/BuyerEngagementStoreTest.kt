@@ -156,4 +156,49 @@ class BuyerEngagementStoreTest {
         val shopDisabled = Shop("s1", "Tienda", "", null, "", "", "", showPrices = true, allowRatings = false)
         assertFalse(shopDisabled.allowRatings)
     }
+
+    @Test
+    fun publicReviewerNameFormattingNeverLeaksEmailsAndFormatsDates() {
+        assertEquals(
+            "María G.",
+            BuyerEngagementStore.formatPublicReviewerName("María González Pérez")
+        )
+        assertEquals(
+            "Camila",
+            BuyerEngagementStore.formatPublicReviewerName("Camila")
+        )
+        assertEquals(
+            "Luis S.",
+            BuyerEngagementStore.formatPublicReviewerName("ana@correo.cl", "Luis Soto")
+        )
+        assertEquals(
+            "María G.",
+            BuyerEngagementStore.formatPublicReviewerName("María G.")
+        )
+        assertEquals(
+            "Comprador verificado",
+            BuyerEngagementStore.formatPublicReviewerName(null, "  ", "Comprador", "user@mail.cl", "https://spam.example")
+        )
+
+        val parsed = BuyerEngagementStore.parseIsoTimestampMillis("2026-11-23T15:27:08.400191+00:00")
+        assertTrue(parsed > 0L)
+        assertTrue(BuyerEngagementStore.parseIsoTimestampMillis("2026-11-23 15:27:08+00") > 0L)
+        val formattedDate = BuyerEngagementStore.formatRatingDate(parsed, nowMillis = parsed)
+        assertTrue("Fecha inesperada: $formattedDate", formattedDate.startsWith("23 nov"))
+
+        val store = BuyerEngagementStore(MemoryStorage())
+        val saved = store.submitRatingLocal(
+            type = RatingTargetType.SHOP,
+            targetId = "shop-privacy",
+            score = 5,
+            comment = "Excelente",
+            buyerId = "buyer-1",
+            authorLabel = "privado@correo.cl",
+            ratingsAllowed = true,
+            nowMs = parsed
+        )
+        assertEquals("Comprador verificado", saved.authorLabel)
+        val summary = store.summaryLocal(RatingTargetType.SHOP, "shop-privacy", "buyer-1")
+        assertFalse(BuyerEngagementStore.formatEntryLabel(summary.recent.first()).contains("@"))
+    }
 }

@@ -293,6 +293,30 @@
                 android:visibility="gone" />
 
             <LinearLayout
+                android:id="@+id/store_rating_login_prompt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/ConectaSur.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Inicia sesión para dejar tu calificación y comentario." />
+
+                <Button
+                    android:id="@+id/store_rating_login_button"
+                    style="@style/ConectaSur.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:minHeight="48dp"
+                    android:text="Continuar con Google" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/store_rating_form"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

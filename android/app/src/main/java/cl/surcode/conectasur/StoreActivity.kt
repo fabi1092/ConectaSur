@@ -207,6 +207,10 @@ class StoreActivity : FragmentActivity() {
             dialog.setOnShowListener { applyAccessibility(dialog.window!!.decorView, presentation) }
             dialog.show()
         }
+        findViewById<Button>(R.id.account_notifications_follows)?.setOnClickListener {
+            setResult(RESULT_OK, Intent().putExtra(MainActivity.OPEN_SETTINGS, true))
+            finish()
+        }
         findViewById<Button>(R.id.account_catalog).setOnClickListener {
             setResult(RESULT_OK, Intent().putExtra(MainActivity.OPEN_CATALOG, true))
             finish()
@@ -412,6 +416,7 @@ class StoreActivity : FragmentActivity() {
         findViewById<View>(R.id.shop_form).isVisible = privateVisible
         findViewById<View>(R.id.account_profile).isVisible = profileVisible
         findViewById<View>(R.id.buyer_profile_card)?.isVisible = profileVisible && !admin
+        findViewById<View>(R.id.account_notifications_follows)?.isVisible = profileVisible && !admin
         findViewById<TextView>(R.id.account_profile_badge)?.text =
             if (admin) "Modo administrador · Panel web" else "Modo comprador · Comunidad ConectaSur"
         findViewById<TextView>(R.id.account_profile_email).text = getString(R.string.store_account, state.session?.email.orEmpty())
