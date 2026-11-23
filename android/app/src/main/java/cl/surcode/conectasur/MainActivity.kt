@@ -322,7 +322,13 @@ class MainActivity : FragmentActivity() {
         intent?.removeExtra(FirebasePushManager.EXTRA_FAIR_NAME)
         intent?.removeExtra(FirebasePushManager.EXTRA_SHOP_ID)
         when {
-            !fairId.isNullOrBlank() || pushType in listOf("fair_invitation", "followed_fair") -> navigate(Destination("fairs"))
+            pushType in listOf("invitation", "fair_invitation", "fair_notice", "fair_cancelled") -> {
+                accountAccess.launch(Intent(this, StoreActivity::class.java))
+            }
+            pushType == "contact" -> {
+                startActivity(Intent(this, ShopInboxActivity::class.java))
+            }
+            !fairId.isNullOrBlank() || pushType in listOf("follow_fair_confirmed", "followed_fair") -> navigate(Destination("fairs"))
             !shopId.isNullOrBlank() -> navigate(Destination("public_store", shopId))
         }
     }
@@ -1898,41 +1904,43 @@ class MainActivity : FragmentActivity() {
                     setPadding(0, (2 * dp).toInt(), 0, 0)
                 })
             }
-            if (participant.sampleProducts.isEmpty()) {
-                card.addView(TextView(this).apply {
-                    text = "Sin productos públicos destacados aún."
-                    textSize = 13f
-                    setTextColor(0xFF4A6560.toInt())
-                    setPadding(0, (6 * dp).toInt(), 0, 0)
-                })
-            } else {
-                card.addView(TextView(this).apply {
-                    text = "Muestra de catálogo público:"
-                    textSize = 13f
-                    setTypeface(null, android.graphics.Typeface.BOLD)
-                    setTextColor(0xFF4A6560.toInt())
-                    setPadding(0, (6 * dp).toInt(), 0, (4 * dp).toInt())
-                })
-                participant.sampleProducts.forEach { product ->
-                    card.addView(Button(this).apply {
-                        text = "${product.name} · ${priceLabel(product.priceClp)}"
-                        contentDescription = "${product.name}, ${spokenPrice(product.priceClp)}"
-                        setBackgroundResource(R.drawable.button_tonal)
-                        setTextColor(0xFF183A34.toInt())
-                        isAllCaps = false
-                        minimumHeight = (48 * dp).toInt()
-                        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                            bottomMargin = (6 * dp).toInt()
-                        }
-                        setOnClickListener {
-                            dialog.dismiss()
-                            navigate(Destination("detail", product.id))
-                        }
+            if (!participant.isAssociation) {
+                if (participant.sampleProducts.isEmpty()) {
+                    card.addView(TextView(this).apply {
+                        text = "Sin productos públicos destacados aún."
+                        textSize = 13f
+                        setTextColor(0xFF4A6560.toInt())
+                        setPadding(0, (6 * dp).toInt(), 0, 0)
                     })
+                } else {
+                    card.addView(TextView(this).apply {
+                        text = "Muestra de catálogo público:"
+                        textSize = 13f
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                        setTextColor(0xFF4A6560.toInt())
+                        setPadding(0, (6 * dp).toInt(), 0, (4 * dp).toInt())
+                    })
+                    participant.sampleProducts.forEach { product ->
+                        card.addView(Button(this).apply {
+                            text = "${product.name} · ${priceLabel(product.priceClp)}"
+                            contentDescription = "${product.name}, ${spokenPrice(product.priceClp)}"
+                            setBackgroundResource(R.drawable.button_tonal)
+                            setTextColor(0xFF183A34.toInt())
+                            isAllCaps = false
+                            minimumHeight = (48 * dp).toInt()
+                            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                                bottomMargin = (6 * dp).toInt()
+                            }
+                            setOnClickListener {
+                                dialog.dismiss()
+                                navigate(Destination("detail", product.id))
+                            }
+                        })
+                    }
                 }
             }
             card.addView(Button(this).apply {
-                text = "Ver tienda"
+                text = if (participant.isAssociation) "Ver asociación" else "Ver tienda"
                 setBackgroundResource(R.drawable.button_primary)
                 setTextColor(0xFFFFFFFF.toInt())
                 minimumHeight = (48 * dp).toInt()
@@ -1941,7 +1949,7 @@ class MainActivity : FragmentActivity() {
                 }
                 setOnClickListener {
                     dialog.dismiss()
-                    navigate(Destination("public_store", participant.shopId))
+                    navigate(Destination(if (participant.isAssociation) "association_detail" else "public_store", participant.shopId))
                 }
             })
             container.addView(card)
@@ -2212,6 +2220,17 @@ class MainActivity : FragmentActivity() {
                 renderScoreButtons()
                 submitButton.text = if (summary.userRating != null) "Actualizar calificación" else "Enviar calificación"
                 submitButton.setOnClickListener {
+                    if (RepositoryProvider.supabaseReady() && currentBuyerId() == null) {
+                        val dlg = AlertDialog.Builder(this@MainActivity)
+                            .setTitle("Inicia sesión para calificar")
+                            .setMessage("Inicia sesión con tu cuenta de Google para enviar tu calificación.")
+                            .setPositiveButton("Continuar con Google") { _, _ -> launchDirectGoogleSignIn() }
+                            .setNegativeButton("Ahora no", null)
+                            .create()
+                        dlg.setOnShowListener { applyAccessibility(dlg.window!!.decorView, prefs.read()) }
+                        dlg.show()
+                        return@setOnClickListener
+                    }
                     submitButton.isEnabled = false
                     lifecycleScope.launch {
                         val result = runCatching {

@@ -195,11 +195,16 @@ object FirebasePushManager {
     ) {
         val appContext = context.applicationContext
         val consentStore = NotificationConsentStore(appContext)
-        if (!consentStore.shouldDeliverNotificationNow()) return
+        if (!consentStore.isConsented()) return
+        if (type.equals("contact", ignoreCase = true) && !consentStore.shouldDeliverNotificationNow()) return
         if (!hasSystemPermission(appContext)) return
         createChannels(appContext)
 
-        val channelId = if (type == "fair_invitation") CHANNEL_INVITATIONS else CHANNEL_FOLLOWERS
+        val channelId = if (type in listOf("invitation", "fair_invitation", "fair_notice", "fair_cancelled", "contact")) {
+            CHANNEL_INVITATIONS
+        } else {
+            CHANNEL_FOLLOWERS
+        }
         val (title, body) = NotificationConsentStore.buildFairNotificationText(rawTitle, rawBody, fairName, type)
 
         val openIntent = Intent(appContext, MainActivity::class.java).apply {

@@ -35,11 +35,18 @@ internal fun OwnerProduct.toSupabase(): JSONObject = JSONObject().apply {
     put("variants", JSONArray().apply { variants.forEach { v -> put(JSONObject().put("id", v.id).put("label", v.label).put("quantity", v.quantity)
         .put("priceClp", v.priceClp ?: JSONObject.NULL).put("photo", v.photo ?: JSONObject.NULL)) } })
 }
+private fun JSONObject.timeHHmm(key: String, fallback: String): String {
+    val raw = nullableString(key)?.trim().orEmpty()
+    return if (raw.matches(Regex("^\\d{2}:\\d{2}.*"))) raw.take(5) else fallback
+}
 internal fun JSONObject.toShop() = Shop(getString("id"), getString("name"), optString("description"), nullableString("logo_url"),
     optString("entrepreneur_type"), optString("sector"), optString("contact"), getBoolean("show_prices"),
     ContactMode.from(optString("contact_mode")), optString("whatsapp_number"),
     optString("pickup_label", ""), nullableDouble("pickup_lat"), nullableDouble("pickup_lng"),
-    optBoolean("allow_ratings", true))
+    optBoolean("allow_ratings", true),
+    optBoolean("contact_notifications", true),
+    timeHHmm("notify_from", "08:00"),
+    timeHHmm("notify_until", "21:00"))
 internal fun JSONObject.toPublicFair() = PublicFair(
     getString("id"), getString("name"), optString("description"), nullableString("image_url"),
     optString("place_name"), getDouble("latitude"), getDouble("longitude"),
