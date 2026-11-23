@@ -12,6 +12,7 @@ export function createFirebaseBuyerAuth(config) {
   return createFirebaseBuyerSession({projectId:config.projectId,driver:{
     ready:()=>ready,user:()=>auth.currentUser,
     start:async()=>(await signInWithPopup(auth,provider)).user,
+    token:async user=>user.getIdToken(),
     claims:async user=>(await getIdTokenResult(user)).claims,
     reload:user=>reload(user),signOut:()=>signOut(auth),onChange:callback=>onIdTokenChanged(auth,callback)
   }});

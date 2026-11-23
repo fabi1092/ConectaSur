@@ -1,5 +1,6 @@
 import { publicShell, escapeHtml as escape } from './public-shops.js';
 import { icon, communityPhoto } from './visuals.js';
+import { enableWebNotifications, disableWebNotifications } from './buyer-engagement.js';
 
 function registrationMessage(error) {
   if (error.code === 'google_not_configured') return 'El acceso con Google todavía no está disponible. Puedes crear tu cuenta con correo o intentarlo más tarde.';
@@ -105,16 +106,154 @@ export function showBuyerRegistration(app, db, { isCurrent, onSignedIn, onLogin 
   return dispose;
 }
 
-export function showBuyerHome(app, user, logout, notice = '') {
+export function showBuyerHome(app, user, logout, notice = '', db = null) {
   document.title = 'Mi cuenta | ConectaSur';
   app.innerHTML = publicShell(`<section class="owner-home buyer-home" aria-labelledby="buyer-home-title">
     <div class="owner-topbar"><a class="public-back" href="#tiendas">← Conocer las tiendas</a><button id="buyer-logout" class="owner-secondary">Cerrar sesión</button></div>
     <div class="owner-welcome"><div><p class="public-eyebrow">Mi cuenta en ConectaSur</p><h1 id="buyer-home-title" tabindex="-1">Hola, ${escape(user.displayName || 'te damos la bienvenida')}.</h1><p>Descubre productos y conoce a quienes los crean.</p></div><span class="owner-session-state">Sesión iniciada</span></div>
     ${notice ? `<p class="owner-save-success" role="status">${escape(notice)}</p>` : ''}
     <div class="buyer-discover"><div><p class="public-eyebrow">Hecho cerca de ti</p><h2>Encuentra productos cerca de ti.</h2><p>Explora las creaciones de Puerto Montt y Alerce. En cada ficha puedes conocer el producto y contactar a su emprendedora.</p><div class="owner-actions"><a class="public-primary" href="#productos">${icon('shop')}Explorar productos</a><a class="owner-secondary" href="#tiendas">Conocer las tiendas</a></div></div><div class="buyer-discover-mark" aria-hidden="true">${icon('heart')}</div></div>
+    ${db ? `<section class="form-card" style="max-width:none;margin-top:16px;" aria-labelledby="buyer-follows-title">
+      <h2 id="buyer-follows-title">Tiendas y asociaciones que sigues</h2>
+      <p id="buyer-follows-status" role="status">Cargando seguimientos…</p>
+      <div id="buyer-follows-list" style="display:grid;gap:10px;margin-top:8px;"></div>
+    </section>
+    <section class="form-card" style="max-width:none;margin-top:16px;" aria-labelledby="buyer-notifs-title">
+      <h2 id="buyer-notifs-title">Avisos de ferias y notificaciones</h2>
+      <p id="buyer-notifs-consent-status" role="status">Comprobando preferencias de avisos…</p>
+      <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+        <button type="button" id="buyer-notifs-enable" class="public-primary" style="min-height:44px;">Activar avisos en el navegador</button>
+        <button type="button" id="buyer-notifs-disable" class="owner-secondary" style="min-height:44px;">Desactivar avisos</button>
+        <button type="button" id="buyer-notifs-mark-read" class="owner-secondary" style="min-height:44px;">Marcar como leídos</button>
+      </div>
+      <div id="buyer-notifs-list" style="display:grid;gap:10px;margin-top:8px;"></div>
+    </section>` : ''}
     <section class="owner-account buyer-account"><h2>Tu cuenta de comprador</h2><p>Ingresaste con</p><p class="owner-account-email">${escape(user.email)}</p><p>Puedes volver aquí desde «Mi cuenta» mientras recorres las tiendas. Si compartes este equipo, cierra tu sesión al terminar.</p></section>
   </section>`, { showAccountLink: false, accountLocation: 'Estás en tu cuenta' });
   app.querySelector('h1').focus({ preventScroll: true });
   window.scrollTo(0, 0);
   app.querySelector('#buyer-logout').addEventListener('click', logout);
+  if (!db) return;
+
+  const followsStatus = app.querySelector('#buyer-follows-status');
+  const followsList = app.querySelector('#buyer-follows-list');
+  const consentStatus = app.querySelector('#buyer-notifs-consent-status');
+  const notifsList = app.querySelector('#buyer-notifs-list');
+  const enableBtn = app.querySelector('#buyer-notifs-enable');
+  const disableBtn = app.querySelector('#buyer-notifs-disable');
+  const markReadBtn = app.querySelector('#buyer-notifs-mark-read');
+  let loadedNotifs = [];
+
+  async function refreshFollows() {
+    if (!followsList?.isConnected) return;
+    try {
+      const items = await db.myFollows();
+      if (!followsList.isConnected) return;
+      if (!items.length) {
+        followsStatus.textContent = 'Aún no sigues ninguna tienda ni asociación.';
+        followsList.innerHTML = '';
+        return;
+      }
+      followsStatus.textContent = `Sigues ${items.length} ${items.length === 1 ? 'espacio' : 'espacios'}:`;
+      followsList.innerHTML = items.map(item => {
+        const href = (item.target_type === 'association' ? '#asociacion/' : '#tienda/') + encodeURIComponent(item.target_id);
+        const kindLabel = item.target_type === 'association' ? 'Asociación' : 'Tienda';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #d3ddd9;border-radius:10px;background:#f9fbfa;flex-wrap:wrap;">
+          <div><strong>${escape(item.name || item.target_id)}</strong><br><small>${escape(kindLabel)}</small></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a class="public-text-link" href="${escape(href)}" style="min-height:44px;display:inline-flex;align-items:center;padding:0 8px;">Ver</a>
+            <button type="button" class="owner-secondary" style="min-height:44px;" data-unfollow-type="${escape(item.target_type)}" data-unfollow-id="${escape(item.target_id)}" data-unfollow-name="${escape(item.name || item.target_id)}">Dejar de seguir</button>
+          </div>
+        </div>`;
+      }).join('');
+    } catch {
+      if (followsStatus?.isConnected) followsStatus.textContent = 'No pudimos cargar tus seguimientos.';
+    }
+  }
+
+  async function refreshNotifs() {
+    if (!notifsList?.isConnected) return;
+    try {
+      const [consented, items] = await Promise.all([
+        db.getNotificationConsent().catch(() => false),
+        db.myNotifications(20).catch(() => [])
+      ]);
+      if (!notifsList.isConnected) return;
+      loadedNotifs = Array.isArray(items) ? items : [];
+      const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
+      consentStatus.textContent = consented
+        ? (perm === 'granted'
+          ? 'Avisos activos con notificación del navegador autorizada.'
+          : 'Consentimiento guardado. Tus avisos aparecen aquí cuando una seguida confirma feria.')
+        : 'Avisos desactivados. Actívalos con tu permiso para enterarte de nuevas ferias.';
+      if (enableBtn) enableBtn.disabled = consented && perm === 'granted';
+      if (disableBtn) disableBtn.disabled = !consented;
+      if (markReadBtn) markReadBtn.disabled = !loadedNotifs.some(n => !n.read_at);
+      if (!loadedNotifs.length) {
+        notifsList.innerHTML = '<p>Aún no tienes avisos de tiendas o asociaciones seguidas.</p>';
+        return;
+      }
+      const dateFmt = new Intl.DateTimeFormat('es-CL', { dateStyle: 'medium', timeStyle: 'short' });
+      notifsList.innerHTML = loadedNotifs.map(n => {
+        const fairId = n?.data?.fair_id;
+        return `<div style="padding:12px;border:1px solid #d3ddd9;border-radius:10px;background:${n.read_at ? '#ffffff' : '#eef6f4'};">
+          <strong>${escape(n.title || 'Aviso')}</strong>
+          <p style="margin:4px 0;">${escape(n.body || '')}</p>
+          <small>${n.created_at ? escape(dateFmt.format(new Date(n.created_at))) : ''}${n.read_at ? ' · Leído' : ' · Nuevo'}</small>
+          ${fairId ? `<div style="margin-top:6px;"><a class="public-text-link" href="#feria/${encodeURIComponent(fairId)}">Ver ficha de feria</a></div>` : ''}
+        </div>`;
+      }).join('');
+    } catch {
+      if (consentStatus?.isConnected) consentStatus.textContent = 'No pudimos consultar tus avisos.';
+    }
+  }
+
+  followsList?.addEventListener('click', async event => {
+    const btn = event.target.closest('[data-unfollow-id]');
+    if (!btn) return;
+    btn.disabled = true;
+    try {
+      await db.unfollowTarget(btn.dataset.unfollowType, btn.dataset.unfollowId);
+      followsStatus.textContent = `Dejaste de seguir a ${btn.dataset.unfollowName}.`;
+      await refreshFollows();
+    } catch {
+      followsStatus.textContent = 'No pudimos actualizar el seguimiento.';
+      btn.disabled = false;
+    }
+  });
+
+  enableBtn?.addEventListener('click', async () => {
+    enableBtn.disabled = true;
+    try {
+      await enableWebNotifications(db);
+      await refreshNotifs();
+    } finally {
+      if (enableBtn.isConnected) enableBtn.disabled = false;
+    }
+  });
+
+  disableBtn?.addEventListener('click', async () => {
+    disableBtn.disabled = true;
+    try {
+      await disableWebNotifications(db);
+      await refreshNotifs();
+    } finally {
+      if (disableBtn.isConnected) disableBtn.disabled = false;
+    }
+  });
+
+  markReadBtn?.addEventListener('click', async () => {
+    const unreadIds = loadedNotifs.filter(n => !n.read_at && n.id).map(n => n.id);
+    if (!unreadIds.length) return;
+    markReadBtn.disabled = true;
+    try {
+      await db.markNotificationsRead(unreadIds);
+      await refreshNotifs();
+    } finally {
+      if (markReadBtn.isConnected) markReadBtn.disabled = false;
+    }
+  });
+
+  refreshFollows();
+  refreshNotifs();
 }

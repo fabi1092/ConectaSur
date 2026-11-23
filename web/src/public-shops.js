@@ -5,6 +5,7 @@ import { accountDestination } from './account-navigation.js';
 import { photo, wirePhotos, productCard, wireProducts, isPublicProductVisible } from './public-products.js';
 import { contactMarkup, wireContact } from './shop-contact.js';
 import { renderInteractiveMap, directionsUrl } from './fair-map.js';
+import { followSectionMarkup, wireFollowSection } from './buyer-engagement.js';
 
 const shopLink = id => '#tienda/' + encodeURIComponent(id);
 const productLink = id => '#producto/' + encodeURIComponent(id);
@@ -277,6 +278,7 @@ export async function showPublicShop(app, db, id, isCurrent = () => true) {
           <p class="public-sector">${icon('pin')} ${escape(shop.sector || 'Sector por informar')}</p>
           ${shopAssociations.length ? `<p class="public-shop-assoc">${icon('people')} <strong>Asociación:</strong> ${shopAssociations.map(a => `<a class="public-text-link" href="${escape(associationLink(a.id))}">${escape(a.name)}</a>`).join(', ')}</p>` : ''}</div>
       </section>
+      ${followSectionMarkup('shop')}
       <div class="public-shop-details">
         <section class="public-about" aria-labelledby="about-title"><p class="public-eyebrow">Detrás de este emprendimiento</p><h2 id="about-title">Conoce nuestra tienda</h2><p class="public-description">${escape(shop.description || 'Esta tienda aún no ha agregado una descripción.')}</p></section>
         <section class="public-contact" aria-labelledby="contact-title"><p class="public-eyebrow">Conversemos</p><h2 id="contact-title">Contacta a la tienda</h2><p>Consulta directamente por sus productos y disponibilidad.</p>
@@ -289,6 +291,7 @@ export async function showPublicShop(app, db, id, isCurrent = () => true) {
     </div>`);
     imageFallbacks(app);
     wireContact(app, db, shop, isCurrent);
+    wireFollowSection(app, db, { targetType: 'shop', targetId: shop.id, targetName: shop.name, isCurrent });
     if (shop.pickupLat != null && shop.pickupLng != null) {
       const pickupMapEl = app.querySelector('#shop-pickup-map');
       if (pickupMapEl) renderInteractiveMap(pickupMapEl, { lat: shop.pickupLat, lng: shop.pickupLng, zoom: 15, popupText: escape(shop.pickupLabel || shop.name) });
@@ -358,6 +361,7 @@ export async function showPublicAssociation(app, db, id, isCurrent = () => true)
           <p class="public-sector">${icon('pin')} ${escape(assoc.sector || 'Puerto Montt y Alerce')}</p>
         </div>
       </section>
+      ${followSectionMarkup('association')}
       <div class="public-shop-details">
         <section class="public-about"><h2>Sobre la asociación</h2><p class="public-description">${escape(assoc.description || 'Agrupación de emprendimientos locales.')}</p></section>
         <section class="public-contact"><h2>Contacto</h2><p class="public-description">${escape(assoc.contact || 'Sin datos de contacto publicados.')}</p></section>
@@ -369,6 +373,7 @@ export async function showPublicAssociation(app, db, id, isCurrent = () => true)
     </div>`);
     imageFallbacks(app);
     wirePhotos(app);
+    wireFollowSection(app, db, { targetType: 'association', targetId: assoc.id, targetName: assoc.name, isCurrent });
     app.querySelector('#assoc-title').focus({ preventScroll: true });
     window.scrollTo(0, 0);
   } catch {

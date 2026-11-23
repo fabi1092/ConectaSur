@@ -16,6 +16,7 @@ import { showEntrepreneurTypes } from './entrepreneur-types.js';
 import { showAdminAccounts } from './admin-accounts.js';
 import { createEntrepreneurAccountData } from '../entrepreneur-account-data.js';
 import { showEntrepreneurAccountEditor } from './entrepreneur-account-editor.js';
+import { startWebNotificationPoller } from './buyer-engagement.js';
 import './design.css';
 
 let adminEditor=null;
@@ -1278,3 +1279,4 @@ async function iniciar() {
 
 window.addEventListener('hashchange', iniciar);
 iniciar();
+startWebNotificationPoller(db);
