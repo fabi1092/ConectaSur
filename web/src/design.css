@@ -359,7 +359,13 @@ html[data-contrast='high'] .spec-row { background: #fff; color: #000; border: 1p
 .public-fair-map-section h2 { font-size: 1.35rem; margin-bottom: 10px; }
 .cs-map-pin-wrap { background: transparent; border: 0; }
 .cs-map-pin { display: block; width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #c2592b; border: 3px solid #ffffff; box-shadow: 0 3px 10px rgba(14, 58, 76, 0.35); }
-.admin-fairs-stack { display: grid; gap: 22px; }
+.admin-fairs-stack { display: grid; gap: 22px; width: 100%; }
+.admin-fairs-stack .form-card { max-width: none; width: 100%; background: #ffffff; border: 1.5px solid var(--line); border-radius: var(--radius); padding: 24px 28px; box-shadow: var(--shadow); }
+.admin-fairs-stack .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.admin-fairs-stack .anon-mode-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0 18px; }
+.admin-fairs-stack td.actions { min-width: 270px; }
+.fair-actions-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fair-actions-row button { margin: 0; }
 .anon-mode-cards { display: grid; gap: 10px; margin: 16px 0 18px; }
 .anon-mode-option { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; }
 .anon-mode-option:has(input:checked) { border-color: var(--green); background: var(--mint); }
@@ -376,8 +382,11 @@ html[data-contrast='high'] .spec-row { background: #fff; color: #000; border: 1p
 .fair-logo-cover { border-radius: 14px; object-fit: cover; }
 @media (max-width: 900px) {
   .public-associations-grid, .public-fairs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-fairs-stack .anon-mode-cards { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
   .directory-filters-row, .public-associations-grid, .public-fairs-grid, .fair-dates-grid, .fair-coords-grid { grid-template-columns: minmax(0, 1fr); }
   .fair-map { height: 260px; }
+  .admin-fairs-stack .form-card { padding: 18px; }
+  .admin-fairs-stack td.actions { min-width: 0; }
 }
