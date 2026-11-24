@@ -20,6 +20,7 @@ node_modules/
 .npm-cache/
 android/supabase.properties
 android/firebase.properties
+android/keystore.properties
 web/supabase-config.js
 supabase/.env.local
 supabase/.temp/

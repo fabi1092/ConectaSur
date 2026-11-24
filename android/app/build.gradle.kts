@@ -11,6 +11,20 @@ val firebase = Properties().apply {
     val config = rootProject.file("firebase.properties")
     if (config.exists()) config.inputStream().use { load(it) }
 }
+val keystore = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val releaseStoreFile = keystore.getProperty("storeFile", "").trim()
+val releaseStorePassword = keystore.getProperty("storePassword", "").trim()
+val releaseKeyAlias = keystore.getProperty("keyAlias", "").trim()
+val releaseKeyPassword = keystore.getProperty("keyPassword", "").trim()
+val hasReleaseSigning = listOf(
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+).all { it.isNotBlank() }
 fun quoted(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 android {
     namespace = "cl.surcode.conectasur"
@@ -19,8 +33,8 @@ android {
         applicationId = "cl.surcode.conectasur"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.5.3-google-firebase"
+        versionCode = 8
+        versionName = "1.0.0"
         buildConfigField("String", "SUPABASE_URL", quoted(if (demoBuild) "" else supabase.getProperty("SUPABASE_URL", "")))
         buildConfigField("String", "SUPABASE_ANON_KEY", quoted(if (demoBuild) "" else supabase.getProperty("SUPABASE_ANON_KEY", "")))
         for (key in listOf("FIREBASE_API_KEY", "FIREBASE_APP_ID", "FIREBASE_PROJECT_ID", "GOOGLE_WEB_CLIENT_ID")) {
@@ -30,7 +44,28 @@ android {
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     buildFeatures { buildConfig = true }
-    buildTypes { release { isMinifyEnabled = false } }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
+    }
+    buildTypes {
+        release {
+            isDebuggable = false
+            isMinifyEnabled = false
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
     lint { abortOnError = true; warningsAsErrors = false; htmlReport = true; xmlReport = true }
 }
 dependencies {
