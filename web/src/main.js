@@ -15,6 +15,7 @@ import { showAssociationEditor } from './association-editor.js';
 import { showEntrepreneurTypes } from './entrepreneur-types.js';
 import { showAdminAccounts } from './admin-accounts.js';
 import { showAdminAudit } from './admin-audit.js';
+import { errorText } from './error-text.js';
 import { createEntrepreneurAccountData } from '../entrepreneur-account-data.js';
 import { showEntrepreneurAccountEditor } from './entrepreneur-account-editor.js';
 import { startWebNotificationPoller } from './buyer-engagement.js';
@@ -376,7 +377,7 @@ async function cargarEmprendedoras() {
 
           await cargarEmprendedoras();
         } catch (error) {
-          mostrarMensaje(error.message, true);
+          mostrarMensaje(errorText(error), true);
         }
       });
     });
@@ -398,7 +399,7 @@ async function cargarEmprendedoras() {
       contador.textContent = '';
       region.innerHTML =
         `<p class="error">No se pudieron cargar las tiendas: ${
-          escapar(error.message)
+          escapar(errorText(error))
         }</p>`;
     }
   }
@@ -477,7 +478,7 @@ function mostrarFormularioEmprendedora() {
         mostrarMensaje('Cuenta y tienda creadas correctamente.');
         mostrarCredencialesEmprendedora(datos);
       } catch (error) {
-        mensaje.textContent = error.message;
+        mensaje.textContent = errorText(error);
       } finally {
         if (boton.isConnected) boton.disabled = false;
       }
@@ -623,7 +624,7 @@ function mostrarFormularioEdicion(tienda) {
         mostrarMensaje('Tienda actualizada.');
         await cargarEmprendedoras();
       } catch (error) {
-        mensaje.textContent = error.message;
+        mensaje.textContent = errorText(error);
       } finally {
         if (boton.isConnected) boton.disabled = false;
       }
@@ -787,7 +788,7 @@ async function cargarAsociaciones() {
           await cargarAsociaciones();
           mostrarMensaje('Estado de la asociación actualizado.');
         } catch (error) {
-          mostrarMensaje(error.message, true);
+          mostrarMensaje(errorText(error), true);
         }
       });
     });
@@ -808,7 +809,7 @@ async function cargarAsociaciones() {
       contador.textContent = '';
       region.innerHTML =
         `<p class="error">No se pudieron cargar las asociaciones: ${
-          escapar(error.message)
+          escapar(errorText(error))
         }</p>`;
     }
   }
@@ -964,7 +965,7 @@ async function mostrarIntegrantesAsociacion(asociacion) {
 
           await mostrarIntegrantesAsociacion(asociacion);
         } catch (error) {
-          mensaje.textContent = error.message;
+          mensaje.textContent = errorText(error);
           boton.disabled = false;
         }
       });
@@ -999,7 +1000,7 @@ async function mostrarIntegrantesAsociacion(asociacion) {
 
             await mostrarIntegrantesAsociacion(asociacion);
           } catch (error) {
-            mostrarMensaje(error.message, true);
+            mostrarMensaje(errorText(error), true);
             boton.disabled = false;
           }
         });
@@ -1007,7 +1008,7 @@ async function mostrarIntegrantesAsociacion(asociacion) {
   } catch (error) {
     panel.innerHTML =
       `<p class="error">No se pudieron cargar los integrantes: ${
-        escapar(error.message)
+        escapar(errorText(error))
       }</p>`;
   }
 }
@@ -1129,7 +1130,7 @@ async function cargarLista(seccion) {
       contador.textContent = '';
       lista.innerHTML =
         `<p class="error">No se pudo cargar la lista: ${
-          escapar(error.message)
+          escapar(errorText(error))
         }</p>`;
     }
   }
@@ -1198,7 +1199,7 @@ function mostrarFormularioLista(seccion, item = null) {
 
         await cargarLista(seccion);
       } catch (error) {
-        mensaje.textContent = error.message;
+        mensaje.textContent = errorText(error);
       } finally {
         if (boton.isConnected) boton.disabled = false;
       }

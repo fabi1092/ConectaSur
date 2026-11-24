@@ -1,5 +1,6 @@
 import { icon } from './visuals.js';
 import { prepareImage } from './prepare-image.js';
+import { errorText } from './error-text.js';
 import { renderInteractiveMap, searchAddressPuertoMontt, PUERTO_MONTT_CENTER } from './fair-map.js';
 
 function esc(value = '') {
@@ -65,7 +66,7 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
       fairs = list;
       renderList();
     } catch (error) {
-      container.innerHTML = `<div class="form-card"><p class="error">${esc(error.message || 'No pudimos cargar las ferias.')}</p></div>`;
+      container.innerHTML = `<div class="form-card"><p class="error">${esc(errorText(error, 'No pudimos cargar las ferias.'))}</p></div>`;
     }
   }
 
@@ -154,7 +155,7 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
         anonMode = await db.setAnonymousNavigation(selected);
         showMessage('Configuración de navegación anónima guardada.');
       } catch (err) {
-        showMessage(err.message || 'No pudimos guardar la configuración.', true);
+        showMessage(errorText(err, 'No pudimos guardar la configuración.'), true);
       } finally {
         btn.disabled = false;
       }
@@ -202,7 +203,7 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
           showMessage('Feria eliminada.');
           await loadAll();
         } catch (err) {
-          showMessage(err.message || 'No pudimos eliminar la feria.', true);
+          showMessage(errorText(err, 'No pudimos eliminar la feria.'), true);
         }
       });
     });
@@ -214,7 +215,7 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
       showMessage(okMessage);
       await loadAll();
     } catch (err) {
-      showMessage(err.message || 'No pudimos cambiar el estado de la feria.', true);
+      showMessage(errorText(err, 'No pudimos cambiar el estado de la feria.'), true);
     }
   }
 
@@ -229,7 +230,7 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
       [rows, shops, associations] = await Promise.all([db.fairChecklist(fair.id), db.listShops(), db.listAssociations()]);
     } catch (error) {
       if (myView !== viewId) return;
-      container.innerHTML = `<div class="form-card"><button type="button" id="btn-back-fairs">${icon('back')} Volver a ferias</button><p class="error">${esc(error.message || 'No pudimos cargar los participantes.')}</p></div>`;
+      container.innerHTML = `<div class="form-card"><button type="button" id="btn-back-fairs">${icon('back')} Volver a ferias</button><p class="error">${esc(errorText(error, 'No pudimos cargar los participantes.'))}</p></div>`;
       container.querySelector('#btn-back-fairs').addEventListener('click', () => renderList());
       return;
     }
@@ -432,7 +433,7 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
         showMessage(typeof success === 'function' ? success(result) : success);
         await reload();
       } catch (err) {
-        showMessage(err.message || 'No pudimos completar la acción.', true);
+        showMessage(errorText(err, 'No pudimos completar la acción.'), true);
       } finally {
         if (button?.isConnected) button.disabled = false;
       }
@@ -613,7 +614,7 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
           });
         });
       } catch (err) {
-        addrResults.innerHTML = `<p class="hint error">${esc(err.message)}</p>`;
+        addrResults.innerHTML = `<p class="hint error">${esc(errorText(err))}</p>`;
       }
     });
 
@@ -636,7 +637,7 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
       } catch (err) {
         if (!fairImageInput.isConnected) return;
         fairImageInput.value = '';
-        fairImageStatus.textContent = err.message || 'No pudimos preparar la imagen.';
+        fairImageStatus.textContent = errorText(err, 'No pudimos preparar la imagen.');
         fairImageStatus.classList.add('error');
       }
     });
@@ -667,7 +668,7 @@ export async function showAdminFairsAndAccess(container, db, showMessage) {
         showMessage(f ? 'Feria actualizada.' : 'Feria creada.');
         await loadAll();
       } catch (err) {
-        showMessage(err.message || 'No pudimos guardar la feria.', true);
+        showMessage(errorText(err, 'No pudimos guardar la feria.'), true);
       } finally {
         if (submitBtn.isConnected) submitBtn.disabled = false;
       }
