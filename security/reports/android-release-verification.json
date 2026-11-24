@@ -1,7 +1,8 @@
 {
   "verifiedAt": "2026-11-24",
   "artifact": "ConectaSur-release-firmado.apk",
-  "sha256": "0021e8b67ba5c24b710ace7d62c5ee36ab683aff683314ce6d998608426419d0",
+  "sizeBytes": 7117187,
+  "sha256": "9e6bfaeb248066f7b1a182e7762769e9b254148e539ba640a6079890c24e3fff",
   "package": "cl.surcode.conectasur",
   "versionName": "1.0.0",
   "versionCode": 8,
@@ -16,7 +17,7 @@
   "verificationTools": ["apksigner 36.0.0", "aapt 36.0.0"],
   "mobsf": {
     "status": "pending",
-    "reason": "The local Windows environment has no Docker or Podman engine; the repository MobSF runner requires its pinned Docker image.",
+    "reason": "The local Windows environment has no Docker or Podman engine. The GitHub Actions workflow currently builds/scans a debug APK, and no local release keystore is available to reproduce this signed artifact in CI.",
     "scopeNote": "Signature and manifest metadata verification do not replace MobSF static analysis."
   }
 }
