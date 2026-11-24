@@ -357,9 +357,16 @@ class StoreActivity : FragmentActivity() {
             }
             else authenticate(true)
         }
-        findViewById<Button>(R.id.shop_products).setOnClickListener { discardIfNeeded { startActivity(Intent(this, ProductManagerActivity::class.java)) } }
-        findViewById<Button>(R.id.shop_register_sale).setOnClickListener { discardIfNeeded { startActivity(Intent(this, SalesActivity::class.java)) } }
-        findViewById<Button>(R.id.shop_history).setOnClickListener { discardIfNeeded { startActivity(Intent(this, SalesActivity::class.java).putExtra("history",true)) } }
+        findViewById<Button>(R.id.shop_open_fairs_tab)?.setOnClickListener {
+            discardIfNeeded {
+                startActivity(
+                    Intent(this, MainActivity::class.java)
+                        .putExtra("screen", "fairs")
+                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                )
+                finish()
+            }
+        }
         model.start(biometric.enabled && !BiometricStoreLock.isSessionUnlocked())
         render(model.state.value)
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { model.state.collect { render(it) } } }
@@ -602,11 +609,9 @@ class StoreActivity : FragmentActivity() {
 
     private fun renderOwnerFairCalendar(state: StoreState) {
         val summaryView = findViewById<TextView>(R.id.shop_fairs_summary) ?: return
-        val listView = findViewById<LinearLayout>(R.id.shop_fairs_list) ?: return
         val items = state.fairCalendar
         if (items.isEmpty()) {
             summaryView.text = "No hay ferias próximas disponibles por ahora."
-            listView.removeAllViews()
             focusFairsIfRequested(state)
             return
         }
@@ -614,89 +619,6 @@ class StoreActivity : FragmentActivity() {
         val invitedCount = items.count { it.status == FairParticipantStatus.INVITED }
         val rejectedCount = items.count { it.status == FairParticipantStatus.REJECTED }
         summaryView.text = "$confirmedCount confirmadas · $invitedCount invitaciones · $rejectedCount rechazadas"
-
-        val dp = resources.displayMetrics.density
-        val pad = (14 * dp).toInt()
-        listView.removeAllViews()
-        items.forEach { item ->
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(pad, pad, pad, pad)
-                background = GradientDrawable().apply {
-                    cornerRadius = 12 * dp
-                    setColor(if (item.status.isPubliclyConfirmed) 0xFFEEF6F4.toInt() else 0xFFFFFFFF.toInt())
-                    setStroke(
-                        ((if (item.status.isPubliclyConfirmed) 2f else 1f) * dp).toInt(),
-                        if (item.status.isPubliclyConfirmed) 0xFF1A7B6E.toInt() else 0xFFD3DDD9.toInt()
-                    )
-                }
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                    bottomMargin = (10 * dp).toInt()
-                }
-            }
-            card.addView(TextView(this).apply {
-                text = item.fair.name
-                textSize = 17f
-                setTypeface(null, Typeface.BOLD)
-                setTextColor(0xFF183A34.toInt())
-            })
-            val scheduleText = "${item.fair.placeName.ifBlank { "Puerto Montt" }}\n" +
-                "${item.fair.startsAt.take(16).replace('T', ' ')} a ${item.fair.endsAt.take(16).replace('T', ' ')}"
-            card.addView(TextView(this).apply {
-                text = scheduleText
-                textSize = 14f
-                setTextColor(0xFF4A6560.toInt())
-                setPadding(0, (4 * dp).toInt(), 0, (4 * dp).toInt())
-            })
-            card.addView(TextView(this).apply {
-                text = item.statusLabel
-                textSize = 14f
-                setTypeface(null, Typeface.BOLD)
-                setTextColor(
-                    when {
-                        item.status.isPubliclyConfirmed -> 0xFF155C43.toInt()
-                        item.status == FairParticipantStatus.REJECTED -> 0xFF8C1D18.toInt()
-                        else -> 0xFF8F5400.toInt()
-                    }
-                )
-            })
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                    topMargin = (10 * dp).toInt()
-                }
-            }
-            val interactive = !state.busy && !choosingLogo
-            val participateSelected = item.status.isPubliclyConfirmed
-            row.addView(Button(this).apply {
-                text = "Participo"
-                minimumHeight = (56 * dp).toInt()
-                isEnabled = interactive
-                setBackgroundResource(if (participateSelected) R.drawable.button_primary else R.drawable.button_tonal)
-                setTextColor(if (participateSelected) 0xFFFFFFFF.toInt() else 0xFF183A34.toInt())
-                contentDescription = if (participateSelected) "Participo en ${item.fair.name} (confirmada)" else "Confirmar participación en ${item.fair.name}"
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    marginEnd = (6 * dp).toInt()
-                }
-                setOnClickListener { model.respondToFair(item.fair.id, true) }
-            })
-            val rejectSelected = item.status == FairParticipantStatus.REJECTED
-            row.addView(Button(this).apply {
-                text = "No participo"
-                minimumHeight = (56 * dp).toInt()
-                isEnabled = interactive
-                setBackgroundResource(if (rejectSelected) R.drawable.button_danger_tonal else R.drawable.button_tonal)
-                setTextColor(if (rejectSelected) 0xFF8C1D18.toInt() else 0xFF183A34.toInt())
-                contentDescription = if (rejectSelected) "No participo en ${item.fair.name} (seleccionado)" else "Rechazar invitación a ${item.fair.name}"
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    marginStart = (6 * dp).toInt()
-                }
-                setOnClickListener { model.respondToFair(item.fair.id, false) }
-            })
-            card.addView(row)
-            listView.addView(card)
-        }
-        applyAccessibility(listView, presentation)
         focusFairsIfRequested(state)
     }
 
@@ -808,6 +730,9 @@ class StoreActivity : FragmentActivity() {
     }
     override fun onResume() {
         super.onResume()
+        if (::model.isInitialized && !model.state.value.locked && model.state.value.session != null && !model.hasChanges()) {
+            model.verifySession()
+        }
         scheduleAutoBiometric()
     }
     override fun onWindowFocusChanged(hasFocus: Boolean) {

@@ -33,6 +33,7 @@ abstract class OwnerActivity : FragmentActivity() {
     private var prompting=false
     private var autoPromptedLockEpoch = -1L
     private var busy=false
+    private var handlingExpiry=false
     protected abstract val titleText: String
     protected abstract fun onOwnerReady()
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -117,14 +118,25 @@ abstract class OwnerActivity : FragmentActivity() {
         unlock()
     }
     override fun onStart() { super.onStart();content.isVisible=false;if(biometric.enabled && !BiometricStoreLock.isSessionUnlocked()){status("Tu tienda está protegida. Pulsa Desbloquear con huella.");findViewById<View>(R.id.owner_unlock).isVisible=true}else{findViewById<View>(R.id.owner_unlock).isVisible=false;validate()} }
+    private fun handleExpiredSession() {
+        if (handlingExpiry || isFinishing) return
+        handlingExpiry = true
+        authorized = false
+        biometric.clear()
+        runCatching { if (RepositoryProvider.supabaseReady()) RepositoryProvider.auth().signOut() }
+        Toast.makeText(this, "Tu sesión venció. Vuelve a ingresar.", Toast.LENGTH_LONG).show()
+        startActivity(Intent(this, StoreActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+        finish()
+    }
     private fun validate() = lifecycleScope.launch {
         try {
             val session=RepositoryProvider.auth().currentSession()
             if(!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) return@launch
-            if(session?.role!=Role.EMPRENDEDORA || session.shopId.isNullOrBlank()){status("Ingresa con una cuenta de emprendedora desde Mi tienda.");return@launch}
+            if(session==null || session.role!=Role.EMPRENDEDORA || session.shopId.isNullOrBlank()){handleExpiredSession();return@launch}
             owner=session;authorized=true;content.isVisible=true;findViewById<View>(R.id.owner_unlock).isVisible=false
             onOwnerReady();applyAccessibility(content,settings)
         }catch(cancelled:CancellationException){throw cancelled}
+        catch(e:BackendException){if(e.status in listOf(401,403)) handleExpiredSession() else status(e.message?:"No pudimos comprobar tu acceso.")}
         catch(e:Exception){status(e.message?:"No pudimos comprobar tu acceso.")}
     }
     private fun unlock() {
@@ -145,7 +157,10 @@ abstract class OwnerActivity : FragmentActivity() {
         if(busy || !authorized)return
         busy=true;status(message);findViewById<View>(R.id.owner_progress).isVisible=true
         lifecycleScope.launch {
-            try{block()}catch(cancelled:CancellationException){throw cancelled}catch(e:Exception){status(e.message?:"No pudimos completar la operación. Tus datos se conservan.")}
+            try{block()}
+            catch(cancelled:CancellationException){throw cancelled}
+            catch(e:BackendException){if(e.status in listOf(401,403)) handleExpiredSession() else status(e.message?:"No pudimos completar la operación. Tus datos se conservan.")}
+            catch(e:Exception){status(e.message?:"No pudimos completar la operación. Tus datos se conservan.")}
             finally{busy=false;findViewById<View>(R.id.owner_progress).isVisible=false}
         }
     }
