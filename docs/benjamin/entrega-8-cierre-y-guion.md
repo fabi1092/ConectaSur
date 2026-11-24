@@ -16,13 +16,13 @@ Este documento consolida los entregables de cierre correspondientes a **Benjamí
 - **Configuración segura:** [android/app/build.gradle.kts](../../android/app/build.gradle.kts) lee la firma desde `android/keystore.properties` (ignorado por Git en [.gitignore](../../.gitignore)). Plantilla sin secretos en [android/keystore.properties.example](../../android/keystore.properties.example). El almacén `.jks` y las contraseñas nunca se suben al repositorio.
 
 ### Datos del artefacto generado en la compilación actual
-- **Tamaño del binario (`app-release.apk`):** `7 093 707` bytes
-- **SHA-256 del archivo APK:** `0021E8B67BA5C24B710ACE7D62C5EE36AB683AFF683314CE6D998608426419D0`
+- **Tamaño del binario (`app-release.apk`):** `7 117 187` bytes
+- **SHA-256 del archivo APK:** `9E6BFAEB248066F7B1A182E7762769E9B254148E539BA640A6079890C24E3FFF`
 - **Certificado firmante:** `CN=ConectaSur SurCode, OU=Desarrollo, O=SurCode, L=Puerto Montt, ST=Los Lagos, C=CL` (`RSA 2048`)
 - **Huella SHA-1 del certificado:** `4C:3E:B3:2A:B8:5F:33:9B:C5:88:67:35:F0:79:51:BA:59:3E:65:0D`
 - **Huella SHA-256 del certificado:** `BD:26:87:47:04:E2:13:AF:A1:35:EB:DB:DA:BE:0B:17:27:D4:A0:1C:A6:61:36:96:04:0B:E6:FB:57:5F:3D:5B`
 
-> **Importante antes de probar Google Sign-In en `release`:** registrar las huellas `SHA-1` y `SHA-256` del certificado `release` en Firebase Console (`conectasur-dev` -> Configuración del proyecto -> App Android) y compartir el archivo `app-release.apk` + su `SHA-256` con Felipe para el análisis MobSF (`C05`) y configuración de App Check (`A11`).
+> **Importante antes de probar Google Sign-In en `release`:** registrar las huellas `SHA-1` y `SHA-256` del certificado `release` en Firebase Console (`conectasur-dev` -> Configuración del proyecto -> App Android) y compartir el archivo `app-release.apk` + su `SHA-256` con Felipe para su verificación en el informe (`C05`).
 
 ---
 
@@ -96,9 +96,9 @@ Duración sugerida: 15 a 20 minutos, siguiendo el flujo natural de visitante -> 
 
 | Responsable | Tareas asignadas | Estado en `main` | Acción siguiente |
 |---|---|---|---|
-| **Benjamín** (`A01`, `A07`, `C01–C02`) | APK firmado, push en vivo, guión, integración final y tag `entrega-8` | **Parcial listo:** `A01` (configuración + APK release firmado verificado) y `C02` (guión y cuentas documentados) | Registrar SHA-1/SHA-256 `release` en Firebase Console, validar `A07` en el teléfono, esperar integraciones del equipo y crear tag `entrega-8` (`C01`) al cierre |
-| **Felipe** (`A11`, `C04–C06`) | Pruebas RLS, informe de seguridad, MobSF release y App Check | **En progreso:** `npm --prefix supabase test` con PGlite y borrador `docs/felipe/entrega-8-seguridad.md` ya en `main` | Actualizar `seguridad.yml` (`test:postgres`), incluir migración `015` en informe, analizar `app-release.apk` con MobSF (`C05`) y cerrar `A11` |
-| **Kisho** (`W01`, `W03`, `W06–W08`, `W11`) | Visor de bitácora web, verificación admin y despliegue final | Por integrar | Crear visor de bitácora (`admin_actions`), verificar `es-CL` y subir a `main` |
-| **Dan** (`W02`, `W04–W05`, `W09`, `C11`) | Privacidad en web, validación móvil/vitrina/emprendedora y `README.md` | Por integrar | Agregar enlace/sección de política de privacidad web y probar `README.md` desde cero |
-| **Alonso** (`W10`, `C03`, `C12`, `C13`) | Manuales breves, prueba con tercero y documento módulo IA | Por integrar | Subir manuales, evidencia de prueba ajena y diseño IA a `docs/` |
-| **Fabián** (`A02–A06`, `A08–A10`, `C07–C10`) | Pruebas físicas Android, casos de prueba y matriz final de requisitos | Por integrar | Completar pruebas físicas (red, letra grande, flujos) y matriz en `docs/` |
+| **Benjamín** (`A01`, `A07`, `C01–C02`) | APK firmado, push en vivo, guión, integración final y tag `entrega-8` | **Parcial listo:** `A01` (APK `release` `9E6BFAEB...24E3FFF` verificado) y `C02` (guión y cuentas documentados) | Validar `A07` push en vivo en el teléfono, esperar integraciones de `Dan` y `Fabián` y crear tag `entrega-8` (`C01`) al cierre |
+| **Felipe** (`A11`, `C04–C06`) | Pruebas RLS, informe de seguridad, MobSF release y App Check | **Actualizado (`3e7c06b`):** `105/106` PGlite, `46/46` web, OSV sin avisos y verificación `apksigner` del APK definitivo en `docs/felipe/entrega-8-seguridad.md` | Documentado límite de `A11` en Supabase del curso y pendiente de MobSF `release` (`C05`) sin Docker local |
+| **Kisho** (`W01`, `W03`, `W06–W08`, `W11`) | Visor de bitácora web, verificación admin y despliegue final | **Integrado y publicado (`ff09503`):** bitácora administrativa (`W08`) y errores `es-CL` (`W11`) vivos en `https://conectasur-dev.web.app` | Dejar respaldo de logs en caso de consulta por SMTP externo en `W06` |
+| **Dan** (`W02`, `W04–W05`, `W09`, `C11`) | Privacidad en web, validación móvil/vitrina/emprendedora y `README.md` | Por integrar | Agregar aviso de política de datos personales en la web (`W09`) y actualizar `README.md` desde cero (`C11`) |
+| **Alonso** (`W10`, `C03`, `C12`, `C13`) | Manuales breves, prueba con tercero y documento módulo IA | **Documentación en `main`:** [manual-emprendedora.md](../Alonso/manual-emprendedora.md), [manual-administrador.md](../Alonso/manual-administrador.md) y [modulo-ia-desacoplado.md](../Alonso/modulo-ia-desacoplado.md) | Ejecutar validación práctica de `W10` en sala con persona ajena al grupo siguiendo el manual |
+| **Fabián** (`A02–A06`, `A08–A10`, `C07–C10`) | Pruebas físicas Android, casos de prueba y matriz final de requisitos | Por integrar | Completar pruebas físicas (red, letra grande, flujos), casos de prueba (`C07`) y matriz final (`C08–C10`) en `docs/` |
