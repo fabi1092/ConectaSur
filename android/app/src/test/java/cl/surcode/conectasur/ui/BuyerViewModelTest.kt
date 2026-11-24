@@ -234,6 +234,21 @@ class BuyerViewModelTest {
         assertFalse(vm.state.value.busy)
     }
 
+    @Test fun expireSessionClearsActiveSessionAndShowsNotice() = runTest(dispatcher) {
+        auth.session = buyer
+        val vm = model()
+        vm.start(); advanceUntilIdle()
+        assertEquals(buyer, vm.state.value.session)
+
+        vm.expireSession()
+
+        assertNull(vm.state.value.session)
+        assertNull(auth.session)
+        assertEquals(1, auth.logouts)
+        assertTrue(vm.state.value.sessionChecked)
+        assertTrue(vm.state.value.message.contains("venció"))
+    }
+
     private inner class FakeAuth : AuthRepository {
         var session: Session? = null
         var enabled = true

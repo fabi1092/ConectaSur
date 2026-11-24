@@ -10,6 +10,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.CancellationException
@@ -38,7 +39,14 @@ class FirebaseBuyerAuth(private val context: Context) {
             }
             return Session("firebase:${user.uid}", user.email, Role.COMPRADOR, null)
         } catch (cancelled: CancellationException) { throw cancelled }
-        catch (error: FirebaseAuthInvalidUserException) { auth.signOut(); throw IllegalStateException("Tu sesión de Google terminó. Vuelve a ingresar.") }
+        catch (error: FirebaseAuthInvalidUserException) {
+            auth.signOut()
+            throw BackendException(401, "Tu sesión de Google venció. Vuelve a ingresar.")
+        }
+        catch (error: FirebaseAuthInvalidCredentialsException) {
+            auth.signOut()
+            throw BackendException(401, "Tu sesión de Google venció. Vuelve a ingresar.")
+        }
         catch (error: IllegalStateException) { auth.signOut(); throw error }
         catch (error: FirebaseNetworkException) { throw java.io.IOException("No pudimos comprobar tu cuenta. Revisa tu conexión.", error) }
     }

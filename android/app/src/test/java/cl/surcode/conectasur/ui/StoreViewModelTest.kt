@@ -489,13 +489,60 @@ class StoreViewModelTest {
         assertFalse(reopened.draft!!.allowRatings)
     }
 
+    @Test fun verifySessionAutoClosesWhenSessionExpiresOrReturnsUnauthorized() = runTest(dispatcher) {
+        auth.session = owner
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        vm.edit(initial.copy(name = "Cambio pendiente"))
+
+        auth.session = null
+        vm.verifySession()
+        advanceUntilIdle()
+        assertNull(vm.state.value.session)
+        assertNull(vm.state.value.shop)
+        assertNull(vm.draft)
+        assertTrue(vm.state.value.error)
+        assertTrue(vm.state.value.message.contains("venció"))
+
+        auth.session = owner
+        val vm2 = model()
+        vm2.start(false)
+        advanceUntilIdle()
+        auth.sessionFailure = BackendException(401, "Token expirado")
+        vm2.verifySession()
+        advanceUntilIdle()
+        assertNull(vm2.state.value.session)
+        assertNull(auth.session)
+        assertTrue(vm2.state.value.error)
+        assertTrue(vm2.state.value.message.contains("venció"))
+    }
+
+    @Test fun verifySessionPreservesSessionAndDraftWhenNetworkFails() = runTest(dispatcher) {
+        auth.session = owner
+        val vm = model()
+        vm.start(false)
+        advanceUntilIdle()
+        val edited = initial.copy(name = "Borrador sin red")
+        vm.edit(edited)
+
+        auth.sessionFailure = IOException("Sin conexión")
+        vm.verifySession()
+        advanceUntilIdle()
+
+        assertEquals(owner, vm.state.value.session)
+        assertEquals(edited, vm.draft)
+        assertFalse(vm.state.value.error)
+    }
+
     private inner class FakeAuth : AuthRepository {
         var session: Session? = null
         var nextSession = owner
         var lastEmail = ""
         var sessionReads = 0
+        var sessionFailure: Exception? = null
         override suspend fun signIn(email: String, password: String): Session { lastEmail = email; session = nextSession; return nextSession }
-        override suspend fun currentSession(): Session? { sessionReads++; return session }
+        override suspend fun currentSession(): Session? { sessionReads++; sessionFailure?.let { throw it }; return session }
         override fun signOut() { session = null }
     }
     private inner class FakeShops : ShopRepository {

@@ -285,6 +285,9 @@ class MainActivity : FragmentActivity() {
                     while (isActive) {
                         repository.refresh()
                         try { RepositoryProvider.syncPendingOwner() } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) {}
+                        if (buyerModel.state.value.session != null && !buyerModel.state.value.demo && !buyerModel.state.value.busy) {
+                            buyerModel.refresh()
+                        }
                         refreshNotifications()
                         delay(15000)
                     }
@@ -315,9 +318,18 @@ class MainActivity : FragmentActivity() {
                                 }
                             }
                         }
+                        val previousUid = lastObservedSessionUid
                         val observedUid = state.session?.uid
-                        if (observedUid != lastObservedSessionUid) {
+                        if (observedUid != previousUid) {
                             lastObservedSessionUid = observedUid
+                            if (previousUid != null && observedUid == null) {
+                                biometric.clear()
+                                if (state.message.contains("venció", ignoreCase = true) ||
+                                    state.message.contains("terminó", ignoreCase = true)
+                                ) {
+                                    Toast.makeText(this@MainActivity, state.message, Toast.LENGTH_LONG).show()
+                                }
+                            }
                             refreshEngagementAfterSessionChange()
                             if (current.screen == "fairs") loadOwnerFairsInTab()
                         }
@@ -586,6 +598,8 @@ class MainActivity : FragmentActivity() {
             setText(accountLabel(state))
             isEnabled = !state.busy && !state.awaitingGoogle && !state.demo
         }
+        findViewById<Button>(R.id.nav_catalog)?.text =
+            if (state.session?.role == Role.EMPRENDEDORA) "Mis productos" else getString(R.string.products)
         renderNotificationsBadge()
         if (::page.isInitialized) page.findViewById<TextView>(R.id.catalog_mode)?.setText(when {
             state.session == null -> R.string.buyer_public_mode
@@ -593,71 +607,20 @@ class MainActivity : FragmentActivity() {
             else -> R.string.public_catalog_mode
         })
     }
-    private var homeCategory = ""
+    private var catalogCategory = ""
     private fun bindHome() {
-        page.findViewById<Button>(R.id.open_catalog)?.setOnClickListener { shopFilter = null; query = ""; navigate(Destination("catalog")) }
+        page.findViewById<Button>(R.id.open_catalog)?.setOnClickListener { shopFilter = null; query = ""; catalogCategory = ""; navigate(Destination("catalog")) }
+        page.findViewById<Button>(R.id.home_open_stores)?.setOnClickListener { navigate(Destination("directory")) }
+        page.findViewById<Button>(R.id.home_open_fairs)?.setOnClickListener { navigate(Destination("fairs")) }
         page.findViewById<Button>(R.id.open_store)?.setOnClickListener { openAccount() }
         page.findViewById<Button>(R.id.open_settings)?.setOnClickListener { navigate(Destination("settings")) }
-        val homeSearch = page.findViewById<EditText>(R.id.home_search_input)
-        homeSearch?.setText(query)
-        homeSearch?.doAfterTextChanged { query = it.toString(); renderHomeProducts() }
-        homeSearch?.setOnEditorActionListener { view, action, _ ->
-            if (action == EditorInfo.IME_ACTION_SEARCH) {
-                (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
-                view.clearFocus(); true
-            } else false
-        }
-        page.findViewById<Button>(R.id.home_voice_search)?.setOnClickListener {
-            try {
-                BiometricStoreLock.suppressNextBackgroundLock()
-                voiceSearchLauncher.launch(
-                    Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                        .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                        .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-CL")
-                        .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
-                )
-            } catch (_: Exception) {
-                BiometricStoreLock.clearBackgroundLockSuppression()
-                Toast.makeText(this, "El buscador por voz no está disponible en este teléfono.", Toast.LENGTH_LONG).show()
-            }
-        }
-        val chips = listOf(
-            R.id.home_cat_all to "",
-            R.id.home_cat_tejidos to "Tejido",
-            R.id.home_cat_madera to "Madera",
-            R.id.home_cat_reposteria to "Repostería",
-            R.id.home_cat_conservas to "Conserva"
-        )
-        fun refreshChipStyles() {
-            val dp = resources.displayMetrics.density
-            chips.forEach { (id, cat) ->
-                val btn = page.findViewById<Button>(id) ?: return@forEach
-                val active = homeCategory == cat
-                btn.background = android.graphics.drawable.GradientDrawable().apply {
-                    cornerRadius = 999 * dp
-                    setColor(if (active) 0xFF1A7B6E.toInt() else 0xFFFFFFFF.toInt())
-                    setStroke((1 * dp).toInt(), if (active) 0xFF1A7B6E.toInt() else 0xFFD3DDD9.toInt())
-                }
-                btn.setTextColor(if (active) 0xFFFFFFFF.toInt() else 0xFF183A34.toInt())
-            }
-        }
-        chips.forEach { (id, cat) ->
-            page.findViewById<Button>(id)?.setOnClickListener {
-                homeCategory = cat
-                refreshChipStyles()
-                renderHomeProducts()
-            }
-        }
-        refreshChipStyles()
         bindHomeBuyerAccess()
         renderHomeProducts()
     }
     private fun renderHomeProducts() {
         val list = page.findViewById<LinearLayout>(R.id.home_product_list) ?: return
-        val combinedQuery = listOf(homeCategory, query).filter { it.isNotBlank() }.joinToString(" ")
-        val filtered = searchProducts(products, combinedQuery)
-        page.findViewById<TextView>(R.id.home_products_count)?.text = "${filtered.size} disponibles"
-        renderProductGrid(list, filtered.take(8))
+        page.findViewById<TextView>(R.id.home_products_count)?.text = "${products.size} disponibles"
+        renderProductGrid(list, products.take(2))
     }
     private fun bindHomeBuyerAccess() {
         page.findViewById<Button>(R.id.buyer_demo_login).setOnClickListener { buyerModel.enterDemo() }
@@ -679,17 +642,19 @@ class MainActivity : FragmentActivity() {
                 if (isOwner) startActivity(Intent(this@MainActivity, ProductManagerActivity::class.java))
             }
         }
+        page.findViewById<View>(R.id.home_buyer_hub)?.isVisible = !isOwner
+        page.findViewById<View>(R.id.home_featured_section)?.isVisible = !isOwner
         page.findViewById<View>(R.id.home_owner_actions)?.apply {
             isVisible = isOwner
             if (isOwner) {
-                page.findViewById<Button>(R.id.home_owner_manage_products)?.setOnClickListener {
-                    startActivity(Intent(this@MainActivity, ProductManagerActivity::class.java))
-                }
                 page.findViewById<Button>(R.id.home_owner_sales)?.setOnClickListener {
                     startActivity(Intent(this@MainActivity, SalesActivity::class.java))
                 }
                 page.findViewById<Button>(R.id.home_owner_history)?.setOnClickListener {
                     startActivity(Intent(this@MainActivity, SalesActivity::class.java).putExtra("history", true))
+                }
+                page.findViewById<Button>(R.id.home_owner_messages)?.setOnClickListener {
+                    startActivity(Intent(this@MainActivity, ShopInboxActivity::class.java))
                 }
                 page.findViewById<Button>(R.id.home_owner_fairs)?.setOnClickListener {
                     navigate(Destination("fairs"))
@@ -730,6 +695,34 @@ class MainActivity : FragmentActivity() {
                 startActivity(Intent(this@MainActivity, ProductManagerActivity::class.java))
             }
         }
+        val chips = listOf(
+            R.id.catalog_cat_all to "",
+            R.id.catalog_cat_tejidos to "Tejido",
+            R.id.catalog_cat_madera to "Madera",
+            R.id.catalog_cat_reposteria to "Repostería",
+            R.id.catalog_cat_conservas to "Conserva"
+        )
+        fun refreshChipStyles() {
+            val dp = resources.displayMetrics.density
+            chips.forEach { (id, cat) ->
+                val btn = page.findViewById<Button>(id) ?: return@forEach
+                val active = catalogCategory == cat
+                btn.background = GradientDrawable().apply {
+                    cornerRadius = 999 * dp
+                    setColor(if (active) 0xFF1A7B6E.toInt() else 0xFFFFFFFF.toInt())
+                    setStroke((1 * dp).toInt(), if (active) 0xFF1A7B6E.toInt() else 0xFFD3DDD9.toInt())
+                }
+                btn.setTextColor(if (active) 0xFFFFFFFF.toInt() else 0xFF183A34.toInt())
+            }
+        }
+        chips.forEach { (id, cat) ->
+            page.findViewById<Button>(id)?.setOnClickListener {
+                catalogCategory = cat
+                refreshChipStyles()
+                renderProducts()
+            }
+        }
+        refreshChipStyles()
         val search = page.findViewById<EditText>(R.id.search_input)
         search.setText(query)
         search.setSelection(query.length)
@@ -754,7 +747,11 @@ class MainActivity : FragmentActivity() {
                 Toast.makeText(this, "El buscador por voz no está disponible en este teléfono.", Toast.LENGTH_LONG).show()
             }
         }
-        page.findViewById<Button>(R.id.clear_search).setOnClickListener { search.text.clear() }
+        page.findViewById<Button>(R.id.clear_search).setOnClickListener {
+            catalogCategory = ""
+            refreshChipStyles()
+            search.text.clear()
+        }
         renderProducts()
     }
     private fun bindCatalogStatus() {
@@ -770,13 +767,14 @@ class MainActivity : FragmentActivity() {
         PublicImageLoader.load(lifecycleScope, image, product.photo, BuildConfig.SUPABASE_URL)
     }
     private fun renderProducts() {
-        val filtered = searchProducts(products.filter { shopFilter == null || it.shopId == shopFilter }, query)
+        val combinedQuery = listOf(catalogCategory, query).filter { it.isNotBlank() }.joinToString(" ")
+        val filtered = searchProducts(products.filter { shopFilter == null || it.shopId == shopFilter }, combinedQuery)
         val list = page.findViewById<LinearLayout>(R.id.product_list) ?: return
-        page.findViewById<Button>(R.id.clear_search).isVisible = query.isNotEmpty()
+        page.findViewById<Button>(R.id.clear_search).isVisible = query.isNotEmpty() || catalogCategory.isNotEmpty()
         page.findViewById<TextView>(R.id.results_count).text = resources.getQuantityString(R.plurals.product_count, filtered.size, filtered.size)
         page.findViewById<TextView>(R.id.empty_message).apply {
             isVisible = filtered.isEmpty()
-            setText(if (query.isBlank()) R.string.empty_catalog else R.string.empty_search)
+            setText(if (combinedQuery.isBlank()) R.string.empty_catalog else R.string.empty_search)
         }
         renderProductGrid(list, filtered)
     }
@@ -1216,8 +1214,15 @@ class MainActivity : FragmentActivity() {
         applyAccessibility(list, prefs.read())
     }
     private fun screenSpeech(): String = when(current.screen) {
-            "home" -> "ConectaSur. Tu tienda, más cerca. Puedes ver productos sin una cuenta. En Ingresar, usa tu correo y contraseña para abrir tu cuenta de comprador o tu tienda, según tu perfil. También puedes ajustar letras y botones."
-        "catalog" -> "Catálogo de productos. Puedes explorar sin iniciar sesión. " + searchProducts(products, query).joinToString(". ") { "${it.name}. ${spokenPrice(it.priceClp)}" }.ifBlank { getString(R.string.empty_search) }
+            "home" -> if (buyerModel.state.value.session?.role == Role.EMPRENDEDORA) {
+                "ConectaSur. Inicio de emprendedora. Desde aquí puedes registrar ventas, revisar tu historial, abrir mensajes o ir a Mis productos abajo."
+            } else {
+                "ConectaSur. Tu tienda, más cerca. Explora productos locales, tiendas y ferias sin necesidad de cuenta, o ingresa en Tu cuenta."
+            }
+        "catalog" -> {
+            val combinedQuery = listOf(catalogCategory, query).filter { it.isNotBlank() }.joinToString(" ")
+            "Catálogo de productos. Puedes explorar sin iniciar sesión. " + searchProducts(products, combinedQuery).joinToString(". ") { "${it.name}. ${spokenPrice(it.priceClp)}" }.ifBlank { getString(R.string.empty_search) }
+        }
         "detail" -> products.find { it.id == current.productId }?.let { "${it.name}. ${spokenPrice(it.priceClp)}. ${it.description}. Nombre y precio de ejemplo." } ?: getString(R.string.product_missing)
         "public_store" -> "Emprendimiento de ejemplo. Aquí puedes ver el catálogo público."
         "directory" -> "Directorio de tiendas y asociaciones locales."
@@ -1702,7 +1707,13 @@ class MainActivity : FragmentActivity() {
             page.findViewById<TextView>(R.id.fairs_owner_summary)?.text = "Cargando tus invitaciones..."
         }
         lifecycleScope.launch {
-            val loaded = runCatching { RepositoryProvider.shops().listOwnerFairCalendar(shopId) }.getOrNull()
+            val result = runCatching { RepositoryProvider.shops().listOwnerFairCalendar(shopId) }
+            val err = result.exceptionOrNull()
+            if (err is BackendException && err.status in listOf(401, 403)) {
+                buyerModel.expireSession()
+                return@launch
+            }
+            val loaded = result.getOrNull()
             if (loaded != null) ownerFairs = loaded
             if (current.screen == "fairs" && buyerModel.state.value.session?.shopId == shopId) {
                 renderOwnerFairsInTab(shopId)
@@ -1817,6 +1828,10 @@ class MainActivity : FragmentActivity() {
                 Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                 if (current.screen == "fairs") renderOwnerFairsInTab(shopId)
             }.onFailure { err ->
+                if (err is BackendException && err.status in listOf(401, 403)) {
+                    buyerModel.expireSession()
+                    return@onFailure
+                }
                 Toast.makeText(this@MainActivity, err.message ?: "No pudimos guardar tu respuesta.", Toast.LENGTH_SHORT).show()
             }
         }
@@ -2212,7 +2227,13 @@ class MainActivity : FragmentActivity() {
             renderNotificationsBadge()
             return
         }
-        val loaded = runCatching { RepositoryProvider.push().listNotifications(50) }.getOrNull() ?: return
+        val result = runCatching { RepositoryProvider.push().listNotifications(50) }
+        val err = result.exceptionOrNull()
+        if (err is BackendException && err.status in listOf(401, 403)) {
+            buyerModel.expireSession()
+            return
+        }
+        val loaded = result.getOrNull() ?: return
         appNotifications = loaded
         renderNotificationsBadge()
         if (current.screen == "notifications") renderNotificationsScreen()

@@ -48,7 +48,13 @@ class SupabaseClient(val url: String, private val anonKey: String, val store: Se
             if (storedSession()?.optString("refresh_token") != previous.optString("refresh_token")) throw BackendException(401, "La sesion cambio")
             if (!result.has("expires_at")) result.put("expires_at", System.currentTimeMillis() / 1000 + result.getLong("expires_in"))
             store.write("auth", result.toString()); result.getString("access_token")
-        } catch (e: BackendException) { if (e.status in 400..403 && storedSession()?.optString("refresh_token") == previous.optString("refresh_token")) clearSession(); throw e }
+        } catch (e: BackendException) {
+            if (e.status in 400..403) {
+                if (storedSession()?.optString("refresh_token") == previous.optString("refresh_token")) clearSession()
+                throw BackendException(401, "Tu sesión venció. Vuelve a ingresar.")
+            }
+            throw e
+        }
     }
     suspend fun signIn(email: String, password: String): Session {
         val result = request("/auth/v1/token?grant_type=password", "POST", JSONObject().put("email", email.trim()).put("password", password)) as JSONObject

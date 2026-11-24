@@ -233,6 +233,30 @@ class StoreViewModel(private val auth: AuthRepository, private val shops: ShopRe
 
     fun lock() { lockVersion++; mutable.value = mutable.value.copy(locked = true) }
     fun unlock() { if (mutable.value.locked) restoreSession(lockVersion) }
+    fun verifySession() {
+        val current = mutable.value
+        if (current.session == null || current.busy || current.locked) return
+        viewModelScope.launch {
+            try {
+                val active = auth.currentSession()
+                if (active == null || active.uid != current.session.uid) {
+                    auth.signOut()
+                    clearDraft()
+                    mutable.value = StoreState(message = "Tu sesión venció. Vuelve a ingresar.", error = true)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: IOException) {
+                // Sin conexión conserva la sesión local hasta que vuelva Internet.
+            } catch (error: BackendException) {
+                if (error.status in listOf(401, 403)) {
+                    auth.signOut()
+                    clearDraft()
+                    mutable.value = StoreState(message = "Tu sesión venció. Vuelve a ingresar.", error = true)
+                }
+            }
+        }
+    }
     fun message(value: String, error: Boolean = false) { mutable.value = mutable.value.copy(message = value, error = error) }
     fun logout(message: String = "Sesión cerrada en este teléfono.") {
         operationId++

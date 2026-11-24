@@ -121,6 +121,15 @@ class BuyerViewModel(private val auth: AuthRepository?, private val demoStore: D
         demoStore.setActive(false)
         mutable.value = BuyerState(sessionChecked = true, message = "Sesión cerrada. Continúas como visitante.")
     }
+    fun expireSession(reason: String = "Tu sesión venció. Vuelve a ingresar.") {
+        if (mutable.value.session == null && !mutable.value.demo) return
+        generation++
+        job?.cancel()
+        auth?.cancelGoogleSignIn()
+        auth?.signOut()
+        demoStore.setActive(false)
+        mutable.value = BuyerState(sessionChecked = true, message = reason)
+    }
     /** La pantalla común asume el acceso; una consulta anterior no puede reemplazar su resultado. */
     fun pauseForAccountAccess() {
         generation++
@@ -150,6 +159,7 @@ class BuyerViewModel(private val auth: AuthRepository?, private val demoStore: D
                 if (error is BackendException && error.status in listOf(401, 403)) {
                     auth?.signOut()
                     auth?.cancelGoogleSignIn()
+                    demoStore.setActive(false)
                     mutable.value = BuyerState(sessionChecked = true, message = "Tu sesión terminó o fue desactivada. Vuelve a ingresar.")
                     return@launch
                 }

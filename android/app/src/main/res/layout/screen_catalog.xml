@@ -139,6 +139,59 @@
                 android:text="Voz" />
         </LinearLayout>
 
+        <!-- Chips de categoría en Productos -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/catalog_cat_all"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Todas" />
+
+                <Button
+                    android:id="@+id/catalog_cat_tejidos"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Tejidos" />
+
+                <Button
+                    android:id="@+id/catalog_cat_madera"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Madera" />
+
+                <Button
+                    android:id="@+id/catalog_cat_reposteria"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Repostería" />
+
+                <Button
+                    android:id="@+id/catalog_cat_conservas"
+                    style="@style/ConectaSur.Button.Compact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Conservas" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
         <Button
             android:id="@+id/clear_search"
             style="@style/ConectaSur.Button.Compact"
