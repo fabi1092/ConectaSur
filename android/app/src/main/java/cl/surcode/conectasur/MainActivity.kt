@@ -101,6 +101,8 @@ class MainActivity : FragmentActivity() {
     private var dirSectorFilter = ""
     private var dirAssocFilter = ""
     private var publicFairs = emptyList<PublicFair>()
+    private var ownerFairs = emptyList<OwnerFairCalendarItem>()
+    private var appNotifications = emptyList<AppNotification>()
     private var fairsGpsActive = false
     private var userLat: Double? = null
     private var userLng: Double? = null
@@ -234,6 +236,7 @@ class MainActivity : FragmentActivity() {
         }
         findViewById<Button>(R.id.back_button).setOnClickListener { goBack() }
         findViewById<Button>(R.id.large_menu).setOnClickListener { openLargeMenu() }
+        findViewById<ImageButton>(R.id.notifications_bell)?.setOnClickListener { navigate(Destination("notifications")) }
         findViewById<Button>(R.id.main_account).setOnClickListener { openAccount() }
         findViewById<Button>(R.id.nav_home).setOnClickListener { navigate(Destination("home"), clear = true) }
         findViewById<Button>(R.id.nav_catalog).setOnClickListener {
@@ -254,6 +257,8 @@ class MainActivity : FragmentActivity() {
         when (intent?.getStringExtra("screen")) {
             "help" -> navigate(Destination("help"))
             "settings" -> navigate(Destination("settings"))
+            "notifications" -> navigate(Destination("notifications"))
+            "fairs" -> navigate(Destination("fairs"))
         }
         val root = findViewById<View>(R.id.main_root)
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
@@ -276,7 +281,14 @@ class MainActivity : FragmentActivity() {
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch { while (isActive) { repository.refresh(); try { RepositoryProvider.syncPendingOwner() } catch(cancelled:CancellationException){throw cancelled} catch(_:Exception){}; delay(15000) } }
+                launch {
+                    while (isActive) {
+                        repository.refresh()
+                        try { RepositoryProvider.syncPendingOwner() } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) {}
+                        refreshNotifications()
+                        delay(15000)
+                    }
+                }
                 launch { repository.status.collect { if (current.screen == "catalog") bindCatalogStatus() } }
                 launch {
                     buyerModel.state.collect { state ->
@@ -284,11 +296,19 @@ class MainActivity : FragmentActivity() {
                         checkAnonymousGate(state)
                         if (current.screen == "home") renderHomeBuyerState(state)
                         if (current.screen == "settings") refreshFollowingSettingsCard()
+                        if (state.session == null || state.demo) {
+                            appNotifications = emptyList()
+                            ownerFairs = emptyList()
+                            renderNotificationsBadge()
+                        } else {
+                            renderNotificationsBadge()
+                        }
                         state.session?.let { session ->
                             applyPendingFollowIfNeeded(session)
                             if (RepositoryProvider.supabaseReady() && !state.demo) {
                                 lifecycleScope.launch {
                                     runCatching { RepositoryProvider.follows(applicationContext).listFollows(session.uid) }
+                                    refreshNotifications()
                                 }
                                 if (NotificationConsentStore(this@MainActivity).isConsented()) {
                                     FirebasePushManager.fetchAndStoreToken(this@MainActivity)
@@ -299,6 +319,7 @@ class MainActivity : FragmentActivity() {
                         if (observedUid != lastObservedSessionUid) {
                             lastObservedSessionUid = observedUid
                             refreshEngagementAfterSessionChange()
+                            if (current.screen == "fairs") loadOwnerFairsInTab()
                         }
                         state.launchUrl?.let { url ->
                             buyerModel.browserLaunched()
@@ -327,6 +348,8 @@ class MainActivity : FragmentActivity() {
         when (intent.getStringExtra("screen")) {
             "help" -> navigate(Destination("help"))
             "settings" -> navigate(Destination("settings"))
+            "notifications" -> navigate(Destination("notifications"))
+            "fairs" -> navigate(Destination("fairs"))
             "home" -> navigate(Destination("home"), clear = true)
         }
     }
@@ -343,16 +366,18 @@ class MainActivity : FragmentActivity() {
         intent?.removeExtra(FirebasePushManager.EXTRA_FAIR_ID)
         intent?.removeExtra(FirebasePushManager.EXTRA_FAIR_NAME)
         intent?.removeExtra(FirebasePushManager.EXTRA_SHOP_ID)
+        if (RepositoryProvider.supabaseReady()) {
+            lifecycleScope.launch { refreshNotifications() }
+        }
         when {
             pushType in listOf("invitation", "fair_invitation", "fair_notice", "fair_cancelled") -> {
-                accountAccess.launch(
-                    Intent(this, StoreActivity::class.java).putExtra(StoreActivity.EXTRA_FOCUS_FAIRS, true)
-                )
+                navigate(Destination("fairs"))
             }
             pushType == "contact" -> {
                 startActivity(Intent(this, ShopInboxActivity::class.java))
             }
-            !fairId.isNullOrBlank() || pushType in listOf("follow_fair_confirmed", "followed_fair") -> navigate(Destination("fairs"))
+            !fairId.isNullOrBlank() -> navigate(Destination("fair_detail", fairId))
+            pushType in listOf("follow_fair_confirmed", "followed_fair") -> navigate(Destination("fairs"))
             !shopId.isNullOrBlank() -> navigate(Destination("public_store", shopId))
         }
     }
@@ -382,7 +407,10 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         if (::buyerModel.isInitialized) buyerModel.refresh()
-        lifecycleScope.launch { repository.refresh() }
+        lifecycleScope.launch {
+            repository.refresh()
+            refreshNotifications()
+        }
         scheduleEntryBiometricCheck()
     }
 
@@ -494,6 +522,8 @@ class MainActivity : FragmentActivity() {
             "public_store" -> R.layout.screen_store
             "directory", "association_detail" -> R.layout.screen_directory
             "fairs" -> R.layout.screen_fairs
+            "fair_detail" -> R.layout.screen_fair_detail
+            "notifications" -> R.layout.screen_notifications
             "settings" -> R.layout.screen_settings
             "help" -> R.layout.screen_help
             "sales" -> R.layout.screen_sales
@@ -513,7 +543,8 @@ class MainActivity : FragmentActivity() {
             findViewById<Button>(id).apply {
                 isSelected = current.screen == screen ||
                     (screen == "catalog" && current.screen == "detail") ||
-                    (screen == "directory" && current.screen in listOf("association_detail", "public_store"))
+                    (screen == "directory" && current.screen in listOf("association_detail", "public_store")) ||
+                    (screen == "fairs" && current.screen == "fair_detail")
                 ViewCompat.setStateDescription(this, if (isSelected) "Pantalla actual" else null)
             }
         }
@@ -525,6 +556,8 @@ class MainActivity : FragmentActivity() {
             "directory" -> bindDirectory()
             "association_detail" -> bindAssociationDetail()
             "fairs" -> bindFairs()
+            "fair_detail" -> bindFairDetail()
+            "notifications" -> bindNotifications()
             "settings" -> bindSettings()
             "help" -> page.findViewById<Button>(R.id.open_settings).setOnClickListener { navigate(Destination("settings")) }
             "sales" -> page.findViewById<Button>(R.id.go_home).setOnClickListener { navigate(Destination("home"), true) }
@@ -553,6 +586,7 @@ class MainActivity : FragmentActivity() {
             setText(accountLabel(state))
             isEnabled = !state.busy && !state.awaitingGoogle && !state.demo
         }
+        renderNotificationsBadge()
         if (::page.isInitialized) page.findViewById<TextView>(R.id.catalog_mode)?.setText(when {
             state.session == null -> R.string.buyer_public_mode
             state.session.role == Role.COMPRADOR -> R.string.account_buyer_title
@@ -656,6 +690,9 @@ class MainActivity : FragmentActivity() {
                 }
                 page.findViewById<Button>(R.id.home_owner_history)?.setOnClickListener {
                     startActivity(Intent(this@MainActivity, SalesActivity::class.java).putExtra("history", true))
+                }
+                page.findViewById<Button>(R.id.home_owner_fairs)?.setOnClickListener {
+                    navigate(Destination("fairs"))
                 }
             }
         }
@@ -1186,6 +1223,8 @@ class MainActivity : FragmentActivity() {
         "directory" -> "Directorio de tiendas y asociaciones locales."
         "association_detail" -> "Detalle de asociación y emprendimientos asociados."
         "fairs" -> "Próximas ferias en Puerto Montt y Alerce."
+        "fair_detail" -> "Detalle y participantes confirmadas de la feria."
+        "notifications" -> "Centro de avisos e invitaciones recientes."
         "settings" -> "A tu medida. Cambia las letras a normal, grande o muy grande. Activa botones más grandes o mayor contraste. La lectura puede ser normal o más lenta."
         "sales" -> getString(R.string.sales_pending)
         else -> getString(R.string.help_navigation) + ". " + getString(R.string.help_reading) + ". " + getString(R.string.help_talkback)
@@ -1484,7 +1523,30 @@ class MainActivity : FragmentActivity() {
             minimumHeight = (56 * dp).toInt()
             setOnClickListener { navigate(Destination("public_store", shop.id)) }
         }
-        card.addView(TextView(this).apply {
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        val logoSize = (48 * dp).toInt()
+        val logoView = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(logoSize, logoSize).apply {
+                marginEnd = (12 * dp).toInt()
+            }
+            setBackgroundResource(R.drawable.photo_frame_bg)
+            val imgPad = (4 * dp).toInt()
+            setPadding(imgPad, imgPad, imgPad, imgPad)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            setImageResource(R.drawable.ic_shop_logo)
+        }
+        if (RepositoryProvider.supabaseReady()) {
+            PublicImageLoader.load(lifecycleScope, logoView, shop.logoUrl, BuildConfig.SUPABASE_URL)
+        }
+        header.addView(logoView)
+        val titleCol = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        titleCol.addView(TextView(this).apply {
             text = shop.name.ifBlank { "Tienda local" }
             textSize = 18f
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -1492,20 +1554,22 @@ class MainActivity : FragmentActivity() {
         })
         val meta = listOf(shop.entrepreneurType, shop.sector).filter { it.isNotBlank() }.joinToString(" · ")
         if (meta.isNotBlank()) {
-            card.addView(TextView(this).apply {
+            titleCol.addView(TextView(this).apply {
                 text = meta
                 textSize = 14f
                 setTextColor(0xFF1A7B6E.toInt())
-                setPadding(0, (4 * dp).toInt(), 0, 0)
+                setPadding(0, (2 * dp).toInt(), 0, 0)
             })
         }
+        header.addView(titleCol)
+        card.addView(header)
         if (shop.description.isNotBlank()) {
             card.addView(TextView(this).apply {
                 text = shop.description
                 textSize = 14f
                 maxLines = 2
                 setTextColor(0xFF4A6560.toInt())
-                setPadding(0, (4 * dp).toInt(), 0, 0)
+                setPadding(0, (8 * dp).toInt(), 0, 0)
             })
         }
         if (engagementStore.isFollowing(currentBuyerId(), FollowTargetType.SHOP, shop.id)) {
@@ -1609,6 +1673,7 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun bindFairs() {
+        loadOwnerFairsInTab()
         page.findViewById<Button>(R.id.fairs_enable_gps).setOnClickListener {
             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
@@ -1619,6 +1684,141 @@ class MainActivity : FragmentActivity() {
             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         } else {
             loadAndRenderFairs(hasPerm)
+        }
+    }
+
+    private fun loadOwnerFairsInTab() {
+        val section = page.findViewById<View>(R.id.fairs_owner_section) ?: return
+        val session = buyerModel.state.value.session
+        val shopId = session?.shopId
+        if (session?.role != Role.EMPRENDEDORA || shopId.isNullOrBlank() || !RepositoryProvider.supabaseReady()) {
+            section.isVisible = false
+            return
+        }
+        section.isVisible = true
+        if (ownerFairs.isNotEmpty()) {
+            renderOwnerFairsInTab(shopId)
+        } else {
+            page.findViewById<TextView>(R.id.fairs_owner_summary)?.text = "Cargando tus invitaciones..."
+        }
+        lifecycleScope.launch {
+            val loaded = runCatching { RepositoryProvider.shops().listOwnerFairCalendar(shopId) }.getOrNull()
+            if (loaded != null) ownerFairs = loaded
+            if (current.screen == "fairs" && buyerModel.state.value.session?.shopId == shopId) {
+                renderOwnerFairsInTab(shopId)
+            }
+        }
+    }
+
+    private fun renderOwnerFairsInTab(shopId: String) {
+        val section = page.findViewById<View>(R.id.fairs_owner_section) ?: return
+        val summary = page.findViewById<TextView>(R.id.fairs_owner_summary) ?: return
+        val listView = page.findViewById<LinearLayout>(R.id.fairs_owner_list) ?: return
+        section.isVisible = true
+        listView.removeAllViews()
+        if (ownerFairs.isEmpty()) {
+            summary.text = "Aún no tienes invitaciones a ferias próximas."
+            return
+        }
+        val confirmed = ownerFairs.count { it.status.isPubliclyConfirmed }
+        val invited = ownerFairs.count { it.status == FairParticipantStatus.INVITED }
+        val rejected = ownerFairs.count { it.status == FairParticipantStatus.REJECTED }
+        summary.text = "$confirmed confirmadas · $invited invitaciones · $rejected rechazadas"
+
+        val dp = resources.displayMetrics.density
+        val pad = (14 * dp).toInt()
+        ownerFairs.forEach { item ->
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(pad, pad, pad, pad)
+                background = GradientDrawable().apply {
+                    cornerRadius = 12 * dp
+                    setColor(if (item.status.isPubliclyConfirmed) 0xFFEEF6F4.toInt() else 0xFFFFFFFF.toInt())
+                    setStroke(
+                        ((if (item.status.isPubliclyConfirmed) 2f else 1f) * dp).toInt(),
+                        if (item.status.isPubliclyConfirmed) 0xFF1A7B6E.toInt() else 0xFFD3DDD9.toInt()
+                    )
+                }
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    bottomMargin = (10 * dp).toInt()
+                }
+            }
+            card.addView(TextView(this).apply {
+                text = item.fair.name
+                textSize = 17f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(0xFF183A34.toInt())
+            })
+            val placeAndDate = "${item.fair.placeName.ifBlank { "Puerto Montt" }}\n" +
+                "${item.fair.startsAt.take(16).replace('T', ' ')} a ${item.fair.endsAt.take(16).replace('T', ' ')}"
+            card.addView(TextView(this).apply {
+                text = placeAndDate
+                textSize = 14f
+                setTextColor(0xFF4A6560.toInt())
+                setPadding(0, (4 * dp).toInt(), 0, (4 * dp).toInt())
+            })
+            card.addView(TextView(this).apply {
+                text = item.statusLabel
+                textSize = 14f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(
+                    when {
+                        item.status.isPubliclyConfirmed -> 0xFF155C43.toInt()
+                        item.status == FairParticipantStatus.REJECTED -> 0xFF8C1D18.toInt()
+                        else -> 0xFF8F5400.toInt()
+                    }
+                )
+            })
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = (10 * dp).toInt()
+                }
+            }
+            val participateSelected = item.status.isPubliclyConfirmed
+            row.addView(Button(this).apply {
+                text = "Participo"
+                minimumHeight = (48 * dp).toInt()
+                isAllCaps = false
+                setBackgroundResource(if (participateSelected) R.drawable.button_primary else R.drawable.button_tonal)
+                setTextColor(if (participateSelected) 0xFFFFFFFF.toInt() else 0xFF183A34.toInt())
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = (6 * dp).toInt()
+                }
+                setOnClickListener { respondToFairFromTab(shopId, item.fair.id, true) }
+            })
+            val rejectSelected = item.status == FairParticipantStatus.REJECTED
+            row.addView(Button(this).apply {
+                text = "No participo"
+                minimumHeight = (48 * dp).toInt()
+                isAllCaps = false
+                setBackgroundResource(if (rejectSelected) R.drawable.button_danger_tonal else R.drawable.button_tonal)
+                setTextColor(if (rejectSelected) 0xFF8C1D18.toInt() else 0xFF183A34.toInt())
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = (6 * dp).toInt()
+                }
+                setOnClickListener { respondToFairFromTab(shopId, item.fair.id, false) }
+            })
+            card.addView(row)
+            listView.addView(card)
+        }
+        applyAccessibility(section, prefs.read())
+    }
+
+    private fun respondToFairFromTab(shopId: String, fairId: String, participate: Boolean) {
+        lifecycleScope.launch {
+            val result = runCatching {
+                RepositoryProvider.shops().respondToFairInvitation(shopId, fairId, participate)
+            }
+            result.onSuccess { nextStatus ->
+                ownerFairs = ownerFairs.map { if (it.fair.id == fairId) it.copy(status = nextStatus) else it }
+                val fairName = ownerFairs.find { it.fair.id == fairId }?.fair?.name ?: "la feria"
+                val msg = if (participate) "Confirmaste tu participación en $fairName." else "Indicaste que no participarás en $fairName."
+                Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
+                if (current.screen == "fairs") renderOwnerFairsInTab(shopId)
+            }.onFailure { err ->
+                Toast.makeText(this@MainActivity, err.message ?: "No pudimos guardar tu respuesta.", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -1694,7 +1894,9 @@ class MainActivity : FragmentActivity() {
             @JavascriptInterface
             fun openFair(id: String) {
                 runOnUiThread {
-                    publicFairs.find { it.id == id }?.let { openFairDetailDialog(it) }
+                    if (publicFairs.any { it.id == id }) {
+                        navigate(Destination("fair_detail", id))
+                    }
                 }
             }
         }, "AndroidMap")
@@ -1721,7 +1923,7 @@ class MainActivity : FragmentActivity() {
                 isClickable = true
                 isFocusable = true
                 minimumHeight = (56 * dp).toInt()
-                setOnClickListener { openFairDetailDialog(fair) }
+                setOnClickListener { navigate(Destination("fair_detail", fair.id)) }
             }
             if (fair.distanceKm != null) {
                 card.addView(TextView(this).apply {
@@ -1755,18 +1957,75 @@ class MainActivity : FragmentActivity() {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    private fun openFairDetailDialog(fair: PublicFair) {
-        val dp = resources.displayMetrics.density
+    private fun bindFairDetail() {
+        val fairId = current.productId
+        val fair = publicFairs.find { it.id == fairId }
+        val titleView = page.findViewById<TextView>(R.id.page_title) ?: return
+        val statusBadge = page.findViewById<TextView>(R.id.fair_detail_status) ?: return
+        val descView = page.findViewById<TextView>(R.id.fair_detail_description) ?: return
+        val metaView = page.findViewById<TextView>(R.id.fair_detail_meta) ?: return
+        val imageView = page.findViewById<ImageView>(R.id.fair_detail_image)
+        val participantsContainer = page.findViewById<LinearLayout>(R.id.fair_detail_participants) ?: return
+        val mapView = page.findViewById<WebView>(R.id.fair_detail_map) ?: return
+
+        if (fair == null) {
+            titleView.text = "Detalle de feria"
+            metaView.text = "Cargando información de la feria..."
+            participantsContainer.removeAllViews()
+            if (RepositoryProvider.supabaseReady()) {
+                lifecycleScope.launch {
+                    publicFairs = runCatching { RepositoryProvider.shops().listPublicFairs(userLat, userLng) }.getOrDefault(emptyList())
+                    if (current.screen == "fair_detail" && current.productId == fairId) {
+                        if (publicFairs.any { it.id == fairId }) {
+                            bindFairDetail()
+                        } else {
+                            metaView.text = "Esta feria ya no está disponible en el calendario público."
+                        }
+                    }
+                }
+            }
+            return
+        }
+
+        titleView.text = fair.name
+        val cancelled = fair.status == "cancelled"
+        statusBadge.text = if (cancelled) "Feria cancelada" else "Feria confirmada"
+        statusBadge.setTextColor(if (cancelled) 0xFF8C1D18.toInt() else 0xFF155C43.toInt())
+
+        if (fair.description.isNotBlank()) {
+            descView.isVisible = true
+            descView.text = fair.description
+        } else {
+            descView.isVisible = false
+        }
+
         val distLine = fair.distanceKm?.let { String.format(java.util.Locale.US, "\nDistancia: %.1f km", it) }.orEmpty()
         val orgLine = fair.organizer.takeIf { it.isNotBlank() }?.let { "\nOrganizador: $it" }.orEmpty()
-        val msg = buildString {
-            if (fair.description.isNotBlank()) append("${fair.description}\n\n")
+        metaView.text = buildString {
             append("Lugar: ${fair.placeName.ifBlank { "Puerto Montt" }}")
             append(orgLine)
             append("\nInicio: ${fair.startsAt.take(16).replace('T', ' ')}")
             append("\nTérmino: ${fair.endsAt.take(16).replace('T', ' ')}")
             append(distLine)
         }
+
+        if (!fair.imageUrl.isNullOrBlank() && imageView != null && RepositoryProvider.supabaseReady()) {
+            imageView.isVisible = true
+            PublicImageLoader.load(lifecycleScope, imageView, fair.imageUrl, BuildConfig.SUPABASE_URL)
+        } else {
+            imageView?.isVisible = false
+        }
+
+        page.findViewById<Button>(R.id.fair_detail_share)?.setOnClickListener {
+            QrShareHelper.shareLink(this, fair.name, "${fair.name}\n${QrShareHelper.fairUrl(fair.id)}")
+        }
+        page.findViewById<Button>(R.id.fair_detail_qr)?.setOnClickListener {
+            QrShareHelper.showQrDialog(this, fair.name, fair.placeName.ifBlank { "Feria ConectaSur" }, QrShareHelper.fairUrl(fair.id))
+        }
+        page.findViewById<Button>(R.id.fair_detail_directions)?.setOnClickListener {
+            openGeoDirections(fair.latitude, fair.longitude, fair.name)
+        }
+
         val jsonArr = org.json.JSONArray().apply {
             put(org.json.JSONObject().apply {
                 put("id", fair.id)
@@ -1779,92 +2038,25 @@ class MainActivity : FragmentActivity() {
                 put("distanceKm", fair.distanceKm)
             })
         }
-        val infoView = TextView(this).apply {
-            text = msg
-            textSize = 15f
-            setTextColor(0xFF183A34.toInt())
-            setPadding(0, 0, 0, (12 * dp).toInt())
-        }
-        val miniMap = WebView(this).apply {
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (200 * dp).toInt())
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    view?.evaluateJavascript(
-                        "if(window.setFairs){setFairs(${org.json.JSONObject.quote(jsonArr.toString())}, null, null);}",
-                        null
-                    )
-                }
+        mapView.settings.javaScriptEnabled = true
+        mapView.settings.domStorageEnabled = true
+        mapView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                view?.evaluateJavascript(
+                    "if(window.setFairs){setFairs(${org.json.JSONObject.quote(jsonArr.toString())}, null, null);}",
+                    null
+                )
             }
-            loadUrl("file:///android_asset/conectasur_map.html")
         }
-        val participantsHeader = TextView(this).apply {
-            text = "Participantes confirmadas"
-            textSize = 17f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(0xFF183A34.toInt())
-            setPadding(0, (14 * dp).toInt(), 0, (6 * dp).toInt())
-        }
-        val participantsContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
+        mapView.loadUrl("file:///android_asset/conectasur_map.html")
+
+        val dp = resources.displayMetrics.density
+        participantsContainer.removeAllViews()
         participantsContainer.addView(TextView(this).apply {
             text = "Cargando participantes confirmadas..."
             textSize = 14f
             setTextColor(0xFF4A6560.toInt())
         })
-        val shareActionsRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                topMargin = (12 * dp).toInt()
-            }
-        }
-        shareActionsRow.addView(Button(this).apply {
-            text = "Compartir enlace"
-            setBackgroundResource(R.drawable.button_tonal)
-            setTextColor(0xFF183A34.toInt())
-            minimumHeight = (48 * dp).toInt()
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginEnd = (6 * dp).toInt()
-            }
-            setOnClickListener {
-                QrShareHelper.shareLink(this@MainActivity, fair.name, "${fair.name}\n${QrShareHelper.fairUrl(fair.id)}")
-            }
-        })
-        shareActionsRow.addView(Button(this).apply {
-            text = "Código QR"
-            setBackgroundResource(R.drawable.button_tonal)
-            setTextColor(0xFF183A34.toInt())
-            minimumHeight = (48 * dp).toInt()
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = (6 * dp).toInt()
-            }
-            setOnClickListener {
-                QrShareHelper.showQrDialog(this@MainActivity, fair.name, fair.placeName.ifBlank { "Feria ConectaSur" }, QrShareHelper.fairUrl(fair.id))
-            }
-        })
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val pad = (16 * dp).toInt()
-            setPadding(pad, (12 * dp).toInt(), pad, (12 * dp).toInt())
-            addView(infoView)
-            addView(miniMap)
-            addView(shareActionsRow)
-            addView(participantsHeader)
-            addView(participantsContainer)
-        }
-        val scroll = ScrollView(this).apply {
-            addView(container)
-        }
-        val dlg = AlertDialog.Builder(this)
-            .setTitle(fair.name)
-            .setView(scroll)
-            .setPositiveButton("Cómo llegar") { _, _ -> openGeoDirections(fair.latitude, fair.longitude, fair.name) }
-            .setNegativeButton("Cerrar", null)
-            .create()
-        dlg.setOnShowListener { applyAccessibility(dlg.window!!.decorView, prefs.read()) }
-        dlg.show()
 
         lifecycleScope.launch {
             val rawParticipants = if (RepositoryProvider.supabaseReady()) {
@@ -1882,8 +2074,8 @@ class MainActivity : FragmentActivity() {
                 )
             }
             val showcase = buildPublicFairShowcase(rawParticipants, products)
-            if (dlg.isShowing) {
-                renderFairParticipantsShowcase(participantsContainer, showcase, dlg, dp)
+            if (current.screen == "fair_detail" && current.productId == fair.id) {
+                renderFairParticipantsShowcase(participantsContainer, showcase, dp)
             }
         }
     }
@@ -1891,7 +2083,6 @@ class MainActivity : FragmentActivity() {
     private fun renderFairParticipantsShowcase(
         container: LinearLayout,
         participants: List<FairParticipant>,
-        dialog: AlertDialog,
         dp: Float
     ) {
         container.removeAllViews()
@@ -1904,19 +2095,20 @@ class MainActivity : FragmentActivity() {
             applyAccessibility(container, prefs.read())
             return
         }
+        val thumbSize = (44 * dp).toInt()
         participants.forEach { participant ->
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setBackgroundResource(R.drawable.card_surface)
-                val p = (12 * dp).toInt()
+                val p = (14 * dp).toInt()
                 setPadding(p, p, p, p)
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                    bottomMargin = (10 * dp).toInt()
+                    bottomMargin = (12 * dp).toInt()
                 }
             }
             card.addView(TextView(this).apply {
                 text = participant.shopName
-                textSize = 16f
+                textSize = 17f
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 setTextColor(0xFF183A34.toInt())
             })
@@ -1924,7 +2116,7 @@ class MainActivity : FragmentActivity() {
             if (meta.isNotBlank()) {
                 card.addView(TextView(this).apply {
                     text = meta
-                    textSize = 13f
+                    textSize = 14f
                     setTextColor(0xFF1A7B6E.toInt())
                     setPadding(0, (2 * dp).toInt(), 0, 0)
                 })
@@ -1933,9 +2125,9 @@ class MainActivity : FragmentActivity() {
                 if (participant.sampleProducts.isEmpty()) {
                     card.addView(TextView(this).apply {
                         text = "Sin productos públicos destacados aún."
-                        textSize = 13f
+                        textSize = 14f
                         setTextColor(0xFF4A6560.toInt())
-                        setPadding(0, (6 * dp).toInt(), 0, 0)
+                        setPadding(0, (8 * dp).toInt(), 0, 0)
                     })
                 } else {
                     card.addView(TextView(this).apply {
@@ -1943,24 +2135,55 @@ class MainActivity : FragmentActivity() {
                         textSize = 13f
                         setTypeface(null, android.graphics.Typeface.BOLD)
                         setTextColor(0xFF4A6560.toInt())
-                        setPadding(0, (6 * dp).toInt(), 0, (4 * dp).toInt())
+                        setPadding(0, (8 * dp).toInt(), 0, (6 * dp).toInt())
                     })
                     participant.sampleProducts.forEach { product ->
-                        card.addView(Button(this).apply {
-                            text = "${product.name} · ${priceLabel(product.priceClp)}"
+                        val prodRow = LinearLayout(this).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            gravity = android.view.Gravity.CENTER_VERTICAL
+                            minimumHeight = (52 * dp).toInt()
+                            val rPad = (10 * dp).toInt()
+                            setPadding(rPad, (8 * dp).toInt(), rPad, (8 * dp).toInt())
+                            background = GradientDrawable().apply {
+                                cornerRadius = 10 * dp
+                                setColor(0xFFF5F8F6.toInt())
+                                setStroke((1 * dp).toInt(), 0xFFDDE6E2.toInt())
+                            }
+                            layoutParams = LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            ).apply { bottomMargin = (8 * dp).toInt() }
+                            isClickable = true
+                            isFocusable = true
                             contentDescription = "${product.name}, ${spokenPrice(product.priceClp)}"
-                            setBackgroundResource(R.drawable.button_tonal)
+                            setOnClickListener { navigate(Destination("detail", product.id)) }
+                        }
+                        val thumb = ImageView(this).apply {
+                            layoutParams = LinearLayout.LayoutParams(thumbSize, thumbSize).apply {
+                                marginEnd = (10 * dp).toInt()
+                            }
+                            setBackgroundResource(R.drawable.photo_frame_bg)
+                            scaleType = ImageView.ScaleType.CENTER_CROP
+                        }
+                        bindPhoto(thumb, product)
+                        prodRow.addView(thumb)
+                        val infoCol = LinearLayout(this).apply {
+                            orientation = LinearLayout.VERTICAL
+                            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                        }
+                        infoCol.addView(TextView(this).apply {
+                            text = product.name
+                            textSize = 14f
+                            setTypeface(null, android.graphics.Typeface.BOLD)
                             setTextColor(0xFF183A34.toInt())
-                            isAllCaps = false
-                            minimumHeight = (48 * dp).toInt()
-                            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                                bottomMargin = (6 * dp).toInt()
-                            }
-                            setOnClickListener {
-                                dialog.dismiss()
-                                navigate(Destination("detail", product.id))
-                            }
                         })
+                        infoCol.addView(TextView(this).apply {
+                            text = priceLabel(product.priceClp)
+                            textSize = 13f
+                            setTextColor(0xFF1A7B6E.toInt())
+                        })
+                        prodRow.addView(infoCol)
+                        card.addView(prodRow)
                     }
                 }
             }
@@ -1969,17 +2192,217 @@ class MainActivity : FragmentActivity() {
                 setBackgroundResource(R.drawable.button_primary)
                 setTextColor(0xFFFFFFFF.toInt())
                 minimumHeight = (48 * dp).toInt()
+                isAllCaps = false
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                    topMargin = (2 * dp).toInt()
+                    topMargin = (4 * dp).toInt()
                 }
                 setOnClickListener {
-                    dialog.dismiss()
                     navigate(Destination(if (participant.isAssociation) "association_detail" else "public_store", participant.shopId))
                 }
             })
             container.addView(card)
         }
         applyAccessibility(container, prefs.read())
+    }
+
+    private suspend fun refreshNotifications() {
+        val state = buyerModel.state.value
+        if (!RepositoryProvider.supabaseReady() || state.session == null || state.demo) {
+            appNotifications = emptyList()
+            renderNotificationsBadge()
+            return
+        }
+        val loaded = runCatching { RepositoryProvider.push().listNotifications(50) }.getOrNull() ?: return
+        appNotifications = loaded
+        renderNotificationsBadge()
+        if (current.screen == "notifications") renderNotificationsScreen()
+    }
+
+    private fun renderNotificationsBadge() {
+        val wrap = findViewById<View>(R.id.notifications_bell_wrap) ?: return
+        val badge = findViewById<TextView>(R.id.notifications_badge) ?: return
+        val bell = findViewById<ImageButton>(R.id.notifications_bell)
+        val state = buyerModel.state.value
+        val active = RepositoryProvider.supabaseReady() && state.session != null && !state.demo
+        wrap.isVisible = active
+        if (!active) return
+        val unread = appNotifications.count { it.isUnread }
+        badge.isVisible = unread > 0
+        if (unread > 0) {
+            badge.text = if (unread > 9) "9+" else unread.toString()
+            val dp = resources.displayMetrics.density
+            badge.background = GradientDrawable().apply {
+                cornerRadius = 999 * dp
+                setColor(0xFFC84B31.toInt())
+            }
+            bell?.contentDescription = "Centro de avisos, $unread sin leer"
+        } else {
+            bell?.contentDescription = "Centro de avisos, sin avisos pendientes"
+        }
+    }
+
+    private fun bindNotifications() {
+        page.findViewById<Button>(R.id.notifications_refresh)?.setOnClickListener {
+            lifecycleScope.launch { refreshNotifications() }
+        }
+        page.findViewById<Button>(R.id.notifications_mark_all)?.setOnClickListener {
+            val unreadIds = appNotifications.filter { it.isUnread }.map { it.id }
+            if (unreadIds.isEmpty()) return@setOnClickListener
+            lifecycleScope.launch {
+                runCatching { RepositoryProvider.push().markNotificationsRead(unreadIds) }
+                val nowMs = System.currentTimeMillis()
+                appNotifications = appNotifications.map { if (it.isUnread) it.copy(readAtMillis = nowMs) else it }
+                renderNotificationsBadge()
+                if (current.screen == "notifications") renderNotificationsScreen()
+            }
+        }
+        page.findViewById<Button>(R.id.notifications_open_settings)?.setOnClickListener {
+            navigate(Destination("settings"))
+        }
+        renderNotificationsScreen()
+        lifecycleScope.launch { refreshNotifications() }
+    }
+
+    private fun renderNotificationsScreen() {
+        val status = page.findViewById<TextView>(R.id.notifications_status) ?: return
+        val list = page.findViewById<LinearLayout>(R.id.notifications_list) ?: return
+        val markAll = page.findViewById<Button>(R.id.notifications_mark_all)
+        val state = buyerModel.state.value
+        list.removeAllViews()
+        if (!RepositoryProvider.supabaseReady() || state.session == null || state.demo) {
+            markAll?.isVisible = false
+            status.text = "Inicia sesión para ver tus invitaciones y avisos guardados."
+            return
+        }
+        val unreadCount = appNotifications.count { it.isUnread }
+        markAll?.isVisible = unreadCount > 0
+        status.text = when {
+            appNotifications.isEmpty() -> "No tienes avisos registrados por ahora."
+            unreadCount == 0 -> "${appNotifications.size} avisos · Todo leído"
+            else -> "${appNotifications.size} avisos · $unreadCount sin leer"
+        }
+        val dp = resources.displayMetrics.density
+        val pad = (14 * dp).toInt()
+        appNotifications.forEach { n ->
+            val unread = n.isUnread
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(pad, pad, pad, pad)
+                background = GradientDrawable().apply {
+                    cornerRadius = 12 * dp
+                    setColor(if (unread) 0xFFEEF6F4.toInt() else 0xFFFFFFFF.toInt())
+                    setStroke(
+                        ((if (unread) 1.8f else 1f) * dp).toInt(),
+                        if (unread) 0xFF1A7B6E.toInt() else 0xFFDDE6E2.toInt()
+                    )
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = (10 * dp).toInt() }
+            }
+            val header = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+            val kindText = when (n.kind) {
+                "invitation" -> "Invitación"
+                "fair_notice" -> "Aviso de feria"
+                "fair_cancelled" -> "Feria cancelada"
+                "contact" -> "Contacto"
+                "follow_fair_confirmed" -> "Tienda seguida"
+                else -> "Aviso"
+            }
+            if (unread) {
+                header.addView(TextView(this).apply {
+                    text = "Nuevo"
+                    textSize = 11f
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                    setTextColor(0xFFFFFFFF.toInt())
+                    background = GradientDrawable().apply {
+                        cornerRadius = 999 * dp
+                        setColor(0xFF1A7B6E.toInt())
+                    }
+                    setPadding((8 * dp).toInt(), (3 * dp).toInt(), (8 * dp).toInt(), (3 * dp).toInt())
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { marginEnd = (6 * dp).toInt() }
+                })
+            }
+            header.addView(TextView(this).apply {
+                text = kindText
+                textSize = 13f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(0xFF1A7B6E.toInt())
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            val dateStr = BuyerEngagementStore.formatRatingDate(n.createdAtMillis)
+            if (dateStr.isNotBlank()) {
+                header.addView(TextView(this).apply {
+                    text = dateStr
+                    textSize = 12f
+                    setTextColor(0xFF5F746F.toInt())
+                })
+            }
+            card.addView(header)
+            card.addView(TextView(this).apply {
+                text = n.title
+                textSize = 16f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(0xFF183A34.toInt())
+                setPadding(0, (6 * dp).toInt(), 0, 0)
+            })
+            if (n.body.isNotBlank()) {
+                card.addView(TextView(this).apply {
+                    text = n.body
+                    textSize = 14f
+                    setTextColor(0xFF26423C.toInt())
+                    setPadding(0, (4 * dp).toInt(), 0, 0)
+                })
+            }
+            val actionLabel = when {
+                n.kind in listOf("invitation", "fair_notice", "fair_cancelled") -> "Ver invitaciones"
+                n.kind == "contact" -> "Abrir mensajes"
+                !n.fairId.isNullOrBlank() -> "Ver feria"
+                !n.shopId.isNullOrBlank() -> "Ver tienda"
+                else -> if (unread) "Marcar como leído" else null
+            }
+            if (actionLabel != null) {
+                card.addView(Button(this).apply {
+                    text = actionLabel
+                    isAllCaps = false
+                    setBackgroundResource(if (unread) R.drawable.button_primary else R.drawable.button_tonal)
+                    setTextColor(if (unread) 0xFFFFFFFF.toInt() else 0xFF183A34.toInt())
+                    minimumHeight = (48 * dp).toInt()
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { topMargin = (10 * dp).toInt() }
+                    setOnClickListener {
+                        markNotificationRead(n.id)
+                        when {
+                            n.kind in listOf("invitation", "fair_notice", "fair_cancelled") -> navigate(Destination("fairs"))
+                            n.kind == "contact" -> startActivity(Intent(this@MainActivity, ShopInboxActivity::class.java))
+                            !n.fairId.isNullOrBlank() -> navigate(Destination("fair_detail", n.fairId))
+                            !n.shopId.isNullOrBlank() -> navigate(Destination("public_store", n.shopId))
+                        }
+                    }
+                })
+            }
+            list.addView(card)
+        }
+        applyAccessibility(list, prefs.read())
+    }
+
+    private fun markNotificationRead(id: String) {
+        val nowMs = System.currentTimeMillis()
+        appNotifications = appNotifications.map { if (it.id == id && it.isUnread) it.copy(readAtMillis = nowMs) else it }
+        renderNotificationsBadge()
+        if (current.screen == "notifications") renderNotificationsScreen()
+        lifecycleScope.launch {
+            runCatching { RepositoryProvider.push().markNotificationsRead(listOf(id)) }
+        }
     }
 
     private fun openGeoDirections(lat: Double, lng: Double, label: String) {

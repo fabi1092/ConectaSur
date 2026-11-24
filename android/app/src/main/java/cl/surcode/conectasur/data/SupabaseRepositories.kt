@@ -490,6 +490,46 @@ class SupabasePushRepository(
         if (token.isBlank()) return
         callBuyerRpc(client, firebaseToken, "unregister_device", JSONObject().put("p_fcm_token", token))
     }
+
+    override suspend fun listNotifications(limit: Int): List<AppNotification> {
+        val rows = callBuyerRpc(
+            client,
+            firebaseToken,
+            "my_notifications",
+            JSONObject().put("p_limit", limit.coerceIn(1, 200))
+        ) as? JSONArray ?: return emptyList()
+        return (0 until rows.length()).mapNotNull { i ->
+            val row = rows.optJSONObject(i) ?: return@mapNotNull null
+            val id = row.optString("id")
+            if (id.isBlank()) return@mapNotNull null
+            val data = row.optJSONObject("data")
+            AppNotification(
+                id = id,
+                kind = row.optString("kind"),
+                title = row.optString("title"),
+                body = row.optString("body"),
+                fairId = data?.nullableString("fair_id"),
+                fairName = data?.nullableString("fair_name"),
+                shopId = data?.nullableString("shop_id"),
+                createdAtMillis = BuyerEngagementStore.parseIsoTimestampMillis(row.nullableString("created_at")),
+                readAtMillis = row.nullableString("read_at")?.let {
+                    BuyerEngagementStore.parseIsoTimestampMillis(it).takeIf { ms -> ms > 0L }
+                }
+            )
+        }
+    }
+
+    override suspend fun markNotificationsRead(ids: List<String>): Int {
+        val cleanIds = ids.map { it.trim() }.filter { it.isNotBlank() }
+        if (cleanIds.isEmpty()) return 0
+        val res = callBuyerRpc(
+            client,
+            firebaseToken,
+            "mark_notifications_read",
+            JSONObject().put("p_ids", JSONArray(cleanIds))
+        )
+        return res.toString().trim().toIntOrNull() ?: 0
+    }
 }
 
 class SupabaseFollowRepository(

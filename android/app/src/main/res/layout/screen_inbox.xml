@@ -1,8 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-        <Button android:id="@+id/inbox_refresh" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/contact_refresh"/>
-        <LinearLayout android:id="@+id/inbox_list" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
-        <Button android:id="@+id/inbox_older" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/contact_older" android:visibility="gone"/>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBackground"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/space_sm"
+        android:paddingBottom="@dimen/space_lg">
+
+        <Button
+            android:id="@+id/inbox_refresh"
+            style="@style/ConectaSur.Button.Tonal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/space_md"
+            android:minHeight="48dp"
+            android:text="@string/contact_refresh" />
+
+        <LinearLayout
+            android:id="@+id/inbox_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <Button
+            android:id="@+id/inbox_older"
+            style="@style/ConectaSur.Button.Tonal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:minHeight="48dp"
+            android:text="@string/contact_older"
+            android:visibility="gone" />
     </LinearLayout>
 </ScrollView>

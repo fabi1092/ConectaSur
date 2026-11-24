@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/page_scroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBackground"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/space_lg"
+        android:paddingTop="@dimen/space_md"
+        android:paddingBottom="@dimen/space_xl">
+
+        <TextView
+            android:id="@+id/page_title"
+            style="@style/ConectaSur.Title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Centro de avisos" />
+
+        <TextView
+            style="@style/ConectaSur.Body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xs"
+            android:text="Invitaciones, recordatorios y avisos de tus tiendas seguidas." />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/notifications_refresh"
+                style="@style/ConectaSur.Button.Tonal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="Actualizar" />
+
+            <Button
+                android:id="@+id/notifications_mark_all"
+                style="@style/ConectaSur.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_xs"
+                android:layout_weight="1.2"
+                android:minHeight="48dp"
+                android:text="Marcar todo leído"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/notifications_open_settings"
+            style="@style/ConectaSur.Button.Tonal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xs"
+            android:minHeight="48dp"
+            android:text="Configurar avisos y permisos" />
+
+        <TextView
+            android:id="@+id/notifications_status"
+            style="@style/ConectaSur.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:text="Cargando tus avisos..." />
+
+        <LinearLayout
+            android:id="@+id/notifications_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:orientation="vertical" />
+    </LinearLayout>
+</ScrollView>
