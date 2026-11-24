@@ -3,7 +3,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['security/mobsf-ci.py', '.github/workflows/mobsf.yml']
+    paths: ['android/**', 'security/**', '.github/workflows/mobsf.yml']
+  pull_request:
+    paths: ['android/**', 'security/**', '.github/workflows/mobsf.yml']
 permissions:
   contents: read
 jobs:
