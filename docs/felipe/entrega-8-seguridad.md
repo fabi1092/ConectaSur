@@ -18,6 +18,8 @@ El 24-11-2026 se recibió y verificó el APK `release` final: paquete `cl.surcod
 | Firma y metadatos del APK release | Válidos | `apksigner` verifica v2/v3; huella coincidente con la entregada por Benjamín; versión 1.0.0, minSdk 26 y sin `debuggable`. |
 | Revisión de reglas y código activo | Se documentan controles y límites abajo | Revisión estática acotada; no es un pentest ni certificación legal. |
 
+Las auditorías npm guardadas se ejecutaron antes, el mismo 24-11-2026. Al repetirlas durante esta actualización, el endpoint de auditoría de npm no respondió; por eso se conservaron los informes previos y no se afirma que esas dos consultas se hayan repetido exitosamente en este pase. La suite C04 se ejecutó con PGlite; falta confirmar con el profesor que ese emulador satisface el término “emulador” de la pauta para la instancia Supabase.
+
 Para repetir en Windows PowerShell con Node 24.12 o superior:
 
 ```powershell
