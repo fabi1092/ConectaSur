@@ -1,0 +1,22 @@
+{
+  "verifiedAt": "2026-11-24",
+  "artifact": "ConectaSur-release-firmado.apk",
+  "sha256": "0021e8b67ba5c24b710ace7d62c5ee36ab683aff683314ce6d998608426419d0",
+  "package": "cl.surcode.conectasur",
+  "versionName": "1.0.0",
+  "versionCode": 8,
+  "minSdk": 26,
+  "targetSdk": 36,
+  "signature": {
+    "verified": true,
+    "schemes": ["v2", "v3"],
+    "certificateSha256": "bd:26:87:47:04:e2:13:af:a1:35:eb:db:da:be:0b:17:27:d4:a0:1c:a6:61:36:96:04:0b:e6:fb:57:5f:3d:5b"
+  },
+  "debuggable": false,
+  "verificationTools": ["apksigner 36.0.0", "aapt 36.0.0"],
+  "mobsf": {
+    "status": "pending",
+    "reason": "The local Windows environment has no Docker or Podman engine; the repository MobSF runner requires its pinned Docker image.",
+    "scopeNote": "Signature and manifest metadata verification do not replace MobSF static analysis."
+  }
+}
