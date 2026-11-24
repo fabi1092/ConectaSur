@@ -54,6 +54,38 @@
                 android:text="Ordenado por fecha" />
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/fairs_owner_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface_owner"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/ConectaSur.Section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tus invitaciones y ferias" />
+
+            <TextView
+                android:id="@+id/fairs_owner_summary"
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="Responde Participo o No participo con un toque." />
+
+            <LinearLayout
+                android:id="@+id/fairs_owner_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:orientation="vertical" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/fairs_enable_gps"
             style="@style/ConectaSur.Button.Tonal"

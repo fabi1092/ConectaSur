@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/contact_scroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBackground"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:id="@+id/contact_root"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/space_lg"
+        android:paddingTop="@dimen/space_md"
+        android:paddingBottom="@dimen/space_xl">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/contact_back"
+                style="@style/ConectaSur.Button.Compact"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableStart="@drawable/ic_back"
+                android:minHeight="48dp"
+                android:text="Volver" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/contact_title"
+            style="@style/ConectaSur.Title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:text="Contacta a la tienda" />
+
+        <LinearLayout
+            android:id="@+id/contact_status_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/status_banner_bg"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/contact_status"
+                style="@style/ConectaSur.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="polite"
+                android:textColor="@color/conectasur_ink"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/contact_done_back"
+                style="@style/ConectaSur.Button.Tonal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:minHeight="48dp"
+                android:text="Volver a la tienda"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/contact_whatsapp_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/ConectaSur.Section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Contacto directo" />
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="Conversa directamente por WhatsApp con la emprendedora." />
+
+            <Button
+                android:id="@+id/contact_whatsapp"
+                style="@style/ConectaSur.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:minHeight="52dp"
+                android:text="@string/contact_whatsapp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/contact_form"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:background="@drawable/card_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_md"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/ConectaSur.Section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Enviar consulta por formulario" />
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="@string/contact_privacy" />
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:labelFor="@id/contact_name"
+                android:text="@string/contact_name"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@id/contact_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:background="@drawable/input_field"
+                android:hint="Ej: María González"
+                android:importantForAutofill="no"
+                android:inputType="textCapWords"
+                android:maxLength="100"
+                android:minHeight="48dp"
+                android:padding="12dp"
+                android:textColor="?attr/appInk"
+                android:textSize="16sp" />
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:labelFor="@id/contact_reply"
+                android:text="@string/contact_reply"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@id/contact_reply"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:background="@drawable/input_field"
+                android:hint="Ej: +56 9 1234 5678 o tu correo"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:maxLength="240"
+                android:minHeight="48dp"
+                android:padding="12dp"
+                android:textColor="?attr/appInk"
+                android:textSize="16sp" />
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:text="Consultas rápidas (un toque)"
+                android:textStyle="bold" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/contact_quick_chips"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
+            <TextView
+                style="@style/ConectaSur.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:labelFor="@id/contact_body"
+                android:text="@string/contact_body"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@id/contact_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:background="@drawable/input_field"
+                android:gravity="top|start"
+                android:hint="Escribe tu consulta para la tienda..."
+                android:importantForAutofill="no"
+                android:inputType="textCapSentences|textMultiLine"
+                android:maxLength="2000"
+                android:minHeight="110dp"
+                android:minLines="4"
+                android:padding="12dp"
+                android:textColor="?attr/appInk"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/contact_send"
+                style="@style/ConectaSur.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:minHeight="52dp"
+                android:text="@string/contact_send" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

@@ -146,10 +146,26 @@ interface SalesRepository {
     fun history(shopId: String): Flow<List<Sale>>
 }
 
+data class AppNotification(
+    val id: String,
+    val kind: String,
+    val title: String,
+    val body: String = "",
+    val fairId: String? = null,
+    val fairName: String? = null,
+    val shopId: String? = null,
+    val createdAtMillis: Long = 0L,
+    val readAtMillis: Long? = null
+) {
+    val isUnread: Boolean get() = readAtMillis == null
+}
+
 interface PushRepository {
     suspend fun setNotificationConsent(granted: Boolean) {}
     suspend fun registerDeviceToken(token: String, platform: String = "android") {}
     suspend fun unregisterDeviceToken(token: String) {}
+    suspend fun listNotifications(limit: Int = 50): List<AppNotification> = emptyList()
+    suspend fun markNotificationsRead(ids: List<String>): Int = 0
 }
 
 enum class FollowTargetType(val wire: String) {
