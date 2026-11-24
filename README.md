@@ -50,6 +50,7 @@ En Windows: gradlew.bat. El APK queda en app/build/outputs/apk/debug/app-debug.a
 
 - [Modelo de datos y permisos](docs/felipe/modelo-datos.md).
 - [Informe de seguridad vigente](docs/benjamin/hito-3-seguridad.md).
+- [Seguridad de Entrega 8: pruebas reproducibles, hallazgos y pendientes](docs/felipe/entrega-8-seguridad.md).
 - [Migración y cambios de integración](docs/migracion-supabase.md).
 - [Guía de conexión para el equipo](docs/integracion-supabase.md).
 
@@ -58,7 +59,7 @@ npm --prefix supabase ci
 npm --prefix web ci
 ~~~
 
-npm test en supabase ejecuta pruebas de RLS/RPC en un PostgreSQL desechable local llamado conectasur_test, con TEST_DATABASE_URL. GitHub Actions crea ese entorno sin utilizar las credenciales del profesor.
+`npm --prefix supabase test` ejecuta localmente todas las migraciones y pruebas de RLS/RPC con PGlite; no necesita credenciales ni un PostgreSQL instalado. La prueba de concurrencia se omite en PGlite y se ejecuta en CI con PostgreSQL 15 mediante `npm --prefix supabase run test:postgres` y `TEST_DATABASE_URL` local `conectasur_test`. GitHub Actions crea esa base desechable sin utilizar las credenciales del profesor. Los resultados, el alcance y los pasos de verificación están en el [informe de seguridad de Entrega 8](docs/felipe/entrega-8-seguridad.md).
 
 El mismo pipeline ejecuta 19 pruebas web de la capa Editar cuenta, modelos y reintentos sin credenciales. El [cierre de integración](docs/entrega-4/cierre-integracion.md) distingue esas pruebas del guardado real pendiente y registra los pasos para reunir ambas partes.
 

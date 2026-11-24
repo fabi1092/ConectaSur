@@ -17,6 +17,7 @@ firebase-config.json
 .env.*
 !.env.example
 node_modules/
+.npm-cache/
 android/supabase.properties
 android/firebase.properties
 web/supabase-config.js
