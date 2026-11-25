@@ -25,7 +25,19 @@ export function renderInteractiveMap(container, {
 } = {}) {
   const hasCoords = Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
   const center = hasCoords ? [Number(lat), Number(lng)] : PUERTO_MONTT_CENTER;
-  const map = L.map(container, { scrollWheelZoom: false }).setView(center, hasCoords ? zoom : 13);
+  const map = L.map(container, { scrollWheelZoom: false, zoomControl: false }).setView(center, hasCoords ? zoom : 13);
+
+  L.control.zoom({ zoomInTitle: 'Acercar mapa', zoomOutTitle: 'Alejar mapa' }).addTo(map);
+  container.querySelector('.leaflet-control-zoom-in')?.setAttribute('aria-label', 'Acercar mapa');
+  container.querySelector('.leaflet-control-zoom-out')?.setAttribute('aria-label', 'Alejar mapa');
+
+  map.on('popupopen', event => {
+    const closeBtn = event.popup?.getElement()?.querySelector('.leaflet-popup-close-button');
+    if (closeBtn) {
+      closeBtn.setAttribute('aria-label', 'Cerrar ventana');
+      closeBtn.setAttribute('title', 'Cerrar ventana');
+    }
+  });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,

@@ -494,8 +494,29 @@ class MainActivity : FragmentActivity() {
     private fun openLargeMenu() {
         val menu = layoutInflater.inflate(R.layout.dialog_menu, null)
         val dialog = AlertDialog.Builder(this).setTitle(R.string.menu_title).setView(menu).create()
-        listOf(R.id.menu_home to "home", R.id.menu_products to "catalog", R.id.menu_help to "help", R.id.menu_settings to "settings").forEach { (id, route) ->
+        listOf(
+            R.id.menu_home to "home",
+            R.id.menu_stores to "directory",
+            R.id.menu_fairs to "fairs",
+            R.id.menu_notifications to "notifications",
+            R.id.menu_help to "help",
+            R.id.menu_settings to "settings"
+        ).forEach { (id, route) ->
             menu.findViewById<Button>(id).setOnClickListener { dialog.dismiss(); navigate(Destination(route), clear = route == "home") }
+        }
+        menu.findViewById<Button>(R.id.menu_products).apply {
+            val isOwner = buyerModel.state.value.session?.role == Role.EMPRENDEDORA
+            if (isOwner) text = "Mis productos" else setText(R.string.see_products)
+            setOnClickListener {
+                dialog.dismiss()
+                if (buyerModel.state.value.session?.role == Role.EMPRENDEDORA) {
+                    startActivity(Intent(this@MainActivity, ProductManagerActivity::class.java))
+                } else {
+                    shopFilter = null
+                    navigate(Destination("catalog"))
+                    if (current.screen == "catalog") renderProducts()
+                }
+            }
         }
         menu.findViewById<Button>(R.id.menu_read).apply {
             setText(if (reader.active) R.string.stop else R.string.listen)
@@ -544,7 +565,6 @@ class MainActivity : FragmentActivity() {
         content.removeAllViews()
         page = layoutInflater.inflate(layout, content, false)
         content.addView(page)
-        findViewById<Button>(R.id.back_button).isVisible = current.screen != "home"
         listOf(
             R.id.nav_home to "home",
             R.id.nav_catalog to "catalog",

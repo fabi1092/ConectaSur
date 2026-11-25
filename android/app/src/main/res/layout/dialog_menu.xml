@@ -4,6 +4,9 @@
         <Button android:id="@+id/menu_home" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/home" />
         <Button android:id="@+id/menu_account" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/account_entry" />
         <Button android:id="@+id/menu_products" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/see_products" />
+        <Button android:id="@+id/menu_stores" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/stores" />
+        <Button android:id="@+id/menu_fairs" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/fairs" />
+        <Button android:id="@+id/menu_notifications" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/notifications_center" />
         <Button android:id="@+id/menu_help" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help" />
         <Button android:id="@+id/menu_settings" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/accessibility" />
         <Button android:id="@+id/menu_read" style="@style/ConectaSur.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/listen" />

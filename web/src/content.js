@@ -8,6 +8,7 @@ export function safeImageUrl(value) {
 }
 
 export function priceLabel(product) {
+  if (!product || typeof product !== 'object') return 'Consultar precio';
   const variants = (product.variants || []).filter(variant => variant.available !== false);
   const prices = (variants.length ? variants.map(variant => variant.priceClp ?? product.priceClp) : [product.priceClp])
     .filter(value => typeof value === 'number' && Number.isFinite(value) && value >= 0);

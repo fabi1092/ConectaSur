@@ -96,6 +96,7 @@ input::placeholder, textarea::placeholder { color: #60736a; opacity: 1; }
 .public-shop-card { border-radius: var(--radius); box-shadow: var(--shadow); }
 .public-shop-card:hover { border-color: #8ba993; }
 .shop-cover { height: 170px; }
+img.shop-cover { display: block; width: 100%; height: 170px; object-fit: cover; background: #eaf1e7; }
 .public-shop-card-body { padding: 0 24px 20px; gap: 13px; }
 .public-shop-card h3 { font-size: 1.4rem; line-height: 1.25; }
 .public-card-description { font-size: 1rem; -webkit-line-clamp: 3; }
@@ -377,9 +378,11 @@ html[data-contrast='high'] .spec-row { background: #fff; color: #000; border: 1p
 .fair-address-row input { flex: 1 1 240px; }
 .fair-addr-results { display: grid; gap: 6px; margin-top: 8px; }
 .fair-addr-choice { text-align: left; justify-content: flex-start !important; width: 100%; }
-.public-shop-assoc { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: .95rem; color: var(--navy); }
+.public-shop-assoc { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 6px; margin-top: 8px; font-size: .95rem; color: var(--navy); }
+.public-shop-assoc strong { white-space: nowrap; flex-shrink: 0; }
 .public-shop-assoc a { color: var(--green); text-decoration: underline; font-weight: 600; }
 .fair-logo-cover { border-radius: 14px; object-fit: cover; }
+.fair-sample-photo { aspect-ratio: 4 / 3; border-radius: 8px; }
 .privacy-page { max-width: 1120px; margin: 0 auto; padding: 34px max(20px, 3vw) 56px; display: grid; gap: 24px; }
 .privacy-hero h1 { font-size: clamp(1.9rem, 3.2vw, 2.7rem); margin: 8px 0 10px; }
 .privacy-hero p:not(.public-eyebrow) { max-width: 72ch; font-size: 1.05rem; }

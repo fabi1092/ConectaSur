@@ -87,4 +87,7 @@
     <string name="menu">Menú</string>
     <string name="menu_title">¿Qué quieres hacer?</string>
     <string name="close_menu">Cerrar menú</string>
+    <string name="stores">Tiendas</string>
+    <string name="fairs">Ferias</string>
+    <string name="notifications_center">Avisos</string>
 </resources>

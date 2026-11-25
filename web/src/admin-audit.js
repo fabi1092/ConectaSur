@@ -45,7 +45,8 @@ export function showAdminAudit(container,db){
   function targetLabel(entry){
     const info=TABLES[entry.target_table];
     const kind=info?info.label:entry.target_table;
-    const key=entry.target_table==='profiles'?names.actors.get(entry.target_id)?.displayName
+    const key=entry.target_table==='profiles'
+      ?(names.actors.get(entry.target_id)?.displayName||names.targets.get('profiles:'+entry.target_id))
       :names.targets.get(entry.target_table+':'+entry.target_id);
     return {kind,name:key||`ID ${shortId(entry.target_id)}`};
   }
@@ -87,20 +88,27 @@ export function showAdminAudit(container,db){
   }
 
   async function loadNames(){
-    const [admins,fairs,associations,shops]=await Promise.allSettled([
-      db.listAdministrators(),db.listAdminFairs(),db.listAssociations(),db.listShops()
+    const profilesPromise=typeof db.client?.from==='function'
+      ?db.client.from('profiles').select('id,display_name')
+      :Promise.resolve({data:[],error:null});
+    const [admins,fairs,associations,shops,profiles]=await Promise.allSettled([
+      db.listAdministrators(),db.listAdminFairs(),db.listAssociations(),db.listShops(),profilesPromise
     ]);
     names={actors:new Map(),targets:new Map()};
     if(admins.status==='fulfilled')admins.value.forEach(item=>names.actors.set(item.uid,item));
     if(fairs.status==='fulfilled')fairs.value.forEach(item=>names.targets.set('fairs:'+item.id,item.name));
     if(associations.status==='fulfilled')associations.value.forEach(item=>names.targets.set('associations:'+item.id,item.name));
     if(shops.status==='fulfilled')shops.value.forEach(item=>{names.targets.set('shops:'+item.id,item.name);names.targets.set('shop_associations:'+item.id,item.name);});
+    if(profiles.status==='fulfilled' && !profiles.value?.error && Array.isArray(profiles.value?.data)){
+      profiles.value.data.forEach(item=>{if(item.display_name)names.targets.set('profiles:'+item.id,item.display_name);});
+    }
     const select=root.querySelector('#audit-actor');
     const current=select.value;
     const ids=[...names.actors.keys()];
     select.innerHTML='<option value="all">Todos los administradores</option>'+ids.map(uid=>`<option value="${escape(uid)}">${escape(actorLabel(uid))}</option>`).join('');
     if(ids.includes(current))select.value=current;
-    return [admins,fairs,associations,shops].some(item=>item.status==='rejected');
+    const profilesFailed=profiles.status==='rejected' || Boolean(profiles.value?.error);
+    return [admins,fairs,associations,shops].some(item=>item.status==='rejected') || profilesFailed;
   }
 
   // append=false: vuelve a la primera página con los filtros actuales. append=true: agrega la siguiente.

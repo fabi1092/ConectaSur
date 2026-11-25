@@ -56,7 +56,7 @@ export function showPrivacyPolicy(app, isCurrent) {
     </div>
 
     <div class="privacy-actions">
-      <a class="public-primary" href="#inicio">Volver a las tiendas</a>
+      <a class="public-primary" href="#tiendas">Volver a las tiendas</a>
       <a class="owner-secondary" href="#ingresar">Ir a Ingresar</a>
     </div>
   </section>`);

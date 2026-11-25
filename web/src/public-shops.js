@@ -416,7 +416,7 @@ export async function showPublicFair(app, db, id, isCurrent = () => true) {
               ${sample.map(item => `<a href="${escape(productLink(item.id))}" class="public-card-link" style="display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid #d3ddd9;border-radius:10px;background:#f9fbfa;text-decoration:none;color:inherit;">
                 ${photo(item.photo, item.name, 'fair-sample-photo')}
                 <strong>${escape(item.name)}</strong>
-                <span>${escape(priceLabel(item.price_clp))}</span>
+                <span>${escape(priceLabel({ priceClp: item.price_clp == null ? null : Number(item.price_clp), variants: [] }))}</span>
               </a>`).join('')}
             </div>`
           : '<p class="public-card-description">Sin productos públicos destacados aún.</p>'
@@ -473,7 +473,7 @@ export async function showPublicFair(app, db, id, isCurrent = () => true) {
             <h2 id="fair-participants-title">Participantes confirmadas (${participants.length})</h2>
           </div>
         </div>
-        <div class="public-shops-grid">${participantsHtml}</div>
+        <div class="public-shop-grid">${participantsHtml}</div>
       </section>
     </div>`);
     wirePhotos(app);
