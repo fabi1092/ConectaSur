@@ -51,6 +51,7 @@ En Windows: gradlew.bat. El APK queda en app/build/outputs/apk/debug/app-debug.a
 - [Modelo de datos y permisos](docs/felipe/modelo-datos.md).
 - [Informe de seguridad vigente](docs/benjamin/hito-3-seguridad.md).
 - [Seguridad de Entrega 8: pruebas reproducibles, hallazgos y pendientes](docs/felipe/entrega-8-seguridad.md).
+- [Pruebas Android, casos de prueba y matriz final de requisitos (Fabián)](docs/fabian/pruebas-android-matriz-requisitos.md).
 - [Migración y cambios de integración](docs/migracion-supabase.md).
 - [Guía de conexión para el equipo](docs/integracion-supabase.md).
 
