@@ -4,6 +4,7 @@ import config from '../supabase-config.js';
 import { createDataLayer } from '../supabase-data.js';
 import { createFirebaseBuyerAuth } from '../firebase-buyer-auth.js';
 import { showPublicShops, showPublicShop, showPublicProduct, showPublicAssociation, showPublicFair, shopLogo, wireShopImages } from './public-shops.js';
+import { showPrivacyPolicy } from './privacy-policy.js';
 import { showAdminFairsAndAccess } from './fairs-admin.js';
 import { showAccountAccess } from './entrepreneur-access.js';
 import { icon, brand } from './visuals.js';
@@ -1275,6 +1276,8 @@ async function iniciar() {
     try { id = decodeURIComponent(route.slice('#feria/'.length)); }
     catch { id = ''; }
     await showPublicFair(app, db, id, isCurrent);
+  } else if (route === '#privacidad') {
+    showPrivacyPolicy(app, isCurrent);
   } else {
     await showPublicShops(app, db, isCurrent);
     if (isCurrent() && ['#productos', '#tiendas', '#asociaciones', '#ferias'].includes(route)) {

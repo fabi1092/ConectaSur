@@ -1,125 +1,173 @@
 # ConectaSur
 
-Aplicación de SurCode para conectar emprendedoras y compradores de Puerto Montt y Alerce.
+Plataforma de **SurCode** que conecta a emprendedoras locales de Puerto Montt y Alerce con compradores mediante una aplicación Android en Kotlin/Views y una aplicación web publicada en Firebase Hosting.
 
-## Backend actual: Supabase
+- **Sitio público:** [https://conectasur-dev.web.app](https://conectasur-dev.web.app)
+- **Backend activo:** Supabase (PostgreSQL con RLS/RPC, Auth y Storage), complementado con Firebase Authentication (Google Sign-In de compradores) y Firebase Cloud Messaging (notificaciones push).
 
-Desde el 1 de noviembre se utiliza la instancia Supabase del grupo entregada por el profesor: PostgreSQL, Auth por correo y Storage. Android y web consumen su API mediante la capa de datos. Firebase Authentication se usa exclusivamente para compradores con Google; Firestore no participa en los flujos actuales. Ver [configuración y límites de Google](docs/entrega-4/google-firebase.md).
+---
 
-Android mantiene Kotlin y Views con XML editables en Design/Palette, navegación simple, ajustes de letras/botones, contraste, lectura opcional y precios en pesos chilenos. El catálogo y la ficha pública consultan Supabase; las fotografías de ejemplo están alojadas en Storage. Los nombres y precios de esos ejemplos son ficticios.
+## Requisitos previos
 
-El acceso Android, cierre de sesión, huella opcional y edición de datos/logo de la tienda se implementan en StoreActivity. Ver [entrega de Fabián](docs/fabian/acceso-tienda.md) para configuración y verificación. El panel web administrativo también está integrado. Los productos, el flujo guiado con borradores recuperables, las variantes, la disponibilidad, las ventas y el historial también están integrados. Ver el [Informe de Entrega 4](docs/entrega-4/informe.md) y el [Informe de Entrega 5](docs/entrega-5/informe.md).
+Para ejecutar el proyecto completo desde cero en local:
 
-Android usa un [inicio de sesión común por perfil](docs/entrega-4/acceso-unificado-android.md): correo y contraseña para comprador, emprendedora o acceso al panel web administrativo, y Google mediante Firebase para comprador. La sesión se conserva al reabrir. Conservar también el correo para comprador es una decisión del usuario que cambia el literal de A10/RN-07; no se presenta como una excepción otorgada por el profesor.
+- **Git**
+- **Node.js 22 o superior** (recomendado **24.12.0+**, declarado en `web/package.json` y `supabase/package.json`)
+- **JDK 21** (incluido en Android Studio como `jbr`)
+- **Android Studio / Android SDK** con `compileSdk 36`, `Build Tools 36.0.0` y soporte mínimo `API 26` (Android 8.0)
 
-El panel web permite [guardar logos de asociaciones](docs/entrega-4/logos-asociaciones.md), [crear, editar y buscar tipos de emprendimiento](docs/entrega-4/tipos-emprendimiento.md), crear y editar categorías y tipos de productos, y buscar o filtrar en todos los listados administrativos (emprendedoras, administradores, asociaciones y catálogos). Al dar de alta una emprendedora se entregan sus credenciales con opción de mostrarlas o copiarlas. Los tipos vigentes se sugieren en los editores web de tienda; renombrarlos no reclasifica las tiendas ya guardadas.
+---
 
-También permite [gestionar otras cuentas administradoras](docs/entrega-4/cuentas-administradoras.md): crear, editar su nombre, desactivar y reactivar, sin cerrar la sesión de quien realiza el alta. La migración 006 protege estas operaciones en el servidor y bloquea la desactivación propia.
+## 1. Clonar el repositorio
 
-La pantalla **Editar cuenta** cambia el nombre de la persona, separado de **Editar tienda**. W06/W07 están implementados con la migración 007 y comprobados guardando y recargando desde la web pública. El [contrato y su evidencia](docs/entrega-4/contrato-cuenta-emprendedora.md) describen permisos, conflictos y reintentos; correo, contraseña, rol, estado y tienda se conservan.
+```sh
+git clone https://github.com/fabi1092/ConectaSur.git
+cd ConectaSur
+```
 
-## Configuración local
+---
 
-La emprendedora también puede administrar [productos y stock desde la web](docs/entrega-4/productos-web.md): fotos, campos por tipo, variantes y modalidades de disponibilidad. Se accede desde Ingresar → Mis productos. La web usa los mismos registros que Android.
+## 2. Ejecutar la aplicación web (`web/`)
 
-La barra A tu manera permite ampliar letras/botones, activar contraste y escuchar instrucciones. El producto admite dictado revisable para nombre/descripción y un resumen escuchable antes de confirmar el guardado. Voz y micrófono dependen de la compatibilidad del dispositivo; las pruebas automatizadas de estos estados usan servicios de voz simulados.
+### 2.1 Instalar dependencias y configurar entorno
+En Linux/macOS (`bash`):
 
-Mi tienda → Mis ventas permite [registrar ventas y consultar el historial desde la web](docs/entrega-5/ventas-web.md). Comparte el descuento transaccional y las preferencias de historial con Android; permite reintentar la misma solicitud sin duplicarla y filtrar el historial privado por fechas de Chile, producto y lugar.
-
-1. Abrir la carpeta real **android** en Android Studio. Usar JDK 21, SDK 36, Build Tools 36.0.0; mínimo provisional Android 8/API 26.
-2. Copiar android/supabase.properties.example a android/supabase.properties y completar únicamente URL y anon key.
-3. Para la web, ejecutar npm ci en web y copiar supabase-config.example.js a supabase-config.js.
-4. Importar la configuración local y llamar configureSupabase(config) antes de usar la capa web.
-
-Los archivos completos de configuración se excluyen de Git. Las credenciales de Studio, contraseñas y service_role no forman parte de los clientes. Cada usuario debe iniciar sesión con su propia cuenta de la aplicación.
-
-Sin configuración Android se abre una demostración local. Para forzarla en pruebas se usa -PconectaDemo=true. Una conexión fallida al backend configurado muestra el estado de conexión y conserva el catálogo público previamente descargado; no cambia silenciosamente a productos ficticios.
-
-## Compilar y probar Android
-
-Desde android:
-
-~~~sh
-./gradlew assembleDebug testDebugUnitTest lintDebug
-./gradlew -PconectaDemo=true connectedDebugAndroidTest
-~~~
-
-En Windows: gradlew.bat. El APK queda en app/build/outputs/apk/debug/app-debug.apk. La segunda orden verifica la navegación con datos de demostración; las pruebas reales se habilitan expresamente y necesitan una cuenta ficticia mediante argumentos del runner, nunca credenciales incluidas en el APK.
-
-## Backend y pruebas
-
-- [Modelo de datos y permisos](docs/felipe/modelo-datos.md).
-- [Informe de seguridad vigente](docs/benjamin/hito-3-seguridad.md).
-- [Seguridad de Entrega 8: pruebas reproducibles, hallazgos y pendientes](docs/felipe/entrega-8-seguridad.md).
-- [Pruebas Android, casos de prueba y matriz final de requisitos (Fabián)](docs/fabian/pruebas-android-matriz-requisitos.md).
-- [Migración y cambios de integración](docs/migracion-supabase.md).
-- [Guía de conexión para el equipo](docs/integracion-supabase.md).
-
-~~~sh
-npm --prefix supabase ci
+```sh
 npm --prefix web ci
-~~~
+cp web/supabase-config.example.js web/supabase-config.js
+```
 
-`npm --prefix supabase test` ejecuta localmente todas las migraciones y pruebas de RLS/RPC con PGlite; no necesita credenciales ni un PostgreSQL instalado. La prueba de concurrencia se omite en PGlite y se ejecuta en CI con PostgreSQL 15 mediante `npm --prefix supabase run test:postgres` y `TEST_DATABASE_URL` local `conectasur_test`. GitHub Actions crea esa base desechable sin utilizar las credenciales del profesor. Los resultados, el alcance y los pasos de verificación están en el [informe de seguridad de Entrega 8](docs/felipe/entrega-8-seguridad.md).
+En Windows PowerShell:
 
-El mismo pipeline ejecuta 19 pruebas web de la capa Editar cuenta, modelos y reintentos sin credenciales. El [cierre de integración](docs/entrega-4/cierre-integracion.md) distingue esas pruebas del guardado real pendiente y registra los pasos para reunir ambas partes.
+```powershell
+npm --prefix web ci
+Copy-Item web\supabase-config.example.js web\supabase-config.js
+```
 
-npm run test:live en supabase verifica Auth, API, RLS, Storage y la capa web contra la instancia del grupo. Requiere configuración privada y credenciales ficticias. Cada ejecución crea fixtures propios y los limpia al terminar.
+Edita `web/supabase-config.js` con la **URL pública** y la **clave `anon`** de tu instancia Supabase (y opcionalmente los datos públicos web de Firebase para acceso con Google). Nunca coloques `service_role` ni contraseñas en este archivo.
 
-Los informes antiguos de Firebase se conservan en docs/historico como evidencia de los hitos anteriores; sus resultados no se presentan como pruebas de Supabase. El proyecto Firebase remoto no se ha eliminado.
+### 2.2 Levantar servidor local y compilar
 
-## Editar con Palette
+```sh
+# Desarrollo local con Vite
+npm --prefix web run dev
 
-Abrir app > res > layout > screen_home.xml y seleccionar Design o Split. activity_main.xml contiene la navegación y una inclusión de inicio para el editor. Los demás XML siguen en res/layout.
+# Compilar versión estática en web/dist/
+npm --prefix web run build
 
-La lectura comienza al pulsar Escuchar; TalkBack y el dictado son ayudas distintas. Los textos respetan el tamaño del sistema y los ajustes locales.
+# Previsualizar versión compilada
+npm --prefix web run preview
+```
 
-## Trabajo por hitos
+### 2.3 Publicar en Firebase Hosting (`--only hosting`)
 
-Mensajes de commit simples y avances separados. Benjamín solicitó enviar los hitos a main. La pauta pide protección de main, PR revisados y contribuciones propias: ese criterio de colaboración debe verificarse con el equipo.
+```sh
+npx firebase-tools login
+npx firebase-tools deploy --only hosting --project conectasur-dev --config firebase.hosting.json
+```
 
-Fabián: acceso/tienda; Dan: productos; Alonso: ventas; Felipe: backend; Kisho: web; Benjamín: base Android, accesibilidad y pruebas. Los contratos de dominio se mantienen y los adaptadores se llaman SupabaseAuthRepository, SupabaseShopRepository, SupabaseProductRepository y SupabaseSalesRepository.
+La web incluye:
+- Vitrina pública sin sesión (`#inicio`, `#productos`, `#tiendas`, `#asociaciones`, `#ferias`, `#privacidad`), fichas `#tienda/<id>`, `#producto/<id>`, `#asociacion/<id>`, `#feria/<id>`.
+- Acceso único (`#ingresar`), recuperación de contraseña (`#recuperar`), registro de comprador (`#registro`), panel de emprendedora (`Resumen`, `Mis productos`, `Mis ventas`, `Editar tienda`) y panel administrativo (`Emprendedoras`, `Asociaciones`, `Ferias y Acceso`, `Administradores`, `Bitácora` y `Catálogo base`).
 
-El cambio de Firestore a Supabase responde a la instrucción del grupo tras recibir la instancia del profesor y queda documentado expresamente.
+---
 
-## Presentación del 2 de noviembre
+## 3. Ejecutar la aplicación Android (`android/`)
 
-Los avances publicados por el equipo se reunieron en main. Ver [estado de integración y recorrido](docs/presentacion-2-noviembre.md).
+### 3.1 Opción A — Modo demostración local (sin backend ni credenciales)
+Compila e instala la app con datos de ejemplo integrados usando `-PconectaDemo=true`:
 
-Para abrir el panel: usar Node 24.12 o superior; en web ejecutar npm ci y npm run dev. Abrir la dirección local que indique Vite. La configuración privada de cliente debe estar en web/supabase-config.js. Para generar la versión estática: npm run build; para probarla: npm run preview.
+En Windows PowerShell (desde `android/`):
 
-En Android, Mi tienda permite entrar con una cuenta de emprendedora, editar la ficha, cambiar el logo y cerrar sesión. Las cuentas administradoras utilizan el panel web.
+```powershell
+Set-Location android
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+.\gradlew.bat -PconectaDemo=true assembleDebug
+```
 
-## Entrega 4 y Entrega 5
+En Linux/macOS (`bash`):
 
-Panel publicado: https://conectasur-dev.web.app
+```sh
+cd android
+./gradlew -PconectaDemo=true assembleDebug
+```
 
-La portada y las fichas de tienda se pueden consultar sin cuenta. Para consultar o modificar datos administrativos se exige el inicio de sesión de administrador de ConectaSur. No incluye contraseñas de demostración.
+El APK queda en `android/app/build/outputs/apk/debug/app-debug.apk`.
 
-Revisión de Entrega 4 del 4 de noviembre: [Informe de Entrega 4](docs/entrega-4/informe.md) y [bloque 1, ficha pública de tienda](docs/entrega-4/ficha-publica.md). La portada abre en la URL principal; cada ficha tiene un enlace `#tienda/ID`. El único acceso de cuenta es **Ingresar** (`#ingresar`): el rol validado en Supabase abre la tienda propia o el panel administrativo.
+### 3.2 Opción B — Modo conectado a Supabase / Firebase
+Antes de compilar:
+1. Copiar `android/supabase.properties.example` a `android/supabase.properties` y completar `SUPABASE_URL` y `SUPABASE_ANON_KEY`.
+2. (Opcional, para Google Sign-In) Copiar `android/firebase.properties.example` a `android/firebase.properties` con `FIREBASE_API_KEY`, `FIREBASE_APP_ID`, `FIREBASE_PROJECT_ID` y `GOOGLE_WEB_CLIENT_ID`.
+3. (Opcional, para notificaciones FCM) Colocar `android/app/google-services.json` de tu proyecto Firebase y registrar las huellas `SHA-1` / `SHA-256` del certificado en Firebase Console.
 
-[Bloque 2, acceso de cuentas](docs/entrega-4/acceso-emprendedoras.md): la emprendedora ingresa con las credenciales creadas por el administrador, consulta o edita su tienda y logo, y cierra sesión. Los cambios se guardan en el mismo registro que consulta Android. Los enlaces anteriores `#mi-tienda` y `#administracion` abren el mismo acceso y respetan el rol de la cuenta.
+Luego abrir la carpeta `android/` en **Android Studio** (o ejecutar `.\gradlew.bat assembleDebug` / `.\gradlew.bat installDebug`).
 
-[Rediseño de la web y referencias](docs/entrega-4/redisenio-web.md): fotografías de la visita, galería pública con filtros y detalle, fichas de tiendas con productos y panel administrativo con resumen real. Se conservan los permisos y el acceso único.
+### 3.3 APK `release` firmado (`A01`)
+1. Copiar `android/keystore.properties.example` a `android/keystore.properties` y completar ruta del almacén `.jks`, alias y contraseñas de firma locales.
+2. Ejecutar desde `android/`:
 
-En Android: Inicio → Mi tienda → ingresar con una cuenta de emprendedora → Mis productos / Registrar una venta / Historial de ventas. Las preferencias de productos e historial se abren desde Mis productos. La app abre el catálogo público sin preguntar un rol ni pedir huella al inicio.
+```powershell
+.\gradlew.bat assembleRelease
+```
 
-- [Informe breve de Entrega 4](docs/entrega-4/informe.md).
-- [Demostración de backend, índices y entorno de desarrollo](docs/entrega-4/backend-demostracion.md).
-- [Comprobaciones manuales antes de presentar](docs/entrega-4/verificacion-manual.md).
-- [Informe breve, alcance y reparto de Entrega 5](docs/entrega-5/informe.md).
-- [Requisitos y criterios de aceptación](docs/entrega-5/requisitos.md).
-- [Informe de seguridad y hallazgos](docs/entrega-5/seguridad.md).
-- [Cambios respecto del prototipo](docs/entrega-5/cambios-prototipo.md).
+El artefacto firmado queda en `android/app/build/outputs/apk/release/app-release.apk`.
 
-Migraciones: npm run migrate desde supabase con las variables privadas del desarrollador. El migrador comprueba hashes y aplica solo las pendientes; no se edita una migración aplicada.
+---
 
-Pruebas SQL aisladas: npm test en supabase con TEST_DATABASE_URL de una base local vacía conectasur_test. Pruebas de servicios reales: npm run test:live en supabase con CONECTASUR_PRIVATE configurado en memoria. En el computador de Benjamín, supabase/tools/local-access.ps1 -Action test carga la configuración cifrada local.
+## 4. Ejecutar pruebas y verificaciones automatizadas (sin credenciales)
 
-Pruebas Android: ./gradlew assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug. Entrega5Test, StoreAccessTest y LaunchTest se ejecutan con el runner AndroidJUnitRunner en un emulador con supabaseLive=true y una cuenta ficticia por argumentos testEmail/testPassword. Para la navegación local: ./gradlew -PconectaDemo=true -Pandroid.testInstrumentationRunnerArguments.class=cl.surcode.conectasur.LaunchTest,cl.surcode.conectasur.NavigationTest connectedDebugAndroidTest.
+### 4.1 Pruebas de reglas y políticas RLS/RPC en Supabase (`C04`)
+Instala dependencias y ejecuta en local todas las migraciones (`001`–`015`) desde cero usando **PGlite** en memoria (no requiere instalar PostgreSQL ni conectar a la nube):
 
-El workflow Analisis MobSF analiza el APK en un contenedor del runner y guarda el informe como artefacto. No se sube el APK a un analizador público ni se incluyen credenciales de Supabase en el APK de CI.
+```sh
+npm --prefix supabase ci
+npm --prefix supabase test
+```
 
-El cierre de Entrega 4 incorpora la migración 007 para editar el nombre de la cuenta de emprendedora desde administración (W06/W07). Debe aplicarse mediante el migrador antes de comprobar el guardado; no abrir UPDATE directo de profiles. La evidencia real de guardar y recargar está en security/reports/entrepreneur-account-live/verification.json. Google sigue dependiendo de que el servidor del docente habilite el proveedor. No se afirma que exista producción independiente: web.app publica la interfaz de desarrollo conectada a Supabase de clase.
+En CI, la suite completa (incluida la prueba de ventas concurrentes) corre también contra PostgreSQL 15 mediante `npm --prefix supabase run test:postgres`.
 
-La web incorpora un [dashboard de emprendedora y navegación con sesión](docs/entrega-4/dashboard-web.md): productos, ventas guardadas del día, disponibilidad y retorno directo a Mi tienda desde la vitrina.
+### 4.2 Pruebas unitarias y análisis estático Android
+
+```powershell
+Set-Location android
+.\gradlew.bat testDebugUnitTest lintDebug
+```
+
+Pruebas instrumentadas locales en modo demo (con emulador o dispositivo conectado por `adb`):
+
+```powershell
+.\gradlew.bat -PconectaDemo=true connectedDebugAndroidTest
+```
+
+### 4.3 Pruebas de modelos y seguridad web (Node 22+)
+
+```sh
+node --test security/entrepreneur-account-data.test.mjs security/parte2-web-google.test.mjs security/firebase-buyer-session.test.mjs supabase/test/dashboard-model.test.js supabase/test/read-retry.test.js supabase/test/sales-model.test.js
+```
+
+---
+
+## 5. Manejo seguro de credenciales
+
+Los siguientes archivos contienen configuración local o secretos y permanecen excluidos en `.gitignore`:
+
+- `web/supabase-config.js`
+- `android/supabase.properties`
+- `android/firebase.properties`
+- `android/keystore.properties` y archivos `*.jks` / `*.keystore`
+- `android/app/google-services.json`
+
+Las contraseñas administrativas y `service_role` nunca se incluyen en los clientes ni en Git.
+
+---
+
+## 6. Documentación de cierre — Entrega 8
+
+- [Guión de demostración, cuentas de prueba y cierre APK (Benjamín)](docs/benjamin/entrega-8-cierre-y-guion.md)
+- [Pruebas Android, casos de prueba y matriz final de requisitos (Fabián)](docs/fabian/pruebas-android-matriz-requisitos.md)
+- [Informe de seguridad y verificación de Entrega 8 (Felipe)](docs/felipe/entrega-8-seguridad.md)
+- [Manual breve de la emprendedora](docs/Alonso/manual-emprendedora.md)
+- [Manual breve del administrador](docs/Alonso/manual-administrador.md)
+- [Diseño de módulo de IA desacoplado (`RNF-MAN-02`)](docs/Alonso/modulo-ia-desacoplado.md)
+- [Modelo de datos y permisos Supabase](docs/felipe/modelo-datos.md)
+- [Publicación web en Firebase Hosting](docs/publicacion-web.md)
