@@ -240,13 +240,9 @@ class MainActivity : FragmentActivity() {
         findViewById<Button>(R.id.main_account).setOnClickListener { openAccount() }
         findViewById<Button>(R.id.nav_home).setOnClickListener { navigate(Destination("home"), clear = true) }
         findViewById<Button>(R.id.nav_catalog).setOnClickListener {
-            if (buyerModel.state.value.session?.role == Role.EMPRENDEDORA) {
-                startActivity(Intent(this, ProductManagerActivity::class.java))
-            } else {
-                shopFilter = null
-                navigate(Destination("catalog"))
-                if (current.screen == "catalog") renderProducts()
-            }
+            shopFilter = null
+            navigate(Destination("catalog"))
+            if (current.screen == "catalog") renderProducts()
         }
         findViewById<Button>(R.id.nav_stores).setOnClickListener { navigate(Destination("directory")) }
         findViewById<Button>(R.id.nav_fairs).setOnClickListener { navigate(Destination("fairs")) }
@@ -505,17 +501,12 @@ class MainActivity : FragmentActivity() {
             menu.findViewById<Button>(id).setOnClickListener { dialog.dismiss(); navigate(Destination(route), clear = route == "home") }
         }
         menu.findViewById<Button>(R.id.menu_products).apply {
-            val isOwner = buyerModel.state.value.session?.role == Role.EMPRENDEDORA
-            if (isOwner) text = "Mis productos" else setText(R.string.see_products)
+            setText(R.string.see_products)
             setOnClickListener {
                 dialog.dismiss()
-                if (buyerModel.state.value.session?.role == Role.EMPRENDEDORA) {
-                    startActivity(Intent(this@MainActivity, ProductManagerActivity::class.java))
-                } else {
-                    shopFilter = null
-                    navigate(Destination("catalog"))
-                    if (current.screen == "catalog") renderProducts()
-                }
+                shopFilter = null
+                navigate(Destination("catalog"))
+                if (current.screen == "catalog") renderProducts()
             }
         }
         menu.findViewById<Button>(R.id.menu_read).apply {
@@ -618,8 +609,7 @@ class MainActivity : FragmentActivity() {
             setText(accountLabel(state))
             isEnabled = !state.busy && !state.awaitingGoogle && !state.demo
         }
-        findViewById<Button>(R.id.nav_catalog)?.text =
-            if (state.session?.role == Role.EMPRENDEDORA) "Mis productos" else getString(R.string.products)
+        findViewById<Button>(R.id.nav_catalog)?.setText(R.string.products)
         renderNotificationsBadge()
         if (::page.isInitialized) page.findViewById<TextView>(R.id.catalog_mode)?.setText(when {
             state.session == null -> R.string.buyer_public_mode
@@ -667,6 +657,9 @@ class MainActivity : FragmentActivity() {
         page.findViewById<View>(R.id.home_owner_actions)?.apply {
             isVisible = isOwner
             if (isOwner) {
+                page.findViewById<Button>(R.id.home_owner_products)?.setOnClickListener {
+                    startActivity(Intent(this@MainActivity, ProductManagerActivity::class.java))
+                }
                 page.findViewById<Button>(R.id.home_owner_sales)?.setOnClickListener {
                     startActivity(Intent(this@MainActivity, SalesActivity::class.java))
                 }
@@ -1257,7 +1250,7 @@ class MainActivity : FragmentActivity() {
     }
     private fun screenSpeech(): String = when(current.screen) {
             "home" -> if (buyerModel.state.value.session?.role == Role.EMPRENDEDORA) {
-                "ConectaSur. Inicio de emprendedora. Desde aquí puedes registrar ventas, revisar tu historial, abrir mensajes o ir a Mis productos abajo."
+                "ConectaSur. Inicio de emprendedora. Desde aquí puedes abrir Mis productos, registrar ventas, revisar tu historial, ver mensajes o explorar Productos abajo."
             } else {
                 "ConectaSur. Tu tienda, más cerca. Explora productos locales, tiendas y ferias sin necesidad de cuenta, o ingresa en Tu cuenta."
             }
