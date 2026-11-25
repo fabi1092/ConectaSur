@@ -171,3 +171,4 @@ Las contraseñas administrativas y `service_role` nunca se incluyen en los clien
 - [Diseño de módulo de IA desacoplado (`RNF-MAN-02`)](docs/Alonso/modulo-ia-desacoplado.md)
 - [Modelo de datos y permisos Supabase](docs/felipe/modelo-datos.md)
 - [Publicación web en Firebase Hosting](docs/publicacion-web.md)
+- [Despliegue en Coolify (`bigboy-vcm`)](docs/despliegue-coolify.md)

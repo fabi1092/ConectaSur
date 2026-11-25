@@ -1,0 +1,6 @@
+node_modules
+dist
+.vite
+supabase-config.js
+.env
+.env.*

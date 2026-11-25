@@ -2,7 +2,7 @@
 import {describe,it} from 'node:test';
 import assert from 'node:assert/strict';
 import {generateKeyPairSync,createVerify} from 'node:crypto';
-import {serviceAccountJwt,createFcmClient,buildMessage,processBatch,syncFirebaseKeys,setFirebaseProject} from '../tools/fcm-worker.mjs';
+import {serviceAccountJwt,createFcmClient,buildMessage,processBatch,syncFirebaseKeys,setFirebaseProject,loadAccount} from '../tools/fcm-worker.mjs';
 
 const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});
 const account={client_email:'push@conectasur-dev.iam.gserviceaccount.com',project_id:'conectasur-dev',
@@ -115,5 +115,15 @@ describe('proyecto de Firebase',()=>{
     const sent=[];await setFirebaseProject('conectasur-dev',{run:async sql=>{sent.push(sql)}});
     assert.match(sent[0],/update app_private\.settings set value='conectasur-dev' where key='firebase_project_id'/);
     for(const bad of [undefined,'','AB',"x'; drop table y;--",'Conecta Sur','a'.repeat(40)])await assert.rejects(setFirebaseProject(bad,{run:async()=>{}}),/invalido/);
+  });
+});
+
+describe('carga de cuenta de servicio en entorno',()=>{
+  it('carga desde FCM_SERVICE_ACCOUNT_JSON o FCM_SERVICE_ACCOUNT_BASE64 y exige configuracion',()=>{
+    const sample={client_email:account.client_email,project_id:account.project_id,private_key:account.private_key};
+    const raw=JSON.stringify(sample);
+    assert.deepEqual(loadAccount({FCM_SERVICE_ACCOUNT_JSON:raw}),sample);
+    assert.deepEqual(loadAccount({FCM_SERVICE_ACCOUNT_BASE64:Buffer.from(raw,'utf8').toString('base64')}),sample);
+    assert.throws(()=>loadAccount({}),/FCM_SERVICE_ACCOUNT_BASE64/);
   });
 });

@@ -1,6 +1,6 @@
 import './style.css';
 import 'leaflet/dist/leaflet.css';
-import config from '../supabase-config.js';
+import config from './runtime-config.js';
 import { createDataLayer } from '../supabase-data.js';
 import { createFirebaseBuyerAuth } from '../firebase-buyer-auth.js';
 import { showPublicShops, showPublicShop, showPublicProduct, showPublicAssociation, showPublicFair, shopLogo, wireShopImages } from './public-shops.js';

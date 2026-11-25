@@ -107,14 +107,19 @@ export async function listPending({run=query}={}) {
 }
 
 // --- Linea de comandos ---
-function loadAccount() {
-  const file=process.env.FCM_SERVICE_ACCOUNT_FILE;
-  if(!file)throw new Error('Define FCM_SERVICE_ACCOUNT_FILE con la ruta del JSON de la cuenta de servicio (fuera del repositorio)');
+export function loadAccount(env=process.env) {
+  const b64=String(env.FCM_SERVICE_ACCOUNT_BASE64||'').trim();
+  if(b64)return JSON.parse(Buffer.from(b64,'base64').toString('utf8'));
+  const raw=String(env.FCM_SERVICE_ACCOUNT_JSON||'').trim();
+  if(raw)return JSON.parse(raw);
+  const file=String(env.FCM_SERVICE_ACCOUNT_FILE||'').trim();
+  if(!file)throw new Error('Define FCM_SERVICE_ACCOUNT_BASE64, FCM_SERVICE_ACCOUNT_JSON o FCM_SERVICE_ACCOUNT_FILE');
   return JSON.parse(readFileSync(file,'utf8'));
 }
 async function main(argv) {
   const [command,...flags]=argv;const has=name=>flags.includes(name);
-  const interval=Number((flags.find(f=>f.startsWith('--interval='))??'--interval=5').split('=')[1])||5;
+  const intervalFlag=flags.find(f=>f.startsWith('--interval='));
+  const interval=Number(intervalFlag?intervalFlag.split('=')[1]:(process.env.PUSH_INTERVAL_SECONDS||5))||5;
   const log=text=>console.log(new Date().toLocaleTimeString('es-CL')+'  '+text);
   if(command==='project'){await setFirebaseProject(flags[0]);console.log('Proyecto Firebase de la base: '+flags[0]);return;}
   if(command==='keys'){const r=await syncFirebaseKeys();console.log('Claves de Firebase sincronizadas: '+r.count+' (vigencia sugerida '+r.maxAge+' s)');return;}
@@ -138,7 +143,10 @@ async function main(argv) {
   };
   if(command==='once'){await pass();return;}
   console.log('Servicio push activo cada '+interval+' s. Ctrl+C para detenerlo.');
-  let stop=false;process.on('SIGINT',()=>{stop=true;console.log('\nDeteniendo...');});
+  let stop=false;
+  const onStop=()=>{stop=true;console.log('\nDeteniendo...');};
+  process.on('SIGINT',onStop);
+  process.on('SIGTERM',onStop);
   while(!stop){
     try{await pass();}catch(e){log('error: '+e.message);if(e.fatal){process.exitCode=1;return;}}
     await new Promise(resolve=>setTimeout(resolve,interval*1000));
