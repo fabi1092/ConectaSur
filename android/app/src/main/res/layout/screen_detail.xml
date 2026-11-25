@@ -54,13 +54,18 @@
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
                 <TextView
                     android:id="@+id/product_availability"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_sm"
-                    android:layout_weight="1"
-                    android:gravity="end"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
                     android:text="@string/available"
                     android:textColor="?attr/appMuted"
                     android:textSize="13sp"

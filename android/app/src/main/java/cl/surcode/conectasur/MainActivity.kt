@@ -798,6 +798,20 @@ class MainActivity : FragmentActivity() {
         }
         renderProductGrid(list, filtered)
     }
+    private fun formatSpecLabel(rawKey: String): String {
+        val normalized = rawKey.trim().replace('_', ' ')
+        val esLocale = java.util.Locale.forLanguageTag("es-CL")
+        val known = mapOf(
+            "tecnica" to "Técnica",
+            "tamano" to "Tamaño",
+            "categoria" to "Categoría",
+            "duracion" to "Duración"
+        )
+        known[normalized.lowercase(esLocale)]?.let { return it }
+        return normalized.replaceFirstChar { ch ->
+            if (ch.isLowerCase()) ch.titlecase(esLocale) else ch.toString()
+        }
+    }
     private fun applyStatusBadge(view: TextView, product: PublicProduct) {
         val (label, bgColor, textColor) = when {
             product.soldOut -> Triple("Agotado", 0xFFFDF2F2.toInt(), 0xFF9B2C2C.toInt())
@@ -807,6 +821,9 @@ class MainActivity : FragmentActivity() {
         view.text = label
         view.setTextColor(textColor)
         val dp = resources.displayMetrics.density
+        val hPad = (10 * dp).toInt()
+        val vPad = (3 * dp).toInt()
+        view.setPadding(hPad, vPad, hPad, vPad)
         view.background = GradientDrawable().apply {
             cornerRadius = 999f * dp
             setColor(bgColor)
@@ -868,8 +885,11 @@ class MainActivity : FragmentActivity() {
         page.findViewById<TextView>(R.id.product_category).text = product.category
         page.findViewById<TextView>(R.id.product_price).apply { text = priceLabel(product.priceClp); contentDescription = spokenPrice(product.priceClp) }
         applyStatusBadge(page.findViewById(R.id.product_availability), product)
+        val isDemoData = !RepositoryProvider.supabaseReady()
+        page.findViewById<View>(R.id.price_note).isVisible = isDemoData
+        page.findViewById<View>(R.id.photo_note).isVisible = isDemoData
         page.findViewById<TextView>(R.id.product_description).text = product.description
-        page.findViewById<TextView>(R.id.product_attributes).text = product.attributes.entries.joinToString("\n") { "${it.key}: ${it.value}" }
+        page.findViewById<TextView>(R.id.product_attributes).text = product.attributes.entries.joinToString("\n") { "${formatSpecLabel(it.key)}: ${it.value}" }
         val specsTitle = page.findViewById<View>(R.id.product_attributes_title)
         val specsList = page.findViewById<LinearLayout>(R.id.product_specs_list)
         specsTitle?.isVisible = product.attributes.isNotEmpty()
@@ -883,7 +903,7 @@ class MainActivity : FragmentActivity() {
                 setBackgroundColor(if (idx % 2 == 0) 0xFFF5F8F6.toInt() else 0xFFFFFFFF.toInt())
             }
             val keyView = TextView(this).apply {
-                text = entry.key
+                text = formatSpecLabel(entry.key)
                 textSize = 14f
                 setTextColor(0xFF4A6560.toInt())
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -924,8 +944,10 @@ class MainActivity : FragmentActivity() {
                     text = priceLabel(v.priceClp)
                     contentDescription = spokenPrice(v.priceClp)
                 }
-                page.findViewById<TextView>(R.id.product_availability).text =
-                    if (product.onRequest) "A pedido" else if (product.soldOut || !v.available) "Agotado" else "Disponible"
+                applyStatusBadge(
+                    page.findViewById(R.id.product_availability),
+                    product.copy(soldOut = product.soldOut || (!v.available && !product.onRequest))
+                )
                 val photoView = page.findViewById<ImageView>(R.id.product_photo)
                 bindPhoto(photoView, product.copy(photo = v.photo ?: product.photo))
             }
