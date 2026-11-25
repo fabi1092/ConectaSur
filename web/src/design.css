@@ -380,12 +380,21 @@ html[data-contrast='high'] .spec-row { background: #fff; color: #000; border: 1p
 .public-shop-assoc { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: .95rem; color: var(--navy); }
 .public-shop-assoc a { color: var(--green); text-decoration: underline; font-weight: 600; }
 .fair-logo-cover { border-radius: 14px; object-fit: cover; }
+.privacy-page { max-width: 1120px; margin: 0 auto; padding: 34px max(20px, 3vw) 56px; display: grid; gap: 24px; }
+.privacy-hero h1 { font-size: clamp(1.9rem, 3.2vw, 2.7rem); margin: 8px 0 10px; }
+.privacy-hero p:not(.public-eyebrow) { max-width: 72ch; font-size: 1.05rem; }
+.privacy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.privacy-card { padding: 22px 24px; border-radius: var(--radius); display: grid; gap: 10px; align-content: start; }
+.privacy-card h2 { font-size: 1.25rem; color: var(--navy); }
+.privacy-card ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.privacy-card-wide { grid-column: 1 / -1; }
+.privacy-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 @media (max-width: 900px) {
   .public-associations-grid, .public-fairs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-fairs-stack .anon-mode-cards { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
-  .directory-filters-row, .public-associations-grid, .public-fairs-grid, .fair-dates-grid, .fair-coords-grid { grid-template-columns: minmax(0, 1fr); }
+  .directory-filters-row, .public-associations-grid, .public-fairs-grid, .fair-dates-grid, .fair-coords-grid, .privacy-grid { grid-template-columns: minmax(0, 1fr); }
   .fair-map { height: 260px; }
   .admin-fairs-stack .form-card { padding: 18px; }
   .admin-fairs-stack td.actions { min-width: 0; }

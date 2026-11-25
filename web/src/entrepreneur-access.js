@@ -67,6 +67,7 @@ export function showAccountAccess(app, db, isCurrent = () => true, showAdmin) {
         <p class="auth-divider">O usa tu cuenta de Google</p>
         <button id="google-login" class="google-button owner-secondary google-access" type="button"><span class="google-symbol" aria-hidden="true">G</span>Continuar con Google</button>
         <a class="owner-auth-link" href="#recuperar">Olvidé mi contraseña</a>
+        <a class="owner-auth-link" href="#privacidad">Aviso de privacidad y datos personales</a>
       </div>
       <aside class="owner-help"><h2>¿Es tu primera vez?</h2><p>Puedes ingresar como comprador con tu cuenta de Google o crear una cuenta con tu correo.</p><a class="owner-secondary" href="#registro">Crear cuenta de comprador</a><p>Si te entregaron una cuenta de emprendedora o administrador, usa sus datos para ingresar.</p><p>Puedes seguir conociendo las tiendas sin ingresar.</p><a class="public-text-link" href="#inicio">Ver las tiendas <span aria-hidden="true">→</span></a></aside>
     </section>`);
